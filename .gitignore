@@ -8,14 +8,15 @@
 .DS_Store
 __pycache__
 .env
+.venv/
 artifacts/runs/
+artifacts/phase2/
+artifacts/experiments/
+artifacts/transitions/
+artifacts/references/
+artifacts/reports/
 .pytest_cache/
 *.egg-info/
 .benchbase/
 
 artifacts/snapshots/
-artifacts/
-results/
-reasoning_results/
-**/__pycache__/
-*.pyc

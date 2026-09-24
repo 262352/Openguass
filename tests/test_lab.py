@@ -70,6 +70,7 @@ def test_live_report_separates_human_csv_and_status(tmp_path):
 def test_reference_selection_uses_repeat_median_not_one_shot_winner(tmp_path,monkeypatch):
  from app.lab.models import TrialRecord
  from app.lab.tuner import LHSGPTuner
+ monkeypatch.setenv('POSTGRES_BENCH_PASSWORD','unit-test-only')
  class FakeAdapter:
   def run(self,seconds,terminals,config):
    throughput=50.0 if config['random_page_cost']==1.0 else 120.0

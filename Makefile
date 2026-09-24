@@ -1,4 +1,11 @@
-.PHONY: install-pg prepare-benchmarks benchmark benchmark-tpcc benchmark-twitter benchmark-ycsb test
+.PHONY: bootstrap check-env install-pg prepare-benchmarks benchmark benchmark-tpcc benchmark-twitter benchmark-ycsb test
+PYTHON ?= .venv/bin/python
+
+bootstrap:
+	./scripts/bootstrap_test_environment.sh
+
+check-env:
+	./scripts/bootstrap_test_environment.sh --check-only
 install-pg:
 	./scripts/install_postgres_benchbase.sh
 
@@ -9,13 +16,13 @@ benchmark:
 	./scripts/run_benchmarks.sh run 30 2
 
 benchmark-tpcc:
-	python3 -m app.benchmark.cli tpcc --duration 30 --terminals 2 --reuse-data
+	$(PYTHON) -m app.benchmark.cli tpcc --duration 30 --terminals 2 --reuse-data
 
 benchmark-twitter:
-	python3 -m app.benchmark.cli twitter --duration 30 --terminals 2 --reuse-data
+	$(PYTHON) -m app.benchmark.cli twitter --duration 30 --terminals 2 --reuse-data
 
 benchmark-ycsb:
-	python3 -m app.benchmark.cli ycsb --duration 30 --terminals 2 --reuse-data
+	$(PYTHON) -m app.benchmark.cli ycsb --duration 30 --terminals 2 --reuse-data
 
 test:
-	python3 -m pytest -q
+	$(PYTHON) -m pytest -q

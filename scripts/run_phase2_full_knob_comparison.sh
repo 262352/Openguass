@@ -7,6 +7,8 @@ export PYTHONUNBUFFERED=1
 unset LANGUAGE LC_CTYPE || true
 
 cd "$(dirname "$0")/.."
+PYTHON_BIN="${PYTHON:-python3}"
+[[ -x .venv/bin/python ]] && PYTHON_BIN=.venv/bin/python
 
 EXPERIMENT_ID="${EXPERIMENT_ID:-phase2-full-$(date -u +%Y%m%dT%H%M%SZ)}"
 DIRECTIONS="${DIRECTIONS:-tpcc:twitter,twitter:tpcc}"
@@ -39,11 +41,10 @@ EOF
 printf '[phase2] id=%s directions=%s budget=%s duration=%ss terminals=%s\n' "$EXPERIMENT_ID" "$DIRECTIONS" "$BUDGET" "$DURATION" "$TERMINALS"
 printf '[phase2] live reports: artifacts/phase2/%s/*/LIVE_PROGRESS.md\n' "$EXPERIMENT_ID"
 
-exec python3 -m app.phase2.cli \
+exec "$PYTHON_BIN" -m app.phase2.cli \
   --experiment-id "$EXPERIMENT_ID" \
   --directions "$DIRECTIONS" \
   --budget "$BUDGET" \
   --duration "$DURATION" \
   --terminals "$TERMINALS" \
   --seed "$SEED"
-

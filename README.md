@@ -4,7 +4,46 @@ Andromeda serves as a natural surrogate of DBAs to answer a wide range of natura
 
 ## Requirements
 
-- python = 3.8.12
+- Python >= 3.10
+
+### 一键安装完整测试环境
+
+在 Ubuntu 22.04 上以一个命令安装 Python 隔离环境、PostgreSQL 14、Java 23、
+固定版本的 BenchBase，创建三个测试数据库，装载 TPC-C、Twitter、YCSB，生成
+可重复使用的快照，并执行全部单元测试与真实负载冒烟测试：
+
+```bash
+cd /root/Andromeda
+DEEPSEEK_API_KEY=你的密钥 ./scripts/bootstrap_test_environment.sh
+```
+
+在中国大陆环境可以让 apt、pip 和 Maven 使用清华源或阿里云源：
+
+```bash
+./scripts/bootstrap_test_environment.sh --mirror tsinghua
+# 或
+./scripts/bootstrap_test_environment.sh --mirror aliyun
+```
+
+清华模式使用 TUNA 的 Ubuntu 与 PyPI 镜像；由于 TUNA 当前没有 Maven Central
+镜像，BenchBase 的 Maven 依赖使用阿里云公共仓库。镜像配置仅对本次脚本进程生效，
+不会覆盖 `/etc/apt/sources.list`、用户的 pip 配置或 Maven 全局配置。
+
+`DEEPSEEK_API_KEY` 未提供时，单元测试、数据库和 BenchBase 仍可完成安装，调用
+DeepSeek 的诊断实验需要之后把密钥写入 `.env`。脚本会自动生成本地数据库密码，
+且不会打印密码。重复运行会复用已有负载快照。
+
+只检查已经安装的环境：
+
+```bash
+./scripts/bootstrap_test_environment.sh --check-only
+```
+
+强制重新装载三个负载并重建快照：
+
+```bash
+./scripts/bootstrap_test_environment.sh --force-reload
+```
   
 You can install multiple packages:
 

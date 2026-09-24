@@ -4,6 +4,56 @@ set -euo pipefail
 project_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 benchbase_commit=33c00473807ebd49304d114a6d769d2d2b2bbb34
 jdk_dir="${HOME}/.local/jdks/jdk-23.0.2+7"
+mirror="${MIRROR:-official}"
+apt_options=(-o Acquire::Retries=5)
+maven_options=()
+
+case "$mirror" in
+  official)
+    ;;
+  tsinghua|aliyun)
+    . /etc/os-release
+    codename=${VERSION_CODENAME:?Unable to determine Ubuntu codename}
+    apt_sources=$(mktemp)
+    if [[ $mirror == tsinghua ]]; then
+      ubuntu_base=https://mirrors.tuna.tsinghua.edu.cn/ubuntu
+      # TUNA currently provides Ubuntu/PyPI but no Maven Central mirror.
+      maven_url=https://maven.aliyun.com/repository/public
+    else
+      ubuntu_base=https://mirrors.aliyun.com/ubuntu
+      maven_url=https://maven.aliyun.com/repository/public
+    fi
+    cat >"$apt_sources" <<EOF
+deb $ubuntu_base $codename main restricted universe multiverse
+deb $ubuntu_base $codename-updates main restricted universe multiverse
+deb $ubuntu_base $codename-backports main restricted universe multiverse
+deb $ubuntu_base $codename-security main restricted universe multiverse
+EOF
+    apt_options+=(
+      -o "Dir::Etc::sourcelist=$apt_sources"
+      -o "Dir::Etc::sourceparts=-"
+      -o "APT::Get::List-Cleanup=0"
+    )
+    maven_settings=$(mktemp)
+    cat >"$maven_settings" <<EOF
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+  <mirrors>
+    <mirror>
+      <id>andromeda-$mirror</id>
+      <name>Andromeda selected Maven mirror</name>
+      <url>$maven_url</url>
+      <mirrorOf>*</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
+    maven_options=(-s "$maven_settings")
+    ;;
+  *)
+    echo "MIRROR must be tsinghua, aliyun, or official." >&2
+    exit 2
+    ;;
+esac
 
 if [[ $(id -u) -ne 0 ]]; then
   echo "Run this installer as root (or with sudo)." >&2
@@ -19,8 +69,24 @@ source "${project_dir}/.env"
 set +a
 : "${POSTGRES_BENCH_PASSWORD:?POSTGRES_BENCH_PASSWORD must be set in .env}"
 
-apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-14 postgresql-contrib-14 curl git ca-certificates
+echo "Using package mirror: $mirror"
+if [[ $mirror != official ]]; then
+  echo "Ubuntu mirror: $ubuntu_base"
+  echo "Maven mirror:  $maven_url"
+fi
+apt-get "${apt_options[@]}" update
+for attempt in 1 2 3; do
+  if DEBIAN_FRONTEND=noninteractive apt-get "${apt_options[@]}" install -y \
+      postgresql-14 postgresql-contrib-14 curl git ca-certificates python3 python3-venv; then
+    break
+  fi
+  if [[ $attempt == 3 ]]; then
+    echo "apt installation failed after ${attempt} attempts." >&2
+    exit 1
+  fi
+  echo "apt download failed; retrying (${attempt}/3)..." >&2
+  apt-get "${apt_options[@]}" update
+done
 pg_ctlcluster 14 main start || true
 pg_isready
 
@@ -53,7 +119,7 @@ if [[ $(git -C "${project_dir}/.benchbase" rev-parse HEAD) != "${benchbase_commi
   exit 1
 fi
 JAVA_HOME="${jdk_dir}" PATH="${jdk_dir}/bin:${PATH}" \
-  "${project_dir}/.benchbase/mvnw" -q clean package -P postgres -DskipTests
+  "${project_dir}/.benchbase/mvnw" "${maven_options[@]}" -q clean package -P postgres -DskipTests
 rm -rf "${project_dir}/.benchbase/target/benchbase-postgres"
 tar -xzf "${project_dir}/.benchbase/target/benchbase-postgres.tgz" -C "${project_dir}/.benchbase/target"
 echo "PostgreSQL and BenchBase are ready."
