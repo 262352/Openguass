@@ -1,0 +1,11 @@
+CREATE USER IF NOT EXISTS 'benchmark'@'%' IDENTIFIED BY 'andromeda-benchmark';
+CREATE USER IF NOT EXISTS 'observer'@'%' IDENTIFIED BY 'andromeda-observer';
+CREATE USER IF NOT EXISTS 'tuner'@'%' IDENTIFIED BY 'andromeda-tuner';
+GRANT ALL PRIVILEGES ON andromeda.* TO 'benchmark'@'%';
+GRANT SELECT, PROCESS, REPLICATION CLIENT ON *.* TO 'observer'@'%';
+GRANT SYSTEM_VARIABLES_ADMIN ON *.* TO 'tuner'@'%';
+GRANT SELECT ON performance_schema.* TO 'tuner'@'%';
+GRANT SELECT ON sys.* TO 'tuner'@'%';
+CREATE USER IF NOT EXISTS 'exporter'@'%' IDENTIFIED BY 'andromeda-exporter' WITH MAX_USER_CONNECTIONS 3;
+GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
+FLUSH PRIVILEGES;

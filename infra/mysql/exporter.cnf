@@ -1,0 +1,5 @@
+[client]
+user=exporter
+password=andromeda-exporter
+host=mysql
+port=3306

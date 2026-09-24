@@ -1,0 +1,8 @@
+USE andromeda;
+CREATE TABLE IF NOT EXISTS sbtest1 (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  k INT NOT NULL,
+  c CHAR(120) NOT NULL,
+  pad CHAR(60) NOT NULL,
+  KEY idx_k (k)
+) ENGINE=InnoDB;

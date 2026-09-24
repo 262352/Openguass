@@ -1,0 +1,53 @@
+name: andromeda-lab
+services:
+  mysql:
+    image: mysql:8.0.40
+    command: ["mysqld", "--defaults-file=/etc/mysql/conf.d/andromeda.cnf"]
+    environment:
+      MYSQL_ROOT_PASSWORD: andromeda-root
+      MYSQL_DATABASE: andromeda
+    ports: ["3306:3306"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./infra/mysql/andromeda.cnf:/etc/mysql/conf.d/andromeda.cnf:ro
+      - ./infra/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -pandromeda-root --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    cpus: 2.0
+    mem_limit: 4g
+
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.16.0
+    command: ["--config.my-cnf=/cfg/exporter.cnf", "--collect.global_status", "--collect.global_variables", "--collect.info_schema.innodb_metrics"]
+    volumes:
+      - ./infra/mysql/exporter.cnf:/cfg/exporter.cnf:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports: ["9104:9104"]
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports: ["9090:9090"]
+    depends_on: [mysqld-exporter]
+
+  benchmark:
+    image: severalnines/sysbench:1.0.20
+    profiles: ["tools"]
+    entrypoint: ["sleep", "infinity"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    cpus: 1.0
+    mem_limit: 512m
+
+volumes:
+  mysql_data:
+  prometheus_data:

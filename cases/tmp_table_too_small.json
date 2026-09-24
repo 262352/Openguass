@@ -1,0 +1,1 @@
+{"case_id":"tmp_table_too_small","fault_knob":"tmp_table_size","injected_value":1048576,"reasonable_range":[16777216,67108864],"metrics":["disk_tmp_table_ratio","Created_tmp_disk_tables"],"expected":{"disk_tmp_table_ratio":"decrease"},"workload":"analytics","restore_value":16777216,"do_not_modify":["sort_buffer_size","join_buffer_size"]}

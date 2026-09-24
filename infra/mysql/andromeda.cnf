@@ -1,0 +1,8 @@
+[mysqld]
+performance_schema=ON
+slow_query_log=ON
+long_query_time=0.2
+log_output=TABLE
+skip_name_resolve=ON
+innodb_buffer_pool_size=1G
+max_connections=200

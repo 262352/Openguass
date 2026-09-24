@@ -1,0 +1,20 @@
+common:
+  host: mysql
+  user: benchmark
+  database: andromeda
+  tables: 4
+  table_size: 100000
+  warmup_seconds: 10
+  duration_seconds: 30
+  report_interval: 1
+  random_seed: 7319
+  threads: [8, 32, 64]
+formal:
+  warmup_seconds: 60
+  duration_seconds: 180
+workloads:
+  - oltp_point_select
+  - oltp_read_only
+  - oltp_read_write
+  - oltp_write_only
+  - analytics

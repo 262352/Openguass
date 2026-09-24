@@ -1,0 +1,1 @@
+{"case_id":"thread_cache_too_small","fault_knob":"thread_cache_size","injected_value":0,"reasonable_range":[16,128],"metrics":["Connections","Threads_created"],"expected":{"Threads_created":"decrease"},"workload":"connection_churn","restore_value":16,"do_not_modify":["max_connections"]}

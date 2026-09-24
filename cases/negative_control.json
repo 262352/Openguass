@@ -1,0 +1,1 @@
+{"case_id":"healthy_negative_control","fault_knob":null,"expected_decision":"insufficient_evidence","workload":"oltp_read_only","do_not_modify":["innodb_buffer_pool_size","tmp_table_size","thread_cache_size"]}
