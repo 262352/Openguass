@@ -3,6 +3,7 @@ import hashlib,os,subprocess,time
 from pathlib import Path
 from app.benchmark.benchbase import BenchBaseRunner
 from app.lab.space import session_settings
+from app.phase2.space import FullKnobSpace
 
 ROOT=Path(__file__).resolve().parents[2]
 class PostgresBenchBaseAdapter:
@@ -32,9 +33,18 @@ class PostgresBenchBaseAdapter:
         subprocess.run(['pg_restore','--clean','--if-exists','--no-owner','--no-privileges','--single-transaction','--exit-on-error','-h',self.runner.target.host,'-p',str(self.runner.target.port),'-U',self.runner.target.user,'-d',self.name,str(self.snapshot)],env=self._env(),check=True,stdout=subprocess.DEVNULL)
         elapsed=time.monotonic()-started;print(f'[snapshot] restored {self.name} in {elapsed:.1f}s',flush=True)
         return {'restored':True,'snapshot':str(self.snapshot),'elapsed_seconds':round(elapsed,3),'transactional':True}
-    def warmup(self,seconds=5,terminals=1):return self.run(seconds,terminals)
-    def run(self,seconds=15,terminals=2,config=None):
-        self._active=dict(config or {});return self.runner.run(self.name,seconds,terminals,False,session_settings(self._active) if self._active else None,verbose=False)
+    def warmup(self,seconds=5,terminals=1,seed=None):return self.run(seconds,terminals,seed=seed)
+    def run(self,seconds=15,terminals=2,config=None,seed=None):
+        self._active=dict(config or {})
+        settings = None
+        if self._active:
+            if "effective_cache_size_mb" in self._active:
+                settings = session_settings(self._active)
+            else:
+                dimensions = {item.name: item for item in FullKnobSpace().dimensions}
+                settings = {name: str(value) for name, value in self._active.items()
+                            if name in dimensions and dimensions[name].execution_class == "session"}
+        return self.runner.run(self.name,seconds,terminals,False,settings,verbose=False,random_seed=seed)
     def stop(self):self._active={};return {'stopped':True,'session_settings_cleared':True}
     def parse_result(self,result):return {'throughput_rps':float(result['throughput_rps']),'p95_us':float(result['latency']['95th Percentile Latency (microseconds)'])}
     def fingerprint(self):

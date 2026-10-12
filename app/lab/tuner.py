@@ -24,6 +24,7 @@ def _metrics(result): return {'throughput_rps':float(result['throughput_rps']),'
 class LHSGPTuner:
   def __init__(self,experiment_id:str,workload:str,duration:int=15,terminals:int=2,seed:int=20260921,root:Path=Path('artifacts/experiments'),snapshot_isolation:bool=False):
     self.workload=workload; self.duration=duration; self.terminals=terminals; self.seed=seed
+    self.reference_root=(root.parent/'references') if root.name=='experiments' else (root/'references')
     self.dir=root/experiment_id/workload; self.dir.mkdir(parents=True,exist_ok=True)
     self.trials_path=self.dir/'trials.jsonl'; self.checkpoint=self.dir/'checkpoint.json'
     self.adapter=PostgresBenchBaseAdapter(workload); self.snapshot_isolation=snapshot_isolation; self.reporter=ExperimentReporter(experiment_id,root)
@@ -88,4 +89,4 @@ class LHSGPTuner:
       shortlist.append({'rank_by_one_shot':rank,'trial_id':candidate.trial_id,'config':candidate.config,'one_shot_objective':candidate.objective,'robust_objective':robust,'repeat_results':results,'distribution':{'throughput_median':median_t,'throughput_stdev':statistics.stdev(throughputs) if len(throughputs)>1 else 0.0,'p95_median_us':median_p,'p95_stdev_us':statistics.stdev(p95) if len(p95)>1 else 0.0}})
     self.adapter.stop();winner=max(shortlist,key=lambda item:item['robust_objective'])
     ref=ReferenceRecord(workload=self.workload,selected_trial_id=winner['trial_id'],config=winner['config'],objective=winner['robust_objective'],one_shot_objective=winner['one_shot_objective'],selection_method=f'top_{len(shortlist)}_by_one_shot_then_{repeats}_repeats_each_max_median_objective',shortlist=shortlist,repeat_results=winner['repeat_results'],distribution=winner['distribution'])
-    out=Path('artifacts/references')/self.workload;out.mkdir(parents=True,exist_ok=True);(out/'reference.json').write_text(ref.model_dump_json(indent=2));self.reporter.event('reference_selected',self.workload,status='selected',objective=ref.objective,throughput_rps=ref.distribution['throughput_median'],p95_us=ref.distribution['p95_median_us'],message=f'trial_id={ref.selected_trial_id} method=robust_top_k');return ref.model_dump(mode='json')
+    out=self.reference_root/self.workload;out.mkdir(parents=True,exist_ok=True);(out/'reference.json').write_text(ref.model_dump_json(indent=2));self.reporter.event('reference_selected',self.workload,status='selected',objective=ref.objective,throughput_rps=ref.distribution['throughput_median'],p95_us=ref.distribution['p95_median_us'],message=f'trial_id={ref.selected_trial_id} method=robust_top_k');return ref.model_dump(mode='json')

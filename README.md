@@ -6,6 +6,18 @@ Andromeda serves as a natural surrogate of DBAs to answer a wide range of natura
 
 - Python >= 3.10
 
+### 多智能体竞争假设与增量因果图
+
+新的多智能体诊断入口由三个领域专家并行提出竞争假设，协调器串行选择实验，确定性验证器分别判定实验有效性、性能收益与机制证据。它复用现有 PostgreSQL 60 旋钮执行器、BenchBase、遥测和回滚能力，不在在线决策中使用 GP/EI。
+
+完整方法、跨服务器部署、冒烟测试、正式 nohup 命令及结果结构见 [docs/multi_agent_diagnosis.md](docs/multi_agent_diagnosis.md)。快速验证命令：
+
+```bash
+SOURCE_WORKLOAD=tpcc TARGET_WORKLOAD=twitter \
+MAX_ROUNDS=1 MAX_MEASUREMENTS=7 DURATION=10 WARMUP_SECONDS=5 TERMINALS=1 \
+./scripts/run_multi_agent_diagnosis.sh
+```
+
 ### 一键安装完整测试环境
 
 在 Ubuntu 22.04 上以一个命令安装 Python 隔离环境、PostgreSQL 14、Java 23、
@@ -16,6 +28,10 @@ Andromeda serves as a natural surrogate of DBAs to answer a wide range of natura
 cd /root/Andromeda
 DEEPSEEK_API_KEY=你的密钥 ./scripts/bootstrap_test_environment.sh
 ```
+
+当前新增的多智能体诊断会通过 OpenAI-compatible SDK 调用 DeepSeek；其新增依赖
+`httpx[socks]`（包含 `socksio`）已经写入 `pyproject.toml`。一键脚本执行项目的
+editable install 时会自动安装，无需在部署服务器额外执行安装命令。
 
 在中国大陆环境可以让 apt、pip 和 Maven 使用清华源或阿里云源：
 
@@ -250,4 +266,26 @@ artifacts/experiments/<id>/
 
 Transition results are split into a concise `transition_report.json`, raw one-second samples in `telemetry_samples.json`, and model calls under `llm/`. Pressing Ctrl+C marks `live_status.json` as `paused`; rerunning with the same `EXPERIMENT_ID` resumes from the checkpoint.
 
+## 8. 假设—证据诊断图
+
+已有实验可以从保存的结构化假设和真实遥测生成诊断图：
+
+```bash
+python3 -m app.lab.cli diagnosis graph --experiment-id <experiment-id>
+```
+
+每个方向同时输出 JSON、可在 VS Code/GitHub 预览的 Mermaid Markdown 和独立 SVG。
+图按“工作负载条件/干预 → 内部机制 → 证据指标 → TPS”组织，边颜色区分 candidate、
+supported、refuted 和 inconclusive。`candidate_graph` 保留尚未验证的模型假设，
+`effective_graph` 只包含反事实实验支持的边；候选边不能作为已验证根因。
+
 # Openguass
+
+## 9-29_v2 单智能体诊断链
+
+当前 V3/V4 的实现、方法边界、命令、产物和实地 quick 验收记录见 [README9-29_v2.md](README9-29_v2.md)。正式双向实验入口：
+
+```bash
+nohup ./scripts/run_v3_v4_single_agent_chain.sh \
+  > artifacts/v3_v4-formal-nohup.log 2>&1 &
+```

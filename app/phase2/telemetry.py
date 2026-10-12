@@ -99,3 +99,20 @@ def summarize(samples: list[dict[str, float]]) -> dict[str, Any]:
     if rates["checkpoint_write_time"] > 100:
         anomalies.append("checkpoint_write_pressure")
     return {"sample_count": len(samples), "elapsed_seconds": elapsed, "rates_per_second": rates, "gauges": gauges, "anomalies": anomalies}
+
+
+def normalize_by_transactions(summary: dict[str, Any], throughput_rps: float) -> dict[str, Any]:
+    """Add rate/TPS metrics; these describe work per completed benchmark operation."""
+    denominator = max(float(throughput_rps), 1e-12)
+    summary = dict(summary)
+    rates = summary.get("rates_per_second", {})
+    summary["per_transaction"] = {
+        f"{name}_per_txn": float(value) / denominator
+        for name, value in rates.items()
+        if isinstance(value, (int, float)) and name not in {"buffer_hit_ratio", "rollback_ratio"}
+    }
+    summary["normalization"] = {
+        "denominator": "BenchBase throughput_rps",
+        "warning": "per-second counters alone are not causal mechanism evidence",
+    }
+    return summary

@@ -75,7 +75,8 @@ class BenchBaseRunner:
         if not (self.root / "benchbase.jar").is_file():
             raise RuntimeError("BenchBase is not built. Run scripts/install_postgres_benchbase.sh.")
 
-    def _config(self, workload: str, duration: int, terminals: int, run_dir: Path, session_settings: dict[str, str] | None = None) -> Path:
+    def _config(self, workload: str, duration: int, terminals: int, run_dir: Path, session_settings: dict[str, str] | None = None,
+                random_seed: int | None = None) -> Path:
         template = ROOT / f"benchmarks/postgres/{workload}.xml"
         tree = ET.parse(template)
         root = tree.getroot()
@@ -94,6 +95,11 @@ class BenchBaseRunner:
             if node is None:
                 raise ValueError(f"template misses <{key}>: {template}")
             node.text = value
+        if random_seed is not None:
+            seed_node = root.find("randomSeed")
+            if seed_node is None:
+                seed_node = ET.SubElement(root, "randomSeed")
+            seed_node.text = str(int(random_seed))
         for work in root.findall("./works/work"):
             time_node = work.find("time")
             if time_node is not None:
@@ -102,7 +108,8 @@ class BenchBaseRunner:
         tree.write(target, encoding="utf-8", xml_declaration=True)
         return target
 
-    def run(self, workload: str, duration: int = 15, terminals: int = 2, reload_data: bool = True, session_settings: dict[str, str] | None = None, verbose: bool = True) -> dict[str, Any]:
+    def run(self, workload: str, duration: int = 15, terminals: int = 2, reload_data: bool = True,
+            session_settings: dict[str, str] | None = None, verbose: bool = True, random_seed: int | None = None) -> dict[str, Any]:
         if workload not in SUPPORTED:
             raise ValueError(f"unsupported workload: {workload}")
         if duration < 5 or terminals < 1:
@@ -111,7 +118,7 @@ class BenchBaseRunner:
         run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + f"-{workload}"
         run_dir = self.artifacts / run_id
         run_dir.mkdir(parents=True, exist_ok=False)
-        config = self._config(workload, duration, terminals, run_dir, session_settings)
+        config = self._config(workload, duration, terminals, run_dir, session_settings, random_seed)
         reload_text = str(reload_data).lower()
         command = [
             str(java_binary()), "-jar", "benchbase.jar", "-b", workload,
@@ -150,6 +157,7 @@ class BenchBaseRunner:
             "terminals": terminals,
             "data_reloaded": reload_data,
             "session_settings": session_settings or {},
+            "random_seed": random_seed,
             "elapsed_seconds": round(elapsed, 3),
             "throughput_rps": summary.get("Throughput (requests/second)"),
             "goodput_rps": summary.get("Goodput (requests/second)"),
