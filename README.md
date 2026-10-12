@@ -43,15 +43,13 @@ sudo bash scripts/setup_and_run_multi_agent.sh --mirror official
 
 首次构建 BenchBase和装载三个数据集需要一些时间。脚本结束时会打印 PID、实验 ID 和日志路径。
 
-### 全新部署与安全重跑
-
-脚本不会修改已有 PostgreSQL 用户的密码：
+### 全新部署与旧镜像自动修复
 
 - 全新部署没有该角色时，脚本生成随机密码、写入本机 `.env` 并创建角色；
-- `.env` 已有非空 `POSTGRES_BENCH_PASSWORD` 时，用它验证现有用户；
-- PostgreSQL 用户已存在但 `.env` 密码为空时，交互式询问当前密码并保存到本机 `.env`；
-- 只有 PostgreSQL 用户尚不存在时，才为新用户生成密码；
-- `.env` 密码与现有用户不一致时立即停止，并明确报告错误。
+- 旧镜像已有角色但 `.env` 密码为空时，脚本生成新密码并自动同步到该角色；
+- `.env` 已有非空 `POSTGRES_BENCH_PASSWORD` 但认证失败时，以本机 `.env` 为准自动修复该角色；
+- 修复后必须通过 TCP 密码连接验证，之后才会创建数据库和装载数据；
+- 密码不写入日志，只保存在权限为 `0600` 的本机 `.env`。
 
 `.env`、`.venv`、`.benchbase`、快照和运行结果均被 Git 忽略，不会上传。不要把 API Key 写入命令行或提交到仓库。
 
@@ -76,7 +74,7 @@ sudo bash scripts/bootstrap_test_environment.sh --mirror tsinghua --force-reload
 
 ## 自定义正式实验
 
-变量放在命令前即可改变方向和预算，安装及已有密码仍会保留：
+变量放在命令前即可改变方向和预算；数据库凭据仍以本机 `.env` 为准：
 
 ```bash
 cd /root/Openguass

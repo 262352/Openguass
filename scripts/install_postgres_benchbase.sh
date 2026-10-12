@@ -87,17 +87,7 @@ role_exists=$(runuser -u postgres -- sh -c 'cd / && exec psql -XAtqc "$1"' sh \
   "SELECT 1 FROM pg_roles WHERE rolname='${bench_user}'")
 bench_password=${POSTGRES_BENCH_PASSWORD:-}
 
-if [[ -n $role_exists && -z $bench_password ]]; then
-  if [[ -t 0 ]]; then
-    read -rsp "Existing PostgreSQL password for ${bench_user}: " bench_password
-    echo
-  else
-    echo "${bench_user} already exists, but POSTGRES_BENCH_PASSWORD is empty." >&2
-    echo "Put its current password in .env; the installer will not reset it." >&2
-    exit 1
-  fi
-fi
-if [[ -z $role_exists && -z $bench_password ]]; then
+if [[ -z $bench_password ]]; then
   bench_password=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')
 fi
 : "${bench_password:?POSTGRES_BENCH_PASSWORD is required}"
@@ -129,16 +119,18 @@ if [[ -z $role_exists ]]; then
     "$bench_user" "$bench_password" <<'SQL'
 SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'role_name', :'role_password') \gexec
 SQL
+elif ! PGPASSWORD="$bench_password" psql -XAt -h "$bench_host" -p "$bench_port" \
+    -U "$bench_user" -d postgres -v ON_ERROR_STOP=1 -c 'select 1' >/dev/null 2>&1; then
+  echo "Existing role ${bench_user} does not match local .env; repairing its password."
+  runuser -u postgres -- sh -c 'cd / && exec psql -v ON_ERROR_STOP=1 -v role_name="$1" -v role_password="$2"' sh \
+    "$bench_user" "$bench_password" <<'SQL'
+SELECT format('ALTER ROLE %I PASSWORD %L', :'role_name', :'role_password') \gexec
+SQL
 fi
 
 if ! PGPASSWORD="$bench_password" psql -XAt -h "$bench_host" -p "$bench_port" \
     -U "$bench_user" -d postgres -v ON_ERROR_STOP=1 -c 'select 1' >/dev/null; then
-  if [[ -n $role_exists ]]; then
-    echo "The password in .env does not match existing role ${bench_user}." >&2
-    echo "No password was changed. Restore the existing password in .env and rerun." >&2
-  else
-    echo "The newly created role ${bench_user} failed TCP password authentication." >&2
-  fi
+  echo "Role ${bench_user} failed TCP password authentication after configuration." >&2
   exit 1
 fi
 
@@ -171,4 +163,4 @@ JAVA_HOME="$jdk_dir" PATH="$jdk_dir/bin:$PATH" \
 rm -rf "${project_dir}/.benchbase/target/benchbase-postgres"
 tar -xzf "${project_dir}/.benchbase/target/benchbase-postgres.tgz" -C "${project_dir}/.benchbase/target"
 test -s "${project_dir}/.benchbase/target/benchbase-postgres/benchbase.jar"
-echo "PostgreSQL and BenchBase are ready; existing credentials were preserved."
+echo "PostgreSQL and BenchBase are ready; database credentials match local .env."

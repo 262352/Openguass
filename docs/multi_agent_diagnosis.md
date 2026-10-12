@@ -43,9 +43,10 @@ sudo bash scripts/setup_and_run_multi_agent.sh --mirror tsinghua
 ./scripts/bootstrap_test_environment.sh --check-only
 ```
 
-一键入口会保留 `.env` 中已有的非空配置，并验证已有 PostgreSQL 用户的密码；它不会
-用新值覆盖现有数据库密码。仅准备环境而不启动时增加 `--prepare-only`。零字节快照
-不会被复用，三个快照必须同时非空并通过 `pg_restore --list` 后实验才会启动。
+一键入口会保留 `.env` 中已有的非空配置。旧镜像已有 PostgreSQL 角色但本机密码
+为空或不匹配时，会生成或采用 `.env` 密码并自动修复角色，然后验证 TCP 连接。仅
+准备环境而不启动时增加 `--prepare-only`。零字节快照不会被复用，三个快照必须
+同时非空并通过 `pg_restore --list` 后实验才会启动。
 
 多智能体入口新增的 Python 依赖是 `httpx[socks]`（运行时包为 `socksio`）。它已在
 `pyproject.toml` 声明，上面的一键脚本通过 `pip install -e .` 自动安装；PostgreSQL

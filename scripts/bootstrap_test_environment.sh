@@ -16,7 +16,7 @@ usage() {
 Usage: ./scripts/bootstrap_test_environment.sh [options]
 
 Prepare the complete Ubuntu 22.04 aarch64 PostgreSQL/BenchBase environment.
-Existing .env values and existing PostgreSQL passwords are never replaced.
+Existing .env values are preserved. PostgreSQL role credentials are aligned with .env.
 
 Options:
   --check-only       Validate without installing or changing data.

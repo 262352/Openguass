@@ -8,13 +8,13 @@ def read_script(name: str) -> str:
     return (ROOT / "scripts" / name).read_text(encoding="utf-8")
 
 
-def test_installer_is_aarch64_and_never_resets_existing_password():
+def test_installer_is_aarch64_and_can_repair_legacy_role_password():
     script = read_script("install_postgres_benchbase.sh")
     assert "aarch64|arm64" in script
     assert "ubuntu-ports" in script
     assert "linux/${adoptium_arch}" in script
-    assert "ALTER ROLE" not in script
-    assert "No password was changed" in script
+    assert "ALTER ROLE %I PASSWORD %L" in script
+    assert "repairing its password" in script
 
 
 def test_clean_install_creates_role_databases_and_local_password():
