@@ -17,6 +17,18 @@ def test_installer_is_aarch64_and_never_resets_existing_password():
     assert "No password was changed" in script
 
 
+def test_clean_install_creates_role_databases_and_local_password():
+    installer = read_script("install_postgres_benchbase.sh")
+    launcher = read_script("setup_and_run_multi_agent.sh")
+    assert "secrets.token_urlsafe(24)" in installer
+    assert "CREATE ROLE %I LOGIN PASSWORD %L" in installer
+    assert "for database in tpcc twitter ycsb" in installer
+    assert "createdb --owner" in installer
+    assert 'PGPASSWORD="$bench_password" psql' in installer
+    assert 'read -rsp "DeepSeek API Key: "' in launcher
+    assert "cp .env.example .env" in launcher
+
+
 def test_bootstrap_rejects_empty_or_invalid_snapshots():
     script = read_script("bootstrap_test_environment.sh")
     assert "-size 0 -delete" in script

@@ -26,7 +26,10 @@
 
 ## 在新服务器安装
 
-部署目标为 Ubuntu 22.04 aarch64，支持 Python 3.10 及以上。下面的路径由操作者决定，程序不会写死项目目录、PostgreSQL 数据目录或内存大小。
+部署目标为全新的 Ubuntu 22.04 aarch64 服务器。除 Git 和当前仓库外，不要求预先
+配置 Python 环境、PostgreSQL 角色、数据库、BenchBase、快照或 `.env`。一键入口
+会隐藏读取 DeepSeek API Key，生成并保存本机数据库密码，创建角色和三个数据库，
+完成数据与快照准备后才启动实验。
 
 ```bash
 git clone https://github.com/262352/Openguass.git

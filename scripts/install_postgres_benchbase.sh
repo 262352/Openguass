@@ -129,13 +129,17 @@ if [[ -z $role_exists ]]; then
     "$bench_user" "$bench_password" <<'SQL'
 SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'role_name', :'role_password') \gexec
 SQL
-else
-  if ! PGPASSWORD="$bench_password" psql -XAt -h "$bench_host" -p "$bench_port" \
-      -U "$bench_user" -d postgres -v ON_ERROR_STOP=1 -c 'select 1' >/dev/null; then
+fi
+
+if ! PGPASSWORD="$bench_password" psql -XAt -h "$bench_host" -p "$bench_port" \
+    -U "$bench_user" -d postgres -v ON_ERROR_STOP=1 -c 'select 1' >/dev/null; then
+  if [[ -n $role_exists ]]; then
     echo "The password in .env does not match existing role ${bench_user}." >&2
     echo "No password was changed. Restore the existing password in .env and rerun." >&2
-    exit 1
+  else
+    echo "The newly created role ${bench_user} failed TCP password authentication." >&2
   fi
+  exit 1
 fi
 
 for database in tpcc twitter ycsb; do

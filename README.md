@@ -10,7 +10,11 @@
 - Python 3.10 及以上由安装脚本检查；
 - PostgreSQL 14、aarch64 Temurin Java 23 和固定版本 BenchBase 由脚本安装。
 
-## 一条命令完成配置并运行
+## 从零部署：一条命令完成配置并运行
+
+正式部署假设服务器上只有 Ubuntu 22.04 aarch64 和当前 Git 仓库，不要求预先创建
+Python 虚拟环境、PostgreSQL 用户、测试数据库、BenchBase、快照或 `.env`。脚本会
+建立完整环境；运行时只需在隐藏提示中输入 DeepSeek API Key。
 
 ```bash
 cd /root/Openguass
@@ -27,21 +31,23 @@ sudo bash scripts/setup_and_run_multi_agent.sh --mirror official
 
 该入口按顺序完成：
 
-1. 保留已有 `.env` 内容；DeepSeek Key 缺失时在终端隐藏输入；
-2. 保留已有 PostgreSQL 用户密码；已有密码只做连接校验，不执行 `ALTER ROLE`；
-3. 安装 PostgreSQL 14、aarch64 Java 23 和固定提交的 BenchBase；
-4. 创建 `.venv`，安装 `pyproject.toml` 中的全部 Python 依赖，包括 `httpx[socks]`；
-5. 运行完整单元与契约测试；
-6. 装载 TPC-C、Twitter、YCSB；
-7. 删除认证失败等原因留下的零字节快照，重新生成并用 `pg_restore --list` 校验三个快照；
-8. 完成冒烟验证后，以 nohup 启动 `TPC-C → Twitter` 多智能体实验。
+1. 从 `.env.example` 创建权限为 `0600` 的本机 `.env`，隐藏输入 DeepSeek API Key；
+2. 安装并启动 PostgreSQL 14；
+3. 生成随机数据库密码，创建 `andromeda_bench` 登录角色以及 TPC-C、Twitter、YCSB 三个数据库，并验证 TCP 密码连接；
+4. 安装 aarch64 Java 23 和固定提交的 BenchBase；
+5. 创建 `.venv`，安装 `pyproject.toml` 中的全部 Python 依赖，包括 `httpx[socks]`；
+6. 运行完整单元与契约测试；
+7. 装载 TPC-C、Twitter、YCSB；
+8. 删除认证失败等原因留下的零字节快照，重新生成并用 `pg_restore --list` 校验三个快照；
+9. 完成冒烟验证后，以 nohup 启动 `TPC-C → Twitter` 多智能体实验。
 
 首次构建 BenchBase和装载三个数据集需要一些时间。脚本结束时会打印 PID、实验 ID 和日志路径。
 
-### 已有密码的处理规则
+### 全新部署与安全重跑
 
 脚本不会修改已有 PostgreSQL 用户的密码：
 
+- 全新部署没有该角色时，脚本生成随机密码、写入本机 `.env` 并创建角色；
 - `.env` 已有非空 `POSTGRES_BENCH_PASSWORD` 时，用它验证现有用户；
 - PostgreSQL 用户已存在但 `.env` 密码为空时，交互式询问当前密码并保存到本机 `.env`；
 - 只有 PostgreSQL 用户尚不存在时，才为新用户生成密码；
