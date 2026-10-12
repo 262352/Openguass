@@ -32,13 +32,17 @@
 git clone https://github.com/262352/Openguass.git
 cd Openguass
 
-# 安装 PostgreSQL、Java、BenchBase、Python 环境，国内网络可选镜像。
-./scripts/bootstrap_test_environment.sh --mirror tsinghua
-# 或：./scripts/bootstrap_test_environment.sh --mirror aliyun
+# 一次完成 PostgreSQL、aarch64 Java、BenchBase、Python、数据、快照并启动实验。
+sudo bash scripts/setup_and_run_multi_agent.sh --mirror tsinghua
+# 或：sudo bash scripts/setup_and_run_multi_agent.sh --mirror aliyun
 
 # 检查已有环境，不重装。
 ./scripts/bootstrap_test_environment.sh --check-only
 ```
+
+一键入口会保留 `.env` 中已有的非空配置，并验证已有 PostgreSQL 用户的密码；它不会
+用新值覆盖现有数据库密码。仅准备环境而不启动时增加 `--prepare-only`。零字节快照
+不会被复用，三个快照必须同时非空并通过 `pg_restore --list` 后实验才会启动。
 
 多智能体入口新增的 Python 依赖是 `httpx[socks]`（运行时包为 `socksio`）。它已在
 `pyproject.toml` 声明，上面的一键脚本通过 `pip install -e .` 自动安装；PostgreSQL

@@ -18,11 +18,26 @@ export DEEPSEEK_MAX_RETRIES="${DEEPSEEK_MAX_RETRIES:-1}"
 SOURCE_WORKLOAD="${SOURCE_WORKLOAD:-tpcc}"
 TARGET_WORKLOAD="${TARGET_WORKLOAD:-twitter}"
 EXPERIMENT_ID="${EXPERIMENT_ID:-multi-agent-$(date -u +%Y%m%dT%H%M%SZ)}"
+PYTHON_BIN="${ROOT_DIR}/.venv/bin/python"
+
+[[ -x "$PYTHON_BIN" ]] || {
+  echo "Missing ${PYTHON_BIN}; run scripts/setup_and_run_multi_agent.sh first." >&2
+  exit 1
+}
+[[ -s "artifacts/snapshots/${TARGET_WORKLOAD}.dump" ]] || {
+  echo "Missing or empty target snapshot artifacts/snapshots/${TARGET_WORKLOAD}.dump." >&2
+  echo "Run scripts/setup_and_run_multi_agent.sh first." >&2
+  exit 1
+}
+[[ -s ".benchbase/target/benchbase-postgres/benchbase.jar" ]] || {
+  echo "BenchBase is not prepared; run scripts/setup_and_run_multi_agent.sh first." >&2
+  exit 1
+}
 
 mkdir -p artifacts/multi_agent
 printf '%s\n' "$EXPERIMENT_ID" > artifacts/current_multi_agent_experiment_id.txt
 
-exec python3 -m app.multi_agent.cli \
+exec "$PYTHON_BIN" -m app.multi_agent.cli \
   --source "$SOURCE_WORKLOAD" \
   --target "$TARGET_WORKLOAD" \
   --experiment-id "$EXPERIMENT_ID" \

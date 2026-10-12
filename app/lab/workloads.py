@@ -14,8 +14,10 @@ class PostgresBenchBaseAdapter:
         env=os.environ.copy();env['PGPASSWORD']=self.runner.target.password;env['LANG']='C';env['LC_ALL']='C';env.pop('LANGUAGE',None);env.pop('LC_CTYPE',None);return env
     def prepare(self,reload_data=False):
         self.health_check()
-        reused=bool(reload_data and self.snapshot.exists())
-        if reload_data and not self.snapshot.exists():
+        valid_snapshot=self.snapshot.is_file() and self.snapshot.stat().st_size > 0
+        reused=bool(reload_data and valid_snapshot)
+        if reload_data and not valid_snapshot:
+            if self.snapshot.exists():self.snapshot.unlink()
             self.snapshot.parent.mkdir(parents=True,exist_ok=True);temporary=self.snapshot.with_suffix('.dump.tmp');started=time.monotonic()
             print(f'[snapshot] creating {self.name}: {self.snapshot}',flush=True)
             try:
@@ -28,7 +30,7 @@ class PostgresBenchBaseAdapter:
             print(f'[snapshot] reusing existing {self.name}: {self.snapshot}',flush=True)
         return {'prepared':True,'snapshot':str(self.snapshot) if self.snapshot.exists() else None,'snapshot_reused':reused}
     def restore_snapshot(self):
-        if not self.snapshot.exists():raise RuntimeError(f'missing snapshot {self.snapshot}; run workload prepare --reload')
+        if not self.snapshot.is_file() or self.snapshot.stat().st_size == 0:raise RuntimeError(f'missing or empty snapshot {self.snapshot}; run workload prepare --reload')
         started=time.monotonic();print(f'[snapshot] restoring {self.name} (transactional): {self.snapshot}',flush=True)
         subprocess.run(['pg_restore','--clean','--if-exists','--no-owner','--no-privileges','--single-transaction','--exit-on-error','-h',self.runner.target.host,'-p',str(self.runner.target.port),'-U',self.runner.target.user,'-d',self.name,str(self.snapshot)],env=self._env(),check=True,stdout=subprocess.DEVNULL)
         elapsed=time.monotonic()-started;print(f'[snapshot] restored {self.name} in {elapsed:.1f}s',flush=True)

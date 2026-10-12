@@ -1,5 +1,11 @@
-.PHONY: bootstrap check-env install-pg prepare-benchmarks benchmark benchmark-tpcc benchmark-twitter benchmark-ycsb test
+.PHONY: setup-run setup-only bootstrap check-env install-pg prepare-benchmarks benchmark benchmark-tpcc benchmark-twitter benchmark-ycsb test
 PYTHON ?= .venv/bin/python
+
+setup-run:
+	./scripts/setup_and_run_multi_agent.sh --mirror tsinghua
+
+setup-only:
+	./scripts/setup_and_run_multi_agent.sh --mirror tsinghua --prepare-only
 
 bootstrap:
 	./scripts/bootstrap_test_environment.sh

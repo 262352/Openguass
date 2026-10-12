@@ -1,5 +1,7 @@
 # Phase 2 redesign: diagnostic tuning speed after workload switching
 
+> Archived design record. The legacy Phase 2 launch scripts referenced below are no longer shipped; use `scripts/setup_and_run_multi_agent.sh` for the current implementation.
+
 ## Research question
 
 For a directed switch such as TPC-C → Twitter, starting from the stable TPC-C configuration `C_A`, how quickly can diagnostic Andromeda recover Twitter TPS compared with a traditional GP tuner under the same PostgreSQL instance, workload snapshot, knob universe, evaluation duration, terminal count, seed set, and wall-clock budget?

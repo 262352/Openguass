@@ -2,6 +2,8 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from app.benchmark.benchbase import BenchBaseRunner, BENCHBASE_COMMIT, SUPPORTED
+from app.lab.workloads import PostgresBenchBaseAdapter
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -25,3 +27,12 @@ def test_runtime_config_reads_password_only_from_environment(tmp_path, monkeypat
     assert "test-only-password" in text
     assert "test-only-password" not in (ROOT / "benchmarks/postgres/ycsb.xml").read_text(encoding="utf-8")
     assert len(BENCHBASE_COMMIT) == 40
+
+
+def test_empty_snapshot_is_never_restored(tmp_path, monkeypatch):
+    monkeypatch.setenv("POSTGRES_BENCH_PASSWORD", "test-only-password")
+    adapter = PostgresBenchBaseAdapter("twitter", runner=BenchBaseRunner(tmp_path, tmp_path))
+    adapter.snapshot = tmp_path / "twitter.dump"
+    adapter.snapshot.touch()
+    with pytest.raises(RuntimeError, match="missing or empty snapshot"):
+        adapter.restore_snapshot()
