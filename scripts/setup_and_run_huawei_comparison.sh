@@ -90,7 +90,21 @@ unset configured_key
 if ((skip_bootstrap == 0)); then
   MIRROR="$mirror" bash scripts/bootstrap_test_environment.sh
 else
-  bash scripts/bootstrap_test_environment.sh --check-only --mirror "$mirror"
+  [[ -x .venv/bin/python ]] || { echo "Missing .venv; run without --skip-bootstrap." >&2; exit 1; }
+  [[ -s .benchbase/target/benchbase-postgres/benchbase.jar ]] || {
+    echo "Missing BenchBase; run without --skip-bootstrap." >&2; exit 1;
+  }
+  for workload in tpcc twitter; do
+    snapshot="artifacts/snapshots/${workload}.dump"
+    [[ -s $snapshot ]] || { echo "Missing or empty snapshot: $snapshot" >&2; exit 1; }
+    pg_restore --list "$snapshot" >/dev/null
+  done
+  pg_isready -h 127.0.0.1 -p 5432 >/dev/null
+  .venv/bin/python - <<'PY'
+from app.phase2.space import FullKnobSpace
+assert len(FullKnobSpace().names) == 60
+print("Prepared TPC-C/Twitter environment is valid")
+PY
 fi
 
 mkdir -p artifacts
