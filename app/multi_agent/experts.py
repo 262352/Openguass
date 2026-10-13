@@ -15,7 +15,7 @@ from .models import CrossReview, ExpertProposal, ExpertRole, utc_now
 
 ROLE_SCOPES: dict[ExpertRole, str] = {
     "query_execution": "critical SQL, EXPLAIN plans, index/sequential scans, estimates, execution latency, statistics and planner/executor knobs",
-    "memory_storage": "cache, temp spill, data-file I/O, background writer, WAL, checkpoints and memory/storage knobs",
+    "memory_storage": "cache, temp spill, transaction commit latency, WAL sync/write latency, host I/O pressure, background writer, checkpoints and memory/storage knobs",
     "concurrency_maintenance": "lock waits, conflicts, connections, transaction concurrency, autovacuum and autoanalyze knobs",
 }
 
@@ -34,7 +34,7 @@ class DeepSeekExpertBackend:
         self.directory = directory
         self.directory.mkdir(parents=True, exist_ok=True)
         self.client = client or OpenAI(api_key=settings.api_key, base_url=settings.base_url,
-                                    timeout=settings.timeout_seconds, max_retries=1)
+                                    timeout=settings.timeout_seconds, max_retries=settings.max_retries)
 
     def _call(self, name: str, system: str, payload: dict[str, Any]) -> dict[str, Any]:
         request = {"model": self.model, "messages": [{"role": "system", "content": system},
@@ -56,7 +56,12 @@ class DeepSeekExpertBackend:
             "Return one strict JSON ExpertProposal. Diagnose only the supplied current verified incumbent. "
             "Do not use GP, EI, Bayesian search, historical best configurations or target-reference TPS. "
             "Use observed metric IDs, give a coherent mechanism-specific knob group, freeze directional predictions, "
-            "and include an alternative with a different measurable prediction. If no action is justified, return an "
+            "and prioritize diagnostic_alerts plus per-transaction terminal_capacity_fraction. Overall p95 may hide a "
+            "rare transaction whose latency consumes nearly all terminal time. Low WAL bytes or WAL counts do not rule "
+            "out slow fsync; use wal_timing, wait events, and host_io together. When one diagnosed mechanism spans "
+            "several knobs, propose the smallest coherent knob group rather than an isolated knob. Transaction metrics "
+            "use IDs such as client.transaction_latency.InsertTweet.p50_us. Include an alternative with a different "
+            "measurable prediction. If no action is justified, return an "
             "observation-only proposal with knob_changes=[]; never invent evidence. Schema: " + json.dumps(schema)
         )
         last_error: Exception | None = None
@@ -149,12 +154,15 @@ class DeepSeekExpertBackend:
 class ExpertPanel:
     ROLES: tuple[ExpertRole, ...] = ("query_execution", "memory_storage", "concurrency_maintenance")
 
-    def __init__(self, backend: ExpertBackend):
+    def __init__(self, backend: ExpertBackend, roles: tuple[ExpertRole, ...] | None = None):
         self.backend = backend
+        self.roles = roles or self.ROLES
+        if not self.roles or not set(self.roles) <= set(self.ROLES):
+            raise ValueError("expert roles must be a non-empty subset of the supported roles")
 
     def propose_parallel(self, payload: dict[str, Any]) -> list[ExpertProposal]:
         with ThreadPoolExecutor(max_workers=3, thread_name_prefix="andromeda-expert") as pool:
-            futures = [pool.submit(self.backend.propose, role, payload) for role in self.ROLES]
+            futures = [pool.submit(self.backend.propose, role, payload) for role in self.roles]
             proposals = [future.result() for future in futures]
         hashes = {(p.incumbent_config_hash, p.workload_fingerprint_hash) for p in proposals}
         if len(hashes) != 1:
@@ -166,7 +174,7 @@ class ExpertPanel:
             return {"round": round_number, "current_incumbent": incumbent,
                     "other_proposals": [p.model_dump(mode="json") for p in proposals if p.expert != role]}
         with ThreadPoolExecutor(max_workers=3, thread_name_prefix="andromeda-review") as pool:
-            futures = [pool.submit(self.backend.review, role, payload(role)) for role in self.ROLES]
+            futures = [pool.submit(self.backend.review, role, payload(role)) for role in self.roles]
             reviews = [review for future in futures for review in future.result()]
         by_id = {p.proposal_id: p for p in proposals}
         for review in reviews:

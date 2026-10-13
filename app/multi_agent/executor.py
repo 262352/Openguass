@@ -59,6 +59,7 @@ class ExperimentExecutor:
 
     def capture(self) -> tuple[dict[str, Any], dict[str, Any]]:
         raw = self.executor.capture()
+        self.executor.enable_diagnostic_timing()
         self.space = FullKnobSpace(raw)
         config = self.space.current_config()
         return config, EnvironmentProbe(self.executor).inspect()
@@ -69,7 +70,10 @@ class ExperimentExecutor:
         snapshot_identity = {"path_name": snapshot.name, "sha256": self._file_hash(snapshot)}
         result = {"source_config_hash": source_config_hash, "workload_fingerprint": fingerprint,
                 "snapshot": snapshot_identity, "hardware": hardware, "duration": self.duration,
-                "warmup_seconds": self.warmup_seconds, "terminals": self.terminals, "seed": self.seed}
+                "warmup_seconds": self.warmup_seconds, "snapshot_settle_seconds":
+                max(0.0, float(os.getenv("SNAPSHOT_SETTLE_SECONDS", "5"))),
+                "terminals": self.terminals, "seed": self.seed,
+                "diagnostic_instrumentation": self.executor.diagnostic_instrumentation}
         self.experiment_context = result
         return result
 
@@ -85,10 +89,11 @@ class ExperimentExecutor:
         apply_result = self.executor.apply(config, self.space)
         self.apply_count += 1
         self.restart_count += int(bool(apply_result.get("restart")))
-        self.adapter.restore_snapshot()
+        restore_result = self.adapter.restore_snapshot()
         if self.warmup_seconds:
             self.adapter.warmup(self.warmup_seconds, self.terminals, seed=self.seed)
             self.warmup_count += 1
+        quiescence = self.executor.quiesce()
         sampler = DiagnosticSampler(self.workload).start()
         started = time.monotonic()
         try:
@@ -102,14 +107,36 @@ class ExperimentExecutor:
             "telemetry": normalize_by_transactions(summarize(samples), parsed["throughput_rps"]),
             "plan_evidence": collect_plan_evidence(self.workload),
             "client": {"failed": 0, "timeouts": 0, "unexpected_sql_errors": 0,
-                       "status": raw.get("status"), "goodput_rps": raw.get("goodput_rps")},
-            "database_state": {"snapshot": self.adapter.snapshot.name, "restored_before_run": True},
+                       "status": raw.get("status"), "goodput_rps": raw.get("goodput_rps"),
+                       "average_latency_us": parsed.get("average_us"), "p99_latency_us": parsed.get("p99_us"),
+                       "max_latency_us": parsed.get("max_us"),
+                       "transaction_latency": parsed.get("transaction_latency", {}),
+                       "bottleneck_summary": self._client_bottleneck(parsed)},
+            "database_state": {"snapshot": self.adapter.snapshot.name, "restored_before_run": True,
+                               "snapshot_restore": restore_result, "pre_measurement_quiescence": quiescence},
             "experiment_context": dict(self.experiment_context),
             "requested_config_hash": stable_hash(config)}
         target = self.directory / "measurements" / f"{self.measurement_count:04d}_{label}.json"
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps({"measurement": measurement, "apply": apply_result}, indent=2), encoding="utf-8")
         return measurement, apply_result
+
+    @staticmethod
+    def _client_bottleneck(parsed: dict[str, Any]) -> dict[str, Any]:
+        transactions = parsed.get("transaction_latency", {})
+        if not transactions:
+            return {"detected": False, "reason": "transaction-level latency unavailable"}
+        name, evidence = max(transactions.items(), key=lambda item: float(item[1].get("terminal_capacity_fraction", 0) or 0))
+        capacity = float(evidence.get("terminal_capacity_fraction", 0) or 0)
+        transaction_p50 = float(evidence.get("p50_us", 0) or 0)
+        overall_p95 = float(parsed.get("p95_us", 0) or 0)
+        masked = transaction_p50 > max(overall_p95 * 10.0, 10_000.0)
+        return {"detected": capacity >= 0.5, "critical_transaction": name,
+                "terminal_capacity_fraction": capacity, "transaction_p50_us": transaction_p50,
+                "transaction_p99_us": evidence.get("p99_us"), "overall_p95_us": overall_p95,
+                "tail_masked_by_overall_p95": masked,
+                "reason": "one transaction type consumes at least half of total client terminal capacity" if capacity >= 0.5
+                          else "no transaction type consumes half of terminal capacity"}
 
     def run_paired(self, incumbent: dict[str, Any], candidate: dict[str, Any], round_number: int) -> dict[str, Any]:
         # Alternate temporal order across rounds while retaining C1/T1 and C2/T2 pair identities.

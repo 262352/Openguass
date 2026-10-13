@@ -40,6 +40,7 @@ class ReportBuilder:
         }
         (self.directory / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
         lines = ["# 多智能体诊断调优报告", "", f"- 当前 verified TPS：`{incumbent.verified_performance.get('throughput_rps')}`",
+                 f"- episode 初始 TPS：`{report.get('episode_initial_tps')}`",
                  f"- 有效因果路径：`{report['effective_path_count']}`", f"- 支持/反驳/不确定边：`{report['supported_edge_count']}/{report['refuted_edge_count']}/{report['inconclusive_edge_count']}`",
                  f"- 未解释性能收益：`{report['unexplained_performance']}`", "", "## 有效路径", ""]
         if not effective.edges:

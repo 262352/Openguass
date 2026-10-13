@@ -2,6 +2,29 @@
 
 当前版本实现基于竞争假设与增量因果图的多智能体 PostgreSQL 诊断调优。三个领域专家并行提出查询执行、内存存储、并发维护方面的假设；协调器串行选择实验；确定性验证器分别判断实验有效性、TPS 收益和机制证据。在线诊断不使用 GP/EI，贝叶斯优化仅作为独立对照。
 
+## BO 参考配置后执行双向负载切换（当前正式入口）
+
+新入口先分别使用同一套 60 旋钮、LHS 初始设计、GP 代理模型和 EI 为 TPC-C、Twitter 建立独立 BO 参考，再执行 `TPC-C BO配置→Twitter` 与 `Twitter BO配置→TPC-C` 两个诊断 episode：
+
+```bash
+cd /root/Andromeda
+
+SUITE_ID="bo-switch-$(date -u +%Y%m%dT%H%M%SZ)" \
+TPCC_BO_BUDGET=100 \
+TWITTER_BO_BUDGET=100 \
+BO_INITIAL_POINTS=10 \
+BO_RETEST_REPEATS=3 \
+DIAGNOSIS_ROUNDS=12 \
+DIAGNOSIS_MEASUREMENTS=60 \
+DURATION=30 \
+WARMUP_SECONDS=30 \
+TERMINALS=2 \
+REPETITIONS=1 \
+bash scripts/run_bo_reference_then_switch.sh
+```
+
+诊断模型只看到源负载 BO 配置、源负载稳态、目标负载初始测量、当前 incumbent 和证据图。目标负载 BO 配置与参考 TPS 保存在套件的 `oracle/` 目录中，只由离线评价器读取。详细协议、分阶段命令和结果结构见 [`docs/bo_reference_switch_workflow.md`](docs/bo_reference_switch_workflow.md)。
+
 ## 部署要求
 
 - Ubuntu 22.04 aarch64；
@@ -136,3 +159,45 @@ cat "artifacts/multi_agent/${EXPERIMENT_ID}/tpcc_to_twitter/CAUSAL_GRAPH.md"
 - `analyze_bayesian_vs_andromeda.py`：读取已有结果生成对照报告。
 
 方法、验证门控和公平对比要求见 [`docs/multi_agent_diagnosis.md`](docs/multi_agent_diagnosis.md)。
+
+## 华为 SCOW：一键运行 BO 标准与 TPC-C → Twitter 诊断对比
+
+新方法没有增加系统包或 Python 第三方依赖，仍使用同一套 PostgreSQL 14、Java 23、
+BenchBase 和 Python 3.10+ 环境。诊断期间会临时开启 PostgreSQL 的 `track_io_timing` 与
+`track_wal_io_timing`，实验结束后由原始 `postgresql.auto.conf` 自动恢复。
+
+全新 aarch64 节点执行：
+
+```bash
+cd /root/Openguass
+sudo bash scripts/setup_and_run_huawei_comparison.sh --mirror tsinghua
+```
+
+脚本会依次完成环境与快照准备、100 轮 TPC-C BO、100 轮 Twitter BO、Twitter 最优配置
+重复验证，以及只包含 `TPC-C → Twitter` 的证据图诊断。TPC-C BO 配置作为切换前源配置；
+Twitter BO TPS 只作为实验后的隐藏参考标准，不会进入智能体提示词。
+
+服务器已经由上一版本准备完成时：
+
+```bash
+cd /root/Openguass
+sudo bash scripts/setup_and_run_huawei_comparison.sh --skip-bootstrap --mirror tsinghua
+```
+
+API Key 优先从本机 `.env` 或环境变量 `DEEPSEEK_API_KEY` 读取。两者都为空时，交互终端只询问
+一次并写入权限为 `0600` 的 `.env`；密钥不会写入 Git、日志或实验报告。
+
+查看进度和结果：
+
+```bash
+SUITE_ID=$(cat artifacts/current_workload_switch_suite_id.txt)
+PID=$(cat artifacts/current_workload_switch_pid.txt)
+
+ps -p "$PID" -o pid,etime,cmd
+tail -f "artifacts/${SUITE_ID}.nohup.log"
+cat "artifacts/workload_switch/${SUITE_ID}/REFERENCE_STANDARD.md"
+cat "artifacts/workload_switch/${SUITE_ID}/FINAL_COMPARISON.md"
+```
+
+`REFERENCE_STANDARD.json` 完整保存 BO 选择轮次、两种负载的验证 TPS 和 60 旋钮配置；
+`FINAL_COMPARISON.json` 保存诊断前后 TPS、相对改善、与 Twitter BO 标准的差距及闭合比例。

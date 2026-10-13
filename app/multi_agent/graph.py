@@ -64,6 +64,8 @@ class GraphStore:
 
     def merge_provenance(self, canonical: ExpertProposal, duplicates: list[ExpertProposal]) -> None:
         """Merge only coordinator-approved semantic duplicates; never infer by keywords."""
+        if not duplicates:
+            return
         for duplicate in duplicates:
             if duplicate.merge_signature() != canonical.merge_signature():
                 raise ValueError("only semantically identical proposals can merge")

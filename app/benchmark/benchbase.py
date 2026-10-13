@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import csv
 import os
 import re
 import shutil
@@ -18,6 +19,45 @@ ROOT = Path(__file__).resolve().parents[2]
 SUPPORTED = ("tpcc", "twitter", "ycsb")
 BENCHBASE_COMMIT = "33c00473807ebd49304d114a6d769d2d2b2bbb34"
 JDK23 = Path.home() / ".local/jdks/jdk-23.0.2+7"
+
+
+def _percentile(values: list[float], percentile: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    index = min(len(ordered) - 1, max(0, int((len(ordered) - 1) * percentile)))
+    return ordered[index]
+
+
+def summarize_transaction_latencies(raw_files: list[Path], duration: int, terminals: int) -> dict[str, dict[str, float | int | None]]:
+    """Summarize BenchBase raw records by transaction type without retaining individual rows."""
+    grouped: dict[str, list[float]] = {}
+    for path in raw_files:
+        with path.open(newline="", encoding="utf-8") as stream:
+            for row in csv.DictReader(stream):
+                name = row.get("Transaction Name")
+                latency = row.get("Latency (microseconds)")
+                if not name or latency is None:
+                    continue
+                try:
+                    grouped.setdefault(name, []).append(float(latency))
+                except ValueError:
+                    continue
+    capacity_us = max(float(duration * terminals) * 1_000_000.0, 1.0)
+    result: dict[str, dict[str, float | int | None]] = {}
+    for name, values in grouped.items():
+        total = sum(values)
+        result[name] = {
+            "count": len(values),
+            "mean_us": total / len(values),
+            "p50_us": _percentile(values, 0.50),
+            "p95_us": _percentile(values, 0.95),
+            "p99_us": _percentile(values, 0.99),
+            "max_us": max(values),
+            "total_latency_seconds": total / 1_000_000.0,
+            "terminal_capacity_fraction": total / capacity_us,
+        }
+    return result
 
 
 @dataclass(frozen=True)
@@ -148,6 +188,7 @@ class BenchBaseRunner:
         if return_code != 0 or not summaries or has_sql_errors:
             raise RuntimeError(f"{workload} failed; inspect {run_dir / 'stdout.log'}")
         summary = json.loads(summaries[-1].read_text(encoding="utf-8"))
+        raw_files = sorted(run_dir.glob("*raw.csv"))
         result = {
             "run_id": run_id,
             "workload": workload,
@@ -162,8 +203,9 @@ class BenchBaseRunner:
             "throughput_rps": summary.get("Throughput (requests/second)"),
             "goodput_rps": summary.get("Goodput (requests/second)"),
             "latency": summary.get("Latency Distribution", {}),
+            "transaction_latency": summarize_transaction_latencies(raw_files, duration, terminals),
             "summary_file": str(summaries[-1]),
-            "raw_files": [str(path) for path in sorted(run_dir.glob("*raw.csv"))],
+            "raw_files": [str(path) for path in raw_files],
             "status": "passed",
         }
         (run_dir / "verified-result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")

@@ -29,6 +29,7 @@ class PostgreSQLKnobExecutor:
         self.auto_conf: Path | None = None
         self.backup = self.dir / "postgresql.auto.conf.before"
         self._captured = False
+        self.diagnostic_instrumentation: dict[str, Any] = {}
 
     def _psql(self, sql: str) -> str:
         command = ["runuser", "-u", "postgres", "--", "psql", "-XAt", "-h", "/var/run/postgresql", "-p", os.getenv("PGPORT", "5432"), "-U", "postgres", "-d", self.database, "-v", "ON_ERROR_STOP=1", "-c", sql]
@@ -57,6 +58,34 @@ class PostgreSQLKnobExecutor:
         self._captured = True
         self.applied = dict(self.original)
         return dict(self.original)
+
+    def enable_diagnostic_timing(self) -> dict[str, Any]:
+        """Enable measurement-only timing GUCs after the rollback snapshot is saved."""
+        if not self._captured:
+            raise RuntimeError("capture() must run before enable_diagnostic_timing()")
+        available_rows = self._psql(
+            "select name,setting from pg_settings where name in "
+            "('track_io_timing','track_wal_io_timing') order by name"
+        )
+        before = dict(line.split("|", 1) for line in available_rows.splitlines() if "|" in line)
+        enabled: list[str] = []
+        for name in before:
+            if before[name] != "on":
+                self._psql(f"alter system set {name} = 'on'")
+                enabled.append(name)
+        if enabled:
+            self._psql("select pg_reload_conf()")
+        after_rows = self._psql(
+            "select name,setting from pg_settings where name in "
+            "('track_io_timing','track_wal_io_timing') order by name"
+        )
+        after = dict(line.split("|", 1) for line in after_rows.splitlines() if "|" in line)
+        result = {"before": before, "after": after, "changed": enabled,
+                  "restored_with_postgresql_auto_conf": True}
+        self.diagnostic_instrumentation = result
+        (self.dir / "diagnostic_instrumentation.json").write_text(
+            json.dumps(result, indent=2), encoding="utf-8")
+        return result
 
     @staticmethod
     def _literal(value: Any) -> str:
@@ -123,6 +152,16 @@ class PostgreSQLKnobExecutor:
             self.restore()
             raise
 
+    def quiesce(self) -> dict[str, Any]:
+        """Flush restore/warmup writeback before a timed run and use one protocol everywhere."""
+        settle_seconds = max(0.0, float(os.getenv("SNAPSHOT_SETTLE_SECONDS", "5")))
+        started = time.monotonic()
+        self._psql("checkpoint")
+        if settle_seconds:
+            time.sleep(settle_seconds)
+        return {"checkpoint_completed": True, "settle_seconds": settle_seconds,
+                "elapsed_seconds": round(time.monotonic() - started, 3)}
+
     def restore(self) -> dict[str, Any]:
         if not self._captured or self.auto_conf is None:
             return {"restored": False, "reason": "not captured"}
@@ -133,4 +172,3 @@ class PostgreSQLKnobExecutor:
         result = {"restored": True, "elapsed_seconds": round(time.monotonic() - started, 3), "restart_seconds": round(restart_seconds, 3)}
         (self.dir / "rollback.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
         return result
-

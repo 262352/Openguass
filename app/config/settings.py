@@ -23,8 +23,8 @@ class Settings:
     api_key: str
     model: str = "deepseek-flash"
     base_url: str = "https://api.deepseek.com"
-    timeout_seconds: float = 45.0
-    max_retries: int = 3
+    timeout_seconds: float = 300.0
+    max_retries: int = 2
     postgres_host: str = "127.0.0.1"
     postgres_port: int = 5432
     postgres_database: str = "tpcc"
@@ -48,8 +48,8 @@ def load_settings(env_file: Path | None = None) -> Settings:
         api_key=api_key,
         model=os.getenv("DEEPSEEK_MODEL", "deepseek-flash"),
         base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
-        timeout_seconds=float(os.getenv("DEEPSEEK_TIMEOUT_SECONDS", "45")),
-        max_retries=int(os.getenv("DEEPSEEK_MAX_RETRIES", "3")),
+        timeout_seconds=float(os.getenv("DEEPSEEK_TIMEOUT_SECONDS", "300")),
+        max_retries=int(os.getenv("DEEPSEEK_MAX_RETRIES", "2")),
         postgres_host=os.getenv("PGHOST", "127.0.0.1"),
         postgres_port=int(os.getenv("PGPORT", "5432")),
         postgres_database=os.getenv("PGDATABASE", "tpcc"),

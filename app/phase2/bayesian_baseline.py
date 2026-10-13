@@ -4,6 +4,8 @@ import argparse
 import csv
 import json
 import os
+import platform
+import xml.etree.ElementTree as ET
 import signal
 import time
 from datetime import datetime, timezone
@@ -78,10 +80,20 @@ def andromeda_summary(path: Path | None) -> dict[str, Any] | None:
 class BayesianBaseline:
     def __init__(self, experiment_id: str, budget: int, initial_points: int, duration: int,
                  terminals: int, seed: int, source_config: Path,
-                 comparison_dir: Path | None = None, root: Path = Path("artifacts/bayesian")):
+                 comparison_dir: Path | None = None, root: Path = Path("artifacts/bayesian"),
+                 workload: str = "twitter", retest_repeats: int = 3, warmup_seconds: int = 30):
         if budget < 2 or not 1 <= initial_points < budget:
             raise ValueError("require 1 <= initial_points < budget")
+        if workload not in {"tpcc", "twitter"}:
+            raise ValueError("Bayesian reference workload must be tpcc or twitter")
+        if retest_repeats < 1:
+            raise ValueError("retest_repeats must be positive")
         self.experiment_id = experiment_id
+        self.workload = workload
+        self.retest_repeats = retest_repeats
+        if warmup_seconds not in {0} and warmup_seconds < 5:
+            raise ValueError("warmup_seconds must be zero or at least 5")
+        self.warmup_seconds = warmup_seconds
         self.budget = budget
         self.initial_points = initial_points
         self.duration = duration
@@ -89,7 +101,7 @@ class BayesianBaseline:
         self.seed = seed
         self.source_config_path = source_config
         self.comparison_dir = comparison_dir
-        self.dir = root / experiment_id / "twitter"
+        self.dir = root / experiment_id / workload
         self.dir.mkdir(parents=True, exist_ok=True)
         self.system_dir = self.dir / "system"
         self.trials_path = self.dir / "trials.jsonl"
@@ -97,7 +109,7 @@ class BayesianBaseline:
         self.status_path = self.dir / "status.json"
         self.stop_path = self.dir.parent / "STOP"
         self.executor = PostgreSQLKnobExecutor(self.system_dir)
-        self.adapter = PostgresBenchBaseAdapter("twitter")
+        self.adapter = PostgresBenchBaseAdapter(workload)
         self.started = time.monotonic()
         self.interrupted = False
 
@@ -107,11 +119,32 @@ class BayesianBaseline:
     def measure(self, config: dict[str, Any], space: FullKnobSpace, label: str) -> tuple[dict[str, Any], dict[str, Any]]:
         self.adapter.restore_snapshot()
         applied = self.executor.apply(config, space)
-        raw = self.adapter.runner.run("twitter", self.duration, self.terminals, False,
-                                      applied["session_settings"], verbose=False)
+        if self.warmup_seconds:
+            self.adapter.runner.run(self.workload, self.warmup_seconds, self.terminals, False,
+                                    applied["session_settings"], verbose=False, random_seed=self.seed)
+        quiescence = self.executor.quiesce()
+        raw = self.adapter.runner.run(self.workload, self.duration, self.terminals, False,
+                                      applied["session_settings"], verbose=False, random_seed=self.seed)
         return ({"throughput_rps": float(raw["throughput_rps"]),
+                 "goodput_rps": float(raw.get("goodput_rps") or raw["throughput_rps"]),
                  "p95_us": float(raw["latency"][P95]),
+                 "average_us": float(raw["latency"].get("Average Latency (microseconds)", 0) or 0),
+                 "p99_us": float(raw["latency"].get("99th Percentile Latency (microseconds)", 0) or 0),
+                 "transaction_latency": raw.get("transaction_latency", {}),
+                 "pre_measurement_quiescence": quiescence,
+                 "client_status": raw.get("status", "unknown"),
                  "artifact": str(Path(raw["summary_file"]).parent), "label": label}, applied)
+
+    def benchmark_profile(self) -> dict[str, Any]:
+        fingerprint = self.adapter.fingerprint()
+        path = Path(__file__).resolve().parents[2] / fingerprint["config"]
+        root = ET.parse(path).getroot()
+        work = root.find("./works/work")
+        return {**fingerprint, "scale_factor": root.findtext("scalefactor"),
+                "isolation": root.findtext("isolation"), "batch_size": root.findtext("batchsize"),
+                "rate": work.findtext("rate") if work is not None else None,
+                "weights": work.findtext("weights") if work is not None else None,
+                "transaction_types": [node.findtext("name") for node in root.findall("./transactiontypes/transactiontype")]}
 
     def write_progress(self, trials: list[dict[str, Any]], baseline: dict[str, Any]) -> None:
         valid = [trial for trial in trials if trial.get("valid")]
@@ -124,7 +157,7 @@ class BayesianBaseline:
         status = {
             "experiment_id": self.experiment_id,
             "state": "stopping" if self.interrupted or self.stop_path.exists() else "running",
-            "workload": "twitter", "knob_count": 60, "objective": "maximize throughput_rps",
+            "workload": self.workload, "knob_count": 60, "objective": "maximize throughput_rps",
             "budget": self.budget, "completed": completed, "remaining": self.budget - completed,
             "lhs_completed": lhs_done, "gp_completed": gp_done,
             "baseline_tps": baseline["throughput_rps"], "best_tps": best_tps,
@@ -145,7 +178,7 @@ class BayesianBaseline:
                 "bayesian_best_tps": bo_best,
             }
         atomic_json(self.dir / "comparison_live.json", comparison)
-        lines = ["# Twitter 60旋钮贝叶斯优化", "",
+        lines = [f"# {self.workload} 60旋钮贝叶斯优化", "",
                  f"- 状态：`{status['state']}`", f"- 已完成：`{completed}/{self.budget}`",
                  f"- 初始化/GP：`{lhs_done}/{gp_done}`", f"- 基线 TPS：`{baseline['throughput_rps']}`",
                  f"- 当前最好 TPS：`{best_tps}`", f"- 改善：`{status['improvement_percent']:.3f}%`",
@@ -169,18 +202,29 @@ class BayesianBaseline:
     def run(self) -> dict[str, Any]:
         old = {sig: signal.signal(sig, self.stop) for sig in (signal.SIGINT, signal.SIGTERM)}
         captured = self.executor.capture()
+        instrumentation = self.executor.enable_diagnostic_timing()
         space = FullKnobSpace(captured)
         if len(space.names) != 60:
             raise RuntimeError("Bayesian baseline requires exactly 60 knobs")
         start_config = load_source_config(self.source_config_path, space)
         atomic_json(self.dir / "manifest.json", {
-            "experiment_id": self.experiment_id, "workload": "twitter", "knob_count": 60,
+            "experiment_id": self.experiment_id, "workload": self.workload, "knob_count": 60,
             "budget": self.budget, "initial_lhs": self.initial_points,
             "gp_ei_iterations": self.budget - self.initial_points,
-            "duration": self.duration, "terminals": self.terminals, "seed": self.seed,
+            "duration": self.duration, "warmup_seconds": self.warmup_seconds,
+            "snapshot_settle_seconds": max(0.0, float(os.getenv("SNAPSHOT_SETTLE_SECONDS", "5"))),
+            "terminals": self.terminals, "seed": self.seed,
             "source_config": str(self.source_config_path), "comparison_dir": str(self.comparison_dir or ""),
             "objective": {"metric": "throughput_rps", "direction": "maximize"},
             "started_at": now(), "knobs": space.describe(),
+            "algorithm": {"initial_design": "latin_hypercube", "surrogate": "gaussian_process",
+                          "acquisition": "expected_improvement"},
+            "environment": {"hostname": platform.node(), "machine": platform.machine(),
+                            "kernel": platform.release(),
+                            "postgresql_version": self.executor._psql("show server_version"),
+                            "workload_profile": self.benchmark_profile(),
+                            "snapshot": self.adapter.snapshot.name,
+                            "diagnostic_instrumentation": instrumentation},
         })
         baseline_path = self.dir / "baseline.json"
         try:
@@ -227,6 +271,19 @@ class BayesianBaseline:
             summary = json.loads(self.status_path.read_text(encoding="utf-8"))
             summary.update({"state": final_state, "completed_at": now()})
             atomic_json(self.status_path, summary)
+            reference_runs = 0
+            if final_state == "completed":
+                self._build_reference(baseline, trials, space)
+                summary["reference_file"] = str(self.dir / "reference.json")
+                summary["reference_retests"] = self.retest_repeats
+                reference_runs = self.retest_repeats
+            else:
+                summary["reference_file"] = None
+                summary["reference_retests"] = 0
+            measured_runs = 1 + len(trials) + reference_runs
+            summary["benchmark_measurements"] = measured_runs
+            summary["warmup_runs"] = measured_runs if self.warmup_seconds else 0
+            summary["total_benchmark_executions"] = measured_runs * (2 if self.warmup_seconds else 1)
             atomic_json(self.dir / "summary.json", summary)
             return summary
         finally:
@@ -236,9 +293,42 @@ class BayesianBaseline:
                 for sig, handler in old.items():
                     signal.signal(sig, handler)
 
+    def _build_reference(self, baseline: dict[str, Any], trials: list[dict[str, Any]],
+                         space: FullKnobSpace) -> dict[str, Any]:
+        valid = [item for item in trials if item.get("valid")]
+        best = max(valid, key=lambda item: float(item["throughput_rps"]), default=None)
+        if best is not None and float(best["throughput_rps"]) > float(baseline["throughput_rps"]):
+            config, origin = best["config"], {"kind": "trial", "evaluation": best["evaluation"]}
+        else:
+            config, origin = baseline["config"], {"kind": "baseline", "evaluation": 0}
+        repeats = []
+        for index in range(1, self.retest_repeats + 1):
+            measurement, applied = self.measure(config, space, f"reference_retest_{index}")
+            repeats.append({**measurement, "apply": applied})
+        tps = [float(item["throughput_rps"]) for item in repeats]
+        p95 = [float(item["p95_us"]) for item in repeats]
+        reference = {
+            "schema_version": "andromeda.bo-reference/v1", "workload": self.workload,
+            "definition": "best measured configuration within the declared search space and budget",
+            "experiment_id": self.experiment_id, "config": config, "selection": origin,
+            "search_budget": {"total": self.budget, "lhs": self.initial_points,
+                              "gp_ei": self.budget - self.initial_points},
+            "measurement_protocol": {"duration": self.duration, "warmup_seconds": self.warmup_seconds,
+                                     "terminals": self.terminals,
+                                     "seed": self.seed, "repeats": self.retest_repeats,
+                                     "snapshot_restored_before_each_run": True},
+            "retests": repeats,
+            "metrics": {"throughput_rps_values": tps, "throughput_rps_min": min(tps),
+                        "throughput_rps_median": sorted(tps)[len(tps)//2],
+                        "p95_us_values": p95, "p95_us_max": max(p95)},
+            "created_at": now(),
+        }
+        atomic_json(self.dir / "reference.json", reference)
+        return reference
+
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Resumable 60-knob Twitter Bayesian optimization baseline")
+    parser = argparse.ArgumentParser(description="Resumable 60-knob workload-specific Bayesian optimization reference")
     parser.add_argument("--experiment-id", required=True)
     parser.add_argument("--budget", type=int, default=100)
     parser.add_argument("--initial-points", type=int, default=8)
@@ -247,9 +337,14 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20261009)
     parser.add_argument("--source-config", type=Path, required=True)
     parser.add_argument("--comparison-dir", type=Path)
+    parser.add_argument("--workload", choices=("tpcc", "twitter"), default="twitter")
+    parser.add_argument("--retest-repeats", type=int, default=3)
+    parser.add_argument("--warmup-seconds", type=int, default=30)
     args = parser.parse_args()
     result = BayesianBaseline(args.experiment_id, args.budget, args.initial_points, args.duration,
-                              args.terminals, args.seed, args.source_config, args.comparison_dir).run()
+                              args.terminals, args.seed, args.source_config, args.comparison_dir,
+                              workload=args.workload, retest_repeats=args.retest_repeats,
+                              warmup_seconds=args.warmup_seconds).run()
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

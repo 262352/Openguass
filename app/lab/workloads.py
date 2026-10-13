@@ -48,7 +48,14 @@ class PostgresBenchBaseAdapter:
                             if name in dimensions and dimensions[name].execution_class == "session"}
         return self.runner.run(self.name,seconds,terminals,False,settings,verbose=False,random_seed=seed)
     def stop(self):self._active={};return {'stopped':True,'session_settings_cleared':True}
-    def parse_result(self,result):return {'throughput_rps':float(result['throughput_rps']),'p95_us':float(result['latency']['95th Percentile Latency (microseconds)'])}
+    def parse_result(self,result):
+        latency=result['latency']
+        return {'throughput_rps':float(result['throughput_rps']),
+                'p95_us':float(latency['95th Percentile Latency (microseconds)']),
+                'average_us':float(latency.get('Average Latency (microseconds)',0) or 0),
+                'p99_us':float(latency.get('99th Percentile Latency (microseconds)',0) or 0),
+                'max_us':float(latency.get('Maximum Latency (microseconds)',0) or 0),
+                'transaction_latency':result.get('transaction_latency',{})}
     def fingerprint(self):
         path=ROOT/f'benchmarks/postgres/{self.name}.xml';return {'workload':self.name,'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'config':str(path.relative_to(ROOT))}
     def health_check(self):self.runner.health();return {'healthy':True}

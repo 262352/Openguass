@@ -12,8 +12,8 @@ if [[ -f .env ]]; then
 fi
 
 : "${DEEPSEEK_API_KEY:?Set DEEPSEEK_API_KEY in .env or the environment}"
-export DEEPSEEK_TIMEOUT_SECONDS="${DEEPSEEK_TIMEOUT_SECONDS:-120}"
-export DEEPSEEK_MAX_RETRIES="${DEEPSEEK_MAX_RETRIES:-1}"
+export DEEPSEEK_TIMEOUT_SECONDS="${DEEPSEEK_TIMEOUT_SECONDS:-300}"
+export DEEPSEEK_MAX_RETRIES="${DEEPSEEK_MAX_RETRIES:-2}"
 
 SOURCE_WORKLOAD="${SOURCE_WORKLOAD:-tpcc}"
 TARGET_WORKLOAD="${TARGET_WORKLOAD:-twitter}"
@@ -37,6 +37,11 @@ PYTHON_BIN="${ROOT_DIR}/.venv/bin/python"
 mkdir -p artifacts/multi_agent
 printf '%s\n' "$EXPERIMENT_ID" > artifacts/current_multi_agent_experiment_id.txt
 
+extra_args=()
+if [[ -n "${SOURCE_CONFIG:-}" ]]; then
+  extra_args+=(--source-config "$SOURCE_CONFIG")
+fi
+
 exec "$PYTHON_BIN" -m app.multi_agent.cli \
   --source "$SOURCE_WORKLOAD" \
   --target "$TARGET_WORKLOAD" \
@@ -48,4 +53,9 @@ exec "$PYTHON_BIN" -m app.multi_agent.cli \
   --terminals "${TERMINALS:-2}" \
   --seed "${BENCHMARK_SEED:-20261012}" \
   --baseline-repeats "${BASELINE_REPEATS:-3}" \
-  --drift-percent "${DRIFT_PERCENT:-25}"
+  --drift-percent "${DRIFT_PERCENT:-25}" \
+  --source-profile-repeats "${SOURCE_PROFILE_REPEATS:-0}" \
+  --max-observation-rounds "${MAX_OBSERVATION_ROUNDS:-2}" \
+  --communication-topology "${COMMUNICATION_TOPOLOGY:-blackboard}" \
+  --expert-roles "${EXPERT_ROLES:-query_execution,memory_storage,concurrency_maintenance}" \
+  "${extra_args[@]}"

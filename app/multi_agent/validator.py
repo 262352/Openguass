@@ -10,6 +10,8 @@ from .models import ExpertProposal, FrozenPrediction, ValidationOutcome
 def _metric(measurement: dict[str, Any], metric_id: str) -> Any:
     if metric_id in {"tps", "throughput_rps", "target_workload_throughput_rps"}:
         return measurement.get("throughput_rps")
+    if metric_id in {"p95_us", "average_us", "p99_us", "max_us"}:
+        return measurement.get(metric_id)
     telemetry = measurement.get("telemetry", {})
     for group in ("per_transaction", "rates_per_second", "gauges"):
         value = telemetry.get(group, {}).get(metric_id)
@@ -17,10 +19,37 @@ def _metric(measurement: dict[str, Any], metric_id: str) -> Any:
             return value.get("p95", value.get("median", value.get("max")))
         if value is not None:
             return value
+    telemetry_path = metric_id.split(".")
+    if telemetry_path[0] == "telemetry":
+        telemetry_path = telemetry_path[1:]
+    if telemetry_path and telemetry_path[0] in {"wal_timing", "host_io"}:
+        value: Any = telemetry
+        for part in telemetry_path:
+            if not isinstance(value, dict) or part not in value:
+                value = None
+                break
+            value = value[part]
+        if value is not None:
+            return value
     plan = measurement.get("plan_evidence", {})
     if metric_id.startswith("plan_"):
         return plan.get(metric_id.removeprefix("plan_"))
     client = measurement.get("client", {})
+    path = metric_id.split(".")
+    if path[0] == "client":
+        path = path[1:]
+    elif path[0] == "transaction_latency":
+        path = ["transaction_latency", *path[1:]]
+    else:
+        path = []
+    value: Any = client
+    for part in path:
+        if not isinstance(value, dict) or part not in value:
+            value = None
+            break
+        value = value[part]
+    if value is not None:
+        return value
     return client.get(metric_id)
 
 
@@ -99,7 +128,7 @@ class EvidenceValidator:
                         "replicate_throughput_rps": tps, "score_method": "minimum_of_comparable_repeats"}
             paired = [_relative(float(t["throughput_rps"]), float(c["throughput_rps"])) for c, t in zip(controls, treatments)]
             incumbent_gain = _relative(verified["throughput_rps"], incumbent_tps)
-            latency_ok = all(self._latency_gain(c, t) <= self.max_p95_regression_percent for c, t in zip(controls, treatments))
+            latency_ok = all(self._latency_regression(c, t) <= self.max_p95_regression_percent for c, t in zip(controls, treatments))
             if all(x is not None and x > 0 for x in paired) and incumbent_gain is not None and incumbent_gain >= self.minimum_tps_gain_percent and latency_ok:
                 performance, accepted = "verified_improvement", True
             else:
@@ -191,8 +220,21 @@ class EvidenceValidator:
         return (max(values) - min(values)) / max(abs(statistics.median(values)), 1e-12) * 100
 
     @staticmethod
-    def _latency_gain(control: dict[str, Any], treatment: dict[str, Any]) -> float:
-        return _relative(float(treatment.get("p95_us", 0)), float(control.get("p95_us", 0))) or 0.0
+    def _latency_regression(control: dict[str, Any], treatment: dict[str, Any]) -> float:
+        """Guard overall and per-transaction tails; aggregate p95 can hide rare stalls."""
+        regressions: list[float] = []
+        for name in ("p95_us", "average_us", "p99_us"):
+            before, after = control.get(name), treatment.get(name)
+            if before is not None and after is not None and float(before) > 0:
+                regressions.append(_relative(float(after), float(before)) or 0.0)
+        before_tx = control.get("client", {}).get("transaction_latency", {})
+        after_tx = treatment.get("client", {}).get("transaction_latency", {})
+        for transaction in set(before_tx) & set(after_tx):
+            for name in ("mean_us", "p50_us", "p99_us"):
+                before, after = before_tx[transaction].get(name), after_tx[transaction].get(name)
+                if before is not None and after is not None and float(before) > 0:
+                    regressions.append(_relative(float(after), float(before)) or 0.0)
+        return max(regressions, default=0.0)
 
     @staticmethod
     def _objective_edge(proposal: ExpertProposal, edge_id: str) -> bool:

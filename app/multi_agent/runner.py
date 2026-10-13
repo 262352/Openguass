@@ -11,9 +11,11 @@ from .coordinator import Coordinator
 from .executor import ExperimentExecutor, stable_hash
 from .experts import DeepSeekExpertBackend, ExpertPanel
 from .graph import GraphStore
+from .graph_protocol import AgentGraph, EvidenceBlackboard, GraphPatch, PatchOperation
 from .models import IncumbentSnapshot, utc_now
 from .reporting import ReportBuilder
 from .validator import EvidenceValidator
+from app.experiment.isolation import assert_diagnosis_context_isolated
 
 
 def _append(path: Path, value: dict[str, Any]) -> None:
@@ -26,9 +28,13 @@ class MultiAgentRunner:
     def __init__(self, root: Path, experiment_id: str, source: str, target: str, *,
                  max_rounds: int = 12, max_measurements: int = 60, duration: int = 30,
                  warmup_seconds: int = 30, terminals: int = 2, seed: int = 20261012,
-                 baseline_repeats: int = 3, drift_percent: float = 25.0):
+                 baseline_repeats: int = 3, drift_percent: float = 25.0,
+                 source_config: Path | None = None, source_profile_repeats: int = 0,
+                 max_observation_rounds: int = 2, communication_topology: str = "blackboard",
+                 expert_roles: tuple[str, ...] = ("query_execution", "memory_storage", "concurrency_maintenance"),
+                 output_root: Path | None = None):
         self.root, self.experiment_id, self.source, self.target = root, experiment_id, source, target
-        self.directory = root / "artifacts" / "multi_agent" / experiment_id / f"{source}_to_{target}"
+        self.directory = (output_root or (root / "artifacts" / "multi_agent" / experiment_id)) / f"{source}_to_{target}"
         self.directory.mkdir(parents=True, exist_ok=False)
         self.max_rounds, self.max_measurements, self.baseline_repeats = max_rounds, max_measurements, baseline_repeats
         self.executor = ExperimentExecutor(self.directory, target, duration=duration, warmup_seconds=warmup_seconds,
@@ -38,26 +44,54 @@ class MultiAgentRunner:
         self.panel: ExpertPanel | None = None
         self.reporter = ReportBuilder(self.directory)
         self.ledger = self.directory / "experiment_ledger.jsonl"
+        self.source_config_path = source_config
+        self.source_profile_repeats = source_profile_repeats
+        self.max_observation_rounds = max_observation_rounds
+        self.communication_topology = communication_topology
+        self.expert_roles = expert_roles
+        self.episode_initial_tps: float | None = None
+        self.source_profile_measurements = 0
 
     def run(self) -> dict[str, Any]:
         start_config, hardware = self.executor.capture()
-        source_file = self.root / "artifacts" / "source_configs" / f"{self.source}.json"
+        source_file = self.source_config_path or (self.root / "artifacts" / "source_configs" / f"{self.source}.json")
         if source_file.exists():
             start_config = json.loads(source_file.read_text(encoding="utf-8")).get("config", start_config)
+        elif self.source_config_path is not None:
+            raise FileNotFoundError(f"source BO configuration does not exist: {source_file}")
         start_config = self.executor.space.reconcile(start_config)
         source_hash = stable_hash(start_config)
         context = self.executor.context(source_hash, hardware)
         context_hash = stable_hash(context)
-        manifest = {"schema_version": "andromeda.multi-agent-experiment/v1", "experiment_id": self.experiment_id,
+        manifest = {"schema_version": "andromeda.multi-agent-experiment/v2", "experiment_id": self.experiment_id,
             "source": self.source, "target": self.target, "created_at": utc_now(), "context": context,
             "budgets": {"rounds": self.max_rounds, "workload_measurements": self.max_measurements},
-            "policy": "No GP/EI/Bayesian component participates in online decisions."}
+            "agent_protocol": {"topology": self.communication_topology, "roles": list(self.expert_roles),
+                               "expert_calls_per_round": len(self.expert_roles), "peer_review_calls": 0},
+            "policy": "No GP/EI/Bayesian result for the target workload participates in online decisions."}
         (self.directory / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
         graph = GraphStore(self.directory, source_hash)
+        blackboard = EvidenceBlackboard(self.directory, self.experiment_id, self.target)
+        agent_graph = AgentGraph(self.directory, self.experiment_id, list(self.expert_roles), self.communication_topology,
+                                 max_expert_calls_per_round=len(self.expert_roles))
         refuted: set[tuple[Any, ...]] = set()
         unexplained = False
         stop_reason = "budget_exhausted"
         try:
+            source_profile = []
+            if self.source_profile_repeats:
+                source_executor = ExperimentExecutor(self.directory / "source_profile", self.source,
+                    duration=self.executor.duration, warmup_seconds=self.executor.warmup_seconds,
+                    terminals=self.executor.terminals, seed=self.executor.seed)
+                source_executor.capture()
+                source_context = source_executor.context(source_hash, hardware)
+                for i in range(self.source_profile_repeats):
+                    value, _ = source_executor.measure(start_config, f"source_steady_{i+1}")
+                    source_profile.append(value)
+                    self.source_profile_measurements += 1
+                (self.directory / "source_workload_profile.json").write_text(json.dumps({
+                    "workload": self.source, "config_hash": source_hash, "context": source_context,
+                    "measurements": source_profile}, ensure_ascii=False, indent=2), encoding="utf-8")
             baselines, baseline_applies = [], []
             for i in range(self.baseline_repeats):
                 measurement, apply_result = self.executor.measure(start_config, f"baseline_{i+1}")
@@ -74,17 +108,43 @@ class MultiAgentRunner:
                 incumbent = self._incumbent(start_config, context, baselines, "baseline", {"baseline_stability": stability})
                 return self.reporter.build(incumbent, graph, self._summary(stop_reason, 0, unexplained))
             incumbent = self._incumbent(start_config, context, baselines, "baseline", {"baseline_stability": stability})
+            self.episode_initial_tps = float(incumbent.verified_performance["throughput_rps"])
             (self.directory / "incumbent.json").write_text(incumbent.model_dump_json(indent=2), encoding="utf-8")
-            self.panel = ExpertPanel(DeepSeekExpertBackend(self.directory / "llm"))
+            visible_context = {"schema_version": "andromeda.diagnosis-visible-context/v1",
+                "episode_id": self.experiment_id, "source_workload": self.source, "target_workload": self.target,
+                "episode_start_config": start_config, "source_profile": source_profile,
+                "target_initial_measurements": baselines, "target_initial_incumbent": incumbent.model_dump(mode="json"),
+                "online_context_only": True}
+            (self.directory / "diagnosis_visible_context.json").write_text(
+                json.dumps(visible_context, ensure_ascii=False, indent=2), encoding="utf-8")
+            self.panel = ExpertPanel(DeepSeekExpertBackend(self.directory / "llm"), self.expert_roles)
+            observation_rounds = 0
             for round_number in range(1, self.max_rounds + 1):
                 remaining = self.max_measurements - self.executor.measurement_count
                 if remaining < 4:
                     stop_reason = "measurement_budget_exhausted"; break
-                payload = {"round": round_number, "current_incumbent": incumbent.model_dump(mode="json"),
-                    "current_measurement": incumbent.evidence, "allowed_knobs": self.executor.space.describe(),
+                visible_incumbent = incumbent.model_dump(mode="json")
+                # Evidence is supplied once as current_measurement. Keeping another full copy
+                # inside the incumbent made each parallel model request unnecessarily large.
+                visible_incumbent["evidence"] = {
+                    "measurement_label": incumbent.evidence.get("label"),
+                    "run_id": incumbent.evidence.get("run_id"),
+                }
+                payload = {"round": round_number, "current_incumbent": visible_incumbent,
+                    "current_measurement": self._visible_measurement(incumbent.evidence, include_diagnostics=True),
+                    "diagnostic_alerts": self._diagnostic_alerts(incumbent.evidence, incumbent),
+                    "workload_transition_evidence": {
+                        "source_workload": self.source,
+                        "source_profile": [self._visible_measurement(item, include_diagnostics=True)
+                                           for item in source_profile],
+                        "target_workload": self.target,
+                        "target_initial_measurements": [self._visible_measurement(item, include_diagnostics=False)
+                                                        for item in baselines]},
+                    "allowed_knobs": self.executor.space.describe(),
                     "graph_frontier": graph.snapshot("pending").model_dump(mode="json"),
                     "tested_summary": graph.snapshot("tested").model_dump(mode="json"),
                     "remaining_budget": {"rounds": self.max_rounds-round_number+1, "workload_measurements": remaining}}
+                assert_diagnosis_context_isolated(payload)
                 try:
                     proposals = self.panel.propose_parallel(payload)
                 except Exception as error:
@@ -95,27 +155,48 @@ class MultiAgentRunner:
                 for proposal in proposals:
                     if proposal.incumbent_config_hash != incumbent.config_hash or proposal.workload_fingerprint_hash != incumbent.workload_fingerprint_hash:
                         raise RuntimeError("expert proposal context does not match current incumbent")
-                try:
-                    reviews = self.panel.review_parallel(round_number, incumbent.model_dump(mode="json"), proposals)
-                except Exception as error:
-                    stop_reason = "cross_review_unavailable"
-                    _append(self.ledger, {"event": "cross_review_failed", "round": round_number,
-                        "error_type": type(error).__name__, "error": str(error)[:2000]})
-                    break
+                patches = []
+                for proposal in proposals:
+                    patch = self._proposal_patch(proposal, round_number, blackboard.version)
+                    blackboard.commit(patch); patches.append(patch)
+                agent_graph.record_round(round_number,
+                    [{"agent": p.expert, "kind": "graph_patch", "patch_id": patch.patch_id}
+                     for p, patch in zip(proposals, patches)],
+                    [{"from": p.expert, "to": "coordinator", "patch_id": patch.patch_id}
+                     for p, patch in zip(proposals, patches)])
                 canonical, merged = self.coordinator.merge_exact_duplicates(proposals)
                 graph.record_hypothesis_pool(proposals)
                 graph.add_proposals(canonical)
                 for proposal in canonical:
                     graph.merge_provenance(proposal, merged.get(proposal.proposal_id, []))
-                selection = self.coordinator.select(canonical, reviews, current_config=incumbent.config,
+                selection = self.coordinator.select(canonical, [], current_config=incumbent.config,
                     refuted_signatures=refuted, remaining_measurements=remaining)
                 proposal_record = {"event": "proposal_frozen", "round": round_number,
                     "incumbent": incumbent.model_dump(mode="json"), "proposals": [p.model_dump(mode="json") for p in proposals],
-                    "cross_reviews": [r.model_dump(mode="json") for r in reviews], "selection": selection.model_dump(mode="json")}
+                    "graph_patches": [p.model_dump(mode="json") for p in patches],
+                    "cross_reviews": [], "selection": selection.model_dump(mode="json")}
                 _append(self.ledger, proposal_record)
                 (self.directory / f"round_{round_number:03d}_decision.json").write_text(json.dumps(proposal_record, ensure_ascii=False, indent=2), encoding="utf-8")
                 if not selection.selected_proposal_id:
-                    stop_reason = "no_actionable_hypothesis"; break
+                    if selection.requires_more_observation and observation_rounds < self.max_observation_rounds and remaining >= 1:
+                        observation_rounds += 1
+                        observed, apply_result = self.executor.measure(incumbent.config, f"round_{round_number:03d}_observation")
+                        incumbent.evidence = observed
+                        observation_refs = [operation.subject_id for patch in patches for operation in patch.operations
+                                            if operation.kind == "add_observation_request"]
+                        result_patch = GraphPatch(patch_id=f"round-{round_number:03d}-observation-result",
+                            episode_id=self.experiment_id, workload=self.target, author="experiment_validator",
+                            base_version=blackboard.version, confidence=1.0,
+                            operations=[PatchOperation(operation_id=f"op-round-{round_number:03d}-observation-result",
+                                kind="report_result", subject_id=f"observation-result-round-{round_number:03d}",
+                                references=observation_refs,
+                                payload={"measurement": observed, "apply": apply_result,
+                                         "reason": "disambiguate observation-only graph frontier"})])
+                        blackboard.commit(result_patch)
+                        _append(self.ledger, {"event": "observation_completed", "round": round_number,
+                            "measurement": observed, "patch_id": result_patch.patch_id})
+                        continue
+                    stop_reason = "no_executable_or_discriminating_followup"; break
                 chosen = next(p for p in canonical if p.proposal_id == selection.selected_proposal_id)
                 candidate = dict(incumbent.config)
                 for change in chosen.knob_changes: candidate[change.knob] = self.executor.space.clamp(change.knob, change.new_value)
@@ -174,11 +255,104 @@ class MultiAgentRunner:
             (self.directory / "final_rollback.json").write_text(json.dumps(rollback, indent=2), encoding="utf-8")
             self.reporter.add_operational_cost({
                 "workload_measurements": self.executor.measurement_count,
+                "source_profile_measurements": self.source_profile_measurements,
                 "warmup_runs": self.executor.warmup_count,
                 "postgresql_restarts": self.executor.restart_count,
                 "configuration_applications": self.executor.apply_count,
                 **self._model_usage(), "final_rollback": rollback,
             })
+
+    @staticmethod
+    def _visible_measurement(measurement: dict[str, Any], *, include_diagnostics: bool) -> dict[str, Any]:
+        """Return the audited model view without duplicating bulky run metadata."""
+        result = {key: measurement.get(key) for key in (
+            "label", "run_id", "throughput_rps", "p95_us", "average_us", "p99_us", "max_us",
+            "healthy", "elapsed_seconds"
+        ) if key in measurement}
+        result["client"] = measurement.get("client", {})
+        if include_diagnostics:
+            result["telemetry"] = measurement.get("telemetry", {})
+            result["plan_evidence"] = measurement.get("plan_evidence", {})
+            result["database_state"] = measurement.get("database_state", {})
+        context = measurement.get("experiment_context", {})
+        result["measurement_protocol"] = {
+            key: context.get(key) for key in ("duration", "warmup_seconds", "snapshot_settle_seconds", "terminals", "seed")
+            if key in context
+        }
+        return result
+
+    @staticmethod
+    def _diagnostic_alerts(measurement: dict[str, Any], incumbent: IncumbentSnapshot) -> list[dict[str, Any]]:
+        """Derive high-signal facts deterministically before asking an expert to explain them."""
+        alerts: list[dict[str, Any]] = []
+        client = measurement.get("client", {})
+        bottleneck = client.get("bottleneck_summary", {})
+        if bottleneck.get("detected"):
+            alerts.append({
+                "kind": "client_terminal_saturation",
+                "severity": "high",
+                "evidence": bottleneck,
+                "interpretation": "one transaction class consumes most finite client terminal time and directly limits TPS",
+            })
+        if bottleneck.get("tail_masked_by_overall_p95"):
+            alerts.append({
+                "kind": "low_frequency_tail_masked_by_overall_percentile",
+                "severity": "high",
+                "evidence": {"critical_transaction": bottleneck.get("critical_transaction"),
+                             "transaction_p50_us": bottleneck.get("transaction_p50_us"),
+                             "overall_p95_us": bottleneck.get("overall_p95_us")},
+                "interpretation": "overall p95 is dominated by frequent fast transactions and cannot guard this bottleneck",
+            })
+        telemetry = measurement.get("telemetry", {})
+        wal = telemetry.get("wal_timing", {})
+        if wal and not wal.get("timing_enabled"):
+            alerts.append({"kind": "missing_wal_timing", "severity": "medium",
+                           "interpretation": "WAL counts cannot distinguish fast writes from slow fsync without timing"})
+        for anomaly in telemetry.get("anomalies", []):
+            if anomaly in {"wal_sync_latency", "wal_wait", "host_io_pressure", "lock_contention", "temp_spill"}:
+                alerts.append({"kind": anomaly, "severity": "high", "evidence": {
+                    "wal_timing": wal, "host_io": telemetry.get("host_io", {}),
+                    "wait_gauges": {name: telemetry.get("gauges", {}).get(name) for name in
+                                    ("wal_waiting_backends", "io_waiting_backends", "lock_waiting_backends")}}})
+        baseline = incumbent.verified_performance.get("median_throughput_rps") or incumbent.verified_performance.get("throughput_rps")
+        current = measurement.get("throughput_rps")
+        if baseline and current is not None:
+            change = (float(current) / float(baseline) - 1.0) * 100.0
+            if change <= -10.0:
+                alerts.append({"kind": "same_config_throughput_collapse", "severity": "high",
+                               "change_percent": change,
+                               "interpretation": "diagnose the simultaneous transaction/WAL/I/O evidence before a planner-only action"})
+        return alerts
+
+    def _proposal_patch(self, proposal, round_number: int, base_version: int) -> GraphPatch:
+        operations = [PatchOperation(operation_id=f"{proposal.proposal_id}:hypothesis-op",
+            kind="add_hypothesis", subject_id=f"{proposal.proposal_id}:hypothesis",
+            payload={"title": proposal.title, "anomaly": proposal.anomaly.model_dump(mode="json"),
+                     "mechanism": proposal.mechanism, "alternatives": [x.model_dump(mode="json") for x in proposal.alternatives]})]
+        if proposal.knob_changes:
+            operations.append(PatchOperation(operation_id=f"{proposal.proposal_id}:intervention-op",
+                kind="add_intervention", subject_id=f"{proposal.proposal_id}:intervention",
+                references=[f"{proposal.proposal_id}:hypothesis"],
+                payload={"knob_changes": [x.model_dump(mode="json") for x in proposal.knob_changes],
+                         "reason": proposal.why_exceeds_incumbent}))
+        else:
+            operations.append(PatchOperation(operation_id=f"{proposal.proposal_id}:observation-op",
+                kind="add_observation_request", subject_id=f"{proposal.proposal_id}:observation",
+                references=[f"{proposal.proposal_id}:hypothesis"],
+                payload={"metrics": [x.model_dump(mode="json") for x in proposal.intermediate_metrics],
+                         "distinguishes": [x.model_dump(mode="json") for x in proposal.alternatives]}))
+        operations.append(PatchOperation(operation_id=f"{proposal.proposal_id}:prediction-op",
+            kind="add_prediction", subject_id=f"{proposal.proposal_id}:predictions",
+            references=[f"{proposal.proposal_id}:hypothesis"],
+            payload={"predictions": [x.model_dump(mode="json") for x in proposal.predictions]}))
+        operations.append(PatchOperation(operation_id=f"{proposal.proposal_id}:challenge-op",
+            kind="challenge", subject_id=f"{proposal.proposal_id}:challenge",
+            references=[f"{proposal.proposal_id}:hypothesis"],
+            payload={"competing_explanations": [x.model_dump(mode="json") for x in proposal.alternatives],
+                     "resolution": "coordinator must select a discriminating observation or intervention"}))
+        return GraphPatch(patch_id=f"round-{round_number:03d}-{proposal.expert}", episode_id=self.experiment_id,
+            workload=self.target, author=proposal.expert, base_version=base_version,
+            operations=operations, confidence=0.5)
 
     def _incumbent(self, config: dict[str, Any], context: dict[str, Any], measurements: list[dict[str, Any]], experiment_id: str, evidence: dict[str, Any]) -> IncumbentSnapshot:
         values = [float(x["throughput_rps"]) for x in measurements]
@@ -190,7 +364,9 @@ class MultiAgentRunner:
 
     def _summary(self, reason: str, rounds: int, unexplained: bool) -> dict[str, Any]:
         return {"stop_reason": reason, "completed_rounds": rounds, "workload_measurements": self.executor.measurement_count,
-                "warmup_runs": self.executor.warmup_count, "unexplained_performance": unexplained}
+                "warmup_runs": self.executor.warmup_count, "unexplained_performance": unexplained,
+                "episode_initial_tps": self.episode_initial_tps,
+                "source_profile_measurements": self.source_profile_measurements}
 
     def _model_usage(self) -> dict[str, int]:
         calls = tokens = 0

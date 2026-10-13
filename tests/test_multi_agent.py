@@ -10,7 +10,8 @@ from app.multi_agent.models import (
     ValidationOutcome,
 )
 from app.multi_agent.reporting import ReportBuilder
-from app.multi_agent.validator import EvidenceValidator
+from app.multi_agent.runner import MultiAgentRunner
+from app.multi_agent.validator import EvidenceValidator, _metric
 from app.multi_agent.executor import stable_hash
 from app.multi_agent.experts import DeepSeekExpertBackend
 from app.phase2.space import FullKnobSpace
@@ -64,6 +65,22 @@ def measurement(tps, metric=1.0, *, plan=None, healthy=True):
             "plan_evidence": plan or {}, "client": {"failed": 0, "timeouts": 0, "unexpected_sql_errors": 0}}
 
 
+def test_model_visible_measurement_keeps_diagnostics_without_full_context_duplication():
+    value = measurement(123, plan={"critical": "plan"})
+    value.update({"label": "baseline_1", "run_id": "run-1",
+        "experiment_context": {"duration": 30, "warmup_seconds": 30, "terminals": 2,
+                               "seed": 7, "hardware": {"large": "duplicate"}}})
+    visible = MultiAgentRunner._visible_measurement(value, include_diagnostics=True)
+    assert visible["telemetry"] == value["telemetry"]
+    assert visible["plan_evidence"] == {"critical": "plan"}
+    assert visible["measurement_protocol"] == {
+        "duration": 30, "warmup_seconds": 30, "terminals": 2, "seed": 7}
+    assert "experiment_context" not in visible and "hardware" not in visible
+
+    baseline = MultiAgentRunner._visible_measurement(value, include_diagnostics=False)
+    assert "telemetry" not in baseline and "plan_evidence" not in baseline
+
+
 def validate(p, controls, treatments, observed=None):
     requested = {x.knob: x.new_value for x in p.knob_changes}
     observed = observed or requested
@@ -95,6 +112,65 @@ def test_competing_causes_remain_distinct_and_discriminating_review_wins():
     config = {d.name: d.current for d in Coordinator().space.dimensions}; config.update({"random_page_cost": 4.0, "wal_writer_delay": 200})
     selected = Coordinator().select(canonical, [review], current_config=config, remaining_measurements=4)
     assert selected.selected_proposal_id == "p2"
+
+
+def test_query_cost_group_with_effective_cache_size_is_executable():
+    p = proposal()
+    config = Coordinator().space.current_config()
+    p = p.model_copy(update={"knob_changes": [
+        KnobChange(knob="effective_cache_size", old_value=config["effective_cache_size"], new_value=786432,
+                   numerical_basis="measured cache hypothesis", mechanism_role="capacity estimate"),
+        KnobChange(knob="random_page_cost", old_value=config["random_page_cost"], new_value=2.0,
+                   numerical_basis="measured plan hypothesis", mechanism_role="random I/O cost"),
+        KnobChange(knob="seq_page_cost", old_value=config["seq_page_cost"], new_value=0.8,
+                   numerical_basis="measured plan hypothesis", mechanism_role="sequential I/O cost"),
+    ]})
+    selected = Coordinator().select([p], [], current_config=config, remaining_measurements=4)
+    assert selected.selected_proposal_id == p.proposal_id
+
+
+def test_nested_transaction_metric_is_resolved_for_predictions():
+    value = measurement(100)
+    value["client"]["transaction_latency"] = {"InsertTweet": {"p50_us": 350_000}}
+    assert _metric(value, "client.transaction_latency.InsertTweet.p50_us") == 350_000
+
+
+def test_nested_wal_and_host_metrics_are_resolved_for_predictions():
+    value = measurement(100)
+    value["telemetry"].update({"wal_timing": {"sync_average_ms": 42.0},
+                               "host_io": {"full_stall_fraction": .25}})
+    assert _metric(value, "telemetry.wal_timing.sync_average_ms") == 42.0
+    assert _metric(value, "host_io.full_stall_fraction") == .25
+
+
+def test_client_terminal_saturation_becomes_high_signal_alert():
+    value = measurement(500)
+    value["client"]["bottleneck_summary"] = {
+        "detected": True, "critical_transaction": "InsertTweet",
+        "terminal_capacity_fraction": .92, "transaction_p50_us": 350_000,
+        "overall_p95_us": 500, "tail_masked_by_overall_p95": True,
+    }
+    incumbent = IncumbentSnapshot(config={}, config_hash="cfg",
+        verified_performance={"throughput_rps": 2500, "median_throughput_rps": 2700},
+        guardrails={}, workload_fingerprint={}, workload_fingerprint_hash="wf",
+        database_state={}, evidence=value, accepted_experiment_id="baseline")
+    alerts = MultiAgentRunner._diagnostic_alerts(value, incumbent)
+    kinds = {item["kind"] for item in alerts}
+    assert {"client_terminal_saturation", "low_frequency_tail_masked_by_overall_percentile",
+            "same_config_throughput_collapse"} <= kinds
+
+
+def test_transaction_tail_regression_blocks_tps_acceptance():
+    p = proposal()
+    controls = [measurement(100), measurement(101)]
+    treatments = [measurement(120, .5), measurement(121, .5)]
+    for item in controls:
+        item["client"]["transaction_latency"] = {"InsertTweet": {"mean_us": 1000, "p50_us": 1000, "p99_us": 2000}}
+    for item in treatments:
+        item["client"]["transaction_latency"] = {"InsertTweet": {"mean_us": 2000, "p50_us": 2000, "p99_us": 4000}}
+    outcome = validate(p, controls, treatments)
+    assert outcome.performance_verdict == "no_improvement"
+    assert not outcome.accepted_as_incumbent
 
 
 def test_independent_roots_to_tps_do_not_create_interaction(tmp_path):
@@ -211,7 +287,7 @@ def test_small_end_to_end_runner_with_fake_database_and_experts(tmp_path, monkey
         def restore(self): self.restart_count += 1; return {"restored":True}
 
     class FakePanel:
-        def __init__(self, backend): pass
+        def __init__(self, backend, roles=None): pass
         def propose_parallel(self, payload):
             base = proposal()
             data = base.model_dump(mode="json")
@@ -267,3 +343,56 @@ def test_same_context_historical_baseline_regime_shift_is_rejected(tmp_path):
     result=runner._historical_baseline_check(stable_hash(context),{"median":100,"values":[99,100,101],"stable":True})
     assert not result["comparable"] and result["maximum_ratio"] == 10
     assert (tmp_path/"artifacts/multi_agent/baseline_registry.jsonl").exists()
+
+
+def test_observation_only_frontier_collects_evidence_without_peer_review(tmp_path, monkeypatch):
+    import app.multi_agent.runner as runner_module
+
+    class FakeExecutor:
+        def __init__(self, directory, workload, **kwargs):
+            self.directory, self.workload = directory, workload
+            self.space = FullKnobSpace(); self.measurement_count = self.warmup_count = 0
+            self.restart_count = self.apply_count = 0
+            self.duration = kwargs["duration"]; self.warmup_seconds = kwargs["warmup_seconds"]
+            self.terminals = kwargs["terminals"]; self.seed = kwargs["seed"]; self.executor = self
+        def capture(self): return self.space.current_config(), {"host":"fake"}
+        def context(self, source_hash, hardware):
+            return {"source_config_hash":source_hash,"workload_fingerprint":{"workload":self.workload,"sha256":"wf"},
+                    "snapshot":{"path_name":self.workload+".dump","sha256":"snap"},"hardware":hardware}
+        def measure(self, config, label):
+            self.measurement_count += 1; self.apply_count += 1
+            return measurement(100 + self.measurement_count), {"observed":{},"session_settings":{}}
+        def restore(self): return {"restored":True}
+        def apply(self, config, space): return {}
+
+    class ObservationPanel:
+        review_called = False
+        def __init__(self, backend, roles=None): self.round = 0
+        def propose_parallel(self, payload):
+            self.round += 1; values=[]
+            for role, suffix in (("query_execution","q"),("memory_storage","m"),("concurrency_maintenance","c")):
+                item = proposal(f"r{self.round}{suffix}", role).model_dump(mode="json")
+                item["knob_changes"] = []
+                item["incumbent_config_hash"] = payload["current_incumbent"]["config_hash"]
+                item["workload_fingerprint_hash"] = payload["current_incumbent"]["workload_fingerprint_hash"]
+                for edge in item["edges"]: edge["context_hash"] = item["incumbent_config_hash"]
+                values.append(ExpertProposal.model_validate(item))
+            return values
+        def review_parallel(self, *args):
+            ObservationPanel.review_called = True
+            raise AssertionError("legacy peer review must not be called")
+
+    monkeypatch.setattr(runner_module, "ExperimentExecutor", FakeExecutor)
+    monkeypatch.setattr(runner_module, "DeepSeekExpertBackend", lambda path: object())
+    monkeypatch.setattr(runner_module, "ExpertPanel", ObservationPanel)
+    runner = runner_module.MultiAgentRunner(tmp_path, "observation", "tpcc", "twitter",
+        max_rounds=2, max_measurements=8, duration=5, warmup_seconds=0, terminals=1,
+        baseline_repeats=3, max_observation_rounds=1)
+    report = runner.run()
+    out = tmp_path/"artifacts/multi_agent/observation/tpcc_to_twitter"
+    assert report["stop_reason"] == "no_executable_or_discriminating_followup"
+    assert report["workload_measurements"] == 4
+    assert not ObservationPanel.review_called
+    assert len(json.loads((out/"agent_graph.json").read_text())["rounds"]) == 2
+    events = (out/"experiment_ledger.jsonl").read_text()
+    assert "observation_completed" in events

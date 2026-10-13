@@ -20,3 +20,5 @@ artifacts/reports/
 .benchbase/
 
 artifacts/snapshots/
+artifacts/multi_agent/
+artifacts/workload_switch/

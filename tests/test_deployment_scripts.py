@@ -44,3 +44,13 @@ def test_setup_entrypoint_prepares_before_nohup_and_creates_log_directory():
     nohup = script.index("nohup env")
     assert bootstrap < create_artifacts < nohup
     assert "--prepare-only" in script
+
+
+def test_huawei_comparison_runs_bo_then_only_tpcc_to_twitter_diagnosis():
+    script = read_script("setup_and_run_huawei_comparison.sh")
+    assert 'TPCC_BO_BUDGET="${TPCC_BO_BUDGET:-100}"' in script
+    assert 'TWITTER_BO_BUDGET="${TWITTER_BO_BUDGET:-100}"' in script
+    assert 'DIRECTIONS="tpcc:twitter"' in script
+    assert "run_bo_reference_then_switch.sh" in script
+    assert "REFERENCE_STANDARD.md" in script
+    assert "FINAL_COMPARISON.md" in script
