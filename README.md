@@ -201,3 +201,7 @@ cat "artifacts/workload_switch/${SUITE_ID}/FINAL_COMPARISON.md"
 
 `REFERENCE_STANDARD.json` 完整保存 BO 选择轮次、两种负载的验证 TPS 和 60 旋钮配置；
 `FINAL_COMPARISON.json` 保存诊断前后 TPS、相对改善、与 Twitter BO 标准的差距及闭合比例。
+
+正式实验中的 TPS 使用 BenchBase Goodput（成功完成事务/秒）。少量 PostgreSQL `40P01`
+死锁或 `40001` 序列化冲突不会终止整个 BO；默认允许比例上限为 0.1%，错误数、SQLSTATE 和
+比例会写入测量记录。超过上限或出现其他 SQL 错误时，该轮配置判为无效且不参与 GP 拟合。

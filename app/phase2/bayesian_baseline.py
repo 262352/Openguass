@@ -127,6 +127,8 @@ class BayesianBaseline:
                                       applied["session_settings"], verbose=False, random_seed=self.seed)
         return ({"throughput_rps": float(raw["throughput_rps"]),
                  "goodput_rps": float(raw.get("goodput_rps") or raw["throughput_rps"]),
+                 "benchbase_reported_throughput_rps": float(raw.get("benchbase_reported_throughput_rps") or raw["throughput_rps"]),
+                 "sql_error_policy": raw.get("sql_error_policy", {}),
                  "p95_us": float(raw["latency"][P95]),
                  "average_us": float(raw["latency"].get("Average Latency (microseconds)", 0) or 0),
                  "p99_us": float(raw["latency"].get("99th Percentile Latency (microseconds)", 0) or 0),
@@ -215,7 +217,8 @@ class BayesianBaseline:
             "snapshot_settle_seconds": max(0.0, float(os.getenv("SNAPSHOT_SETTLE_SECONDS", "5"))),
             "terminals": self.terminals, "seed": self.seed,
             "source_config": str(self.source_config_path), "comparison_dir": str(self.comparison_dir or ""),
-            "objective": {"metric": "throughput_rps", "direction": "maximize"},
+            "objective": {"metric": "throughput_rps", "direction": "maximize",
+                          "definition": "successful completed transactions per second (BenchBase Goodput)"},
             "started_at": now(), "knobs": space.describe(),
             "algorithm": {"initial_design": "latin_hypercube", "surrogate": "gaussian_process",
                           "acquisition": "expected_improvement"},

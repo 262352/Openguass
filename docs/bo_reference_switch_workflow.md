@@ -119,3 +119,8 @@ artifacts/workload_switch/<suite_id>/
 BO budget 是搜索 trial 数；另有一次起点基线和 `BO_RETEST_REPEATS` 次最佳配置复测。诊断 measurement budget 统计目标负载基线、补充观测和 control/treatment；源 workload profile 单独计数。报告分别保留 benchmark 测量、模型调用、tokens、重启和配置应用成本。
 
 “BO 最优”只表示当前搜索空间、预算和环境内的最佳已测配置，不表示全局最优。
+
+BO 的 TPS 定义为 BenchBase Goodput，即每秒成功完成的事务数。`40P01` 死锁和 `40001`
+序列化冲突在比例不超过 `BENCHBASE_MAX_TRANSIENT_ERROR_RATIO`（默认 0.001，即 0.1%）时
+作为有记录的暂态事务中止接受；超过阈值或出现其他 SQLSTATE 时，该配置测量无效且不进入 GP
+训练。原始 BenchBase Throughput、错误数量、SQLSTATE 和错误率仍保存在每次测量结果中。

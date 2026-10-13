@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SUPPORTED = ("tpcc", "twitter", "ycsb")
 BENCHBASE_COMMIT = "33c00473807ebd49304d114a6d769d2d2b2bbb34"
 JDK23 = Path.home() / ".local/jdks/jdk-23.0.2+7"
+RETRYABLE_SQL_STATES = frozenset({"40P01", "40001"})
 
 
 def _percentile(values: list[float], percentile: float) -> float | None:
@@ -58,6 +59,36 @@ def summarize_transaction_latencies(raw_files: list[Path], duration: int, termin
             "terminal_capacity_fraction": total / capacity_us,
         }
     return result
+
+
+def classify_sql_errors(stdout: str, *, maximum_retryable_ratio: float = 0.001) -> dict[str, Any]:
+    """Classify BenchBase SQL errors without turning rare concurrency aborts into run failures."""
+    if not 0 <= maximum_retryable_ratio <= 1:
+        raise ValueError("maximum_retryable_ratio must be between 0 and 1")
+    section = re.search(r"Unexpected SQL Errors:.*?\n(.*?)\n\n", stdout, re.DOTALL)
+    body = section.group(1) if section else ""
+    counts = [int(value) for value in re.findall(r"\[\s*(\d+)\]", body)]
+    unexpected = sum(counts) if "<EMPTY>" not in body else 0
+    states = sorted(set(re.findall(
+        r"will not be retried[^\n]*sql state \[([0-9A-Z]{5})\]", stdout, re.IGNORECASE)))
+    states = [value.upper() for value in states]
+    measured = re.search(r"measuredRequests=(\d+)", stdout)
+    measured_requests = int(measured.group(1)) if measured else 0
+    ratio = unexpected / measured_requests if measured_requests else (1.0 if unexpected else 0.0)
+    retryable = unexpected if unexpected and states and set(states) <= RETRYABLE_SQL_STATES else 0
+    nonretryable = unexpected - retryable
+    accepted = nonretryable == 0 and ratio <= maximum_retryable_ratio
+    return {
+        "unexpected_sql_errors": unexpected,
+        "retryable_sql_errors": retryable,
+        "nonretryable_sql_errors": nonretryable,
+        "sql_states": states,
+        "measured_requests": measured_requests,
+        "unexpected_error_ratio": ratio,
+        "maximum_retryable_error_ratio": maximum_retryable_ratio,
+        "accepted": accepted,
+        "policy": "40P01/40001 are accepted only within the fixed retryable-error ratio",
+    }
 
 
 @dataclass(frozen=True)
@@ -183,12 +214,21 @@ class BenchBaseRunner:
         elapsed = time.monotonic() - started
         summaries = sorted(run_dir.glob("*summary.json"), key=lambda path: path.stat().st_mtime)
         stdout = (run_dir / "stdout.log").read_text(encoding="utf-8", errors="replace")
-        errors = re.search(r"Unexpected SQL Errors:.*?\n(.*?)\n\n", stdout, re.DOTALL)
-        has_sql_errors = bool(errors and "<EMPTY>" not in errors.group(1))
-        if return_code != 0 or not summaries or has_sql_errors:
+        if return_code != 0 or not summaries:
             raise RuntimeError(f"{workload} failed; inspect {run_dir / 'stdout.log'}")
         summary = json.loads(summaries[-1].read_text(encoding="utf-8"))
+        maximum_retryable_ratio = float(os.getenv("BENCHBASE_MAX_TRANSIENT_ERROR_RATIO", "0.001"))
+        sql_errors = classify_sql_errors(stdout, maximum_retryable_ratio=maximum_retryable_ratio)
+        if not sql_errors["accepted"]:
+            raise RuntimeError(
+                f"{workload} failed SQL error policy: unexpected={sql_errors['unexpected_sql_errors']} "
+                f"ratio={sql_errors['unexpected_error_ratio']:.6f} states={sql_errors['sql_states']}; "
+                f"inspect {run_dir / 'stdout.log'}")
         raw_files = sorted(run_dir.glob("*raw.csv"))
+        reported_throughput = summary.get("Throughput (requests/second)")
+        successful_throughput = summary.get("Goodput (requests/second)")
+        if successful_throughput is None:
+            successful_throughput = reported_throughput
         result = {
             "run_id": run_id,
             "workload": workload,
@@ -200,13 +240,16 @@ class BenchBaseRunner:
             "session_settings": session_settings or {},
             "random_seed": random_seed,
             "elapsed_seconds": round(elapsed, 3),
-            "throughput_rps": summary.get("Throughput (requests/second)"),
-            "goodput_rps": summary.get("Goodput (requests/second)"),
+            "throughput_rps": successful_throughput,
+            "goodput_rps": successful_throughput,
+            "benchbase_reported_throughput_rps": reported_throughput,
+            "objective_definition": "successful completed transactions per second (BenchBase Goodput)",
+            "sql_error_policy": sql_errors,
             "latency": summary.get("Latency Distribution", {}),
             "transaction_latency": summarize_transaction_latencies(raw_files, duration, terminals),
             "summary_file": str(summaries[-1]),
             "raw_files": [str(path) for path in raw_files],
-            "status": "passed",
+            "status": "passed_with_retryable_aborts" if sql_errors["retryable_sql_errors"] else "passed",
         }
         (run_dir / "verified-result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
         return result

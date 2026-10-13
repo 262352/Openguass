@@ -1,7 +1,7 @@
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from app.benchmark.benchbase import BenchBaseRunner, BENCHBASE_COMMIT, SUPPORTED
+from app.benchmark.benchbase import BenchBaseRunner, BENCHBASE_COMMIT, SUPPORTED, classify_sql_errors
 from app.lab.workloads import PostgresBenchBaseAdapter
 import pytest
 
@@ -36,3 +36,38 @@ def test_empty_snapshot_is_never_restored(tmp_path, monkeypatch):
     adapter.snapshot.touch()
     with pytest.raises(RuntimeError, match="missing or empty snapshot"):
         adapter.restore_snapshot()
+
+
+def test_rare_deadlock_is_a_bounded_retryable_abort():
+    stdout = """
+Results(state=EXIT, nanoSeconds=1, measuredRequests=22107) = 736 requests/sec
+SQLException occurred and will not be retried... sql state [40P01], error code [0].
+Unexpected SQL Errors:
+NewOrder/01 [   1]
+
+"""
+    result = classify_sql_errors(stdout)
+    assert result["accepted"]
+    assert result["retryable_sql_errors"] == 1
+    assert result["nonretryable_sql_errors"] == 0
+    assert result["unexpected_error_ratio"] == pytest.approx(1 / 22107)
+
+
+def test_excessive_retryable_errors_or_nonretryable_state_are_rejected():
+    excessive = """
+Results(state=EXIT, nanoSeconds=1, measuredRequests=1000) = 100 requests/sec
+SQLException occurred and will not be retried... sql state [40001], error code [0].
+Unexpected SQL Errors:
+NewOrder/01 [   2]
+
+"""
+    assert not classify_sql_errors(excessive)["accepted"]
+    fatal = excessive.replace("40001", "23505").replace("[   2]", "[   1]")
+    result = classify_sql_errors(fatal)
+    assert not result["accepted"]
+    assert result["nonretryable_sql_errors"] == 1
+
+
+def test_no_unexpected_sql_errors_is_accepted():
+    result = classify_sql_errors("Unexpected SQL Errors:\n<EMPTY>\n\n")
+    assert result["accepted"] and result["unexpected_sql_errors"] == 0
