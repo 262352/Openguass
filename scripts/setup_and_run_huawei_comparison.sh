@@ -99,6 +99,10 @@ else
     [[ -s $snapshot ]] || { echo "Missing or empty snapshot: $snapshot" >&2; exit 1; }
     pg_restore --list "$snapshot" >/dev/null
   done
+  profile_file="artifacts/snapshots/workload_profile.sha256"
+  [[ -s $profile_file ]] && sha256sum --check --status "$profile_file" || {
+    echo "Snapshots were built for an older workload profile; run without --skip-bootstrap." >&2; exit 1;
+  }
   pg_isready -h 127.0.0.1 -p 5432 >/dev/null
   .venv/bin/python - <<'PY'
 from app.phase2.space import FullKnobSpace
@@ -123,9 +127,10 @@ nohup env \
   REPETITIONS="${REPETITIONS:-1}" \
   DIAGNOSIS_ROUNDS="${DIAGNOSIS_ROUNDS:-12}" \
   DIAGNOSIS_MEASUREMENTS="${DIAGNOSIS_MEASUREMENTS:-60}" \
-  DURATION="${DURATION:-30}" \
+  DURATION="${DURATION:-120}" \
   WARMUP_SECONDS="${WARMUP_SECONDS:-30}" \
-  TERMINALS="${TERMINALS:-2}" \
+  TPCC_TERMINALS="${TPCC_TERMINALS:-10}" \
+  TWITTER_TERMINALS="${TWITTER_TERMINALS:-16}" \
   BASELINE_REPEATS="${BASELINE_REPEATS:-3}" \
   SOURCE_PROFILE_REPEATS="${SOURCE_PROFILE_REPEATS:-1}" \
   MAX_OBSERVATION_ROUNDS="${MAX_OBSERVATION_ROUNDS:-2}" \

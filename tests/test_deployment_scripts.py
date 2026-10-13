@@ -35,6 +35,8 @@ def test_bootstrap_rejects_empty_or_invalid_snapshots():
     assert 'pg_restore --list "$snapshot"' in script
     assert 'test -s "artifacts/snapshots/${workload}.dump"' in script
     assert '-e "$project_dir" pytest' in script
+    assert "workload_profile.sha256" in script
+    assert "sha256sum --check --status" in script
 
 
 def test_setup_entrypoint_prepares_before_nohup_and_creates_log_directory():
@@ -54,3 +56,6 @@ def test_huawei_comparison_runs_bo_then_only_tpcc_to_twitter_diagnosis():
     assert "run_bo_reference_then_switch.sh" in script
     assert "REFERENCE_STANDARD.md" in script
     assert "FINAL_COMPARISON.md" in script
+    assert 'DURATION="${DURATION:-120}"' in script
+    assert 'TPCC_TERMINALS="${TPCC_TERMINALS:-10}"' in script
+    assert 'TWITTER_TERMINALS="${TWITTER_TERMINALS:-16}"' in script

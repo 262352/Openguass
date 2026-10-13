@@ -30,9 +30,11 @@ def main() -> int:
     parser.add_argument("--repetitions", type=int, default=1)
     parser.add_argument("--diagnosis-rounds", type=int, default=12)
     parser.add_argument("--diagnosis-measurements", type=int, default=60)
-    parser.add_argument("--duration", type=int, default=30)
+    parser.add_argument("--duration", type=int, default=120)
     parser.add_argument("--warmup-seconds", type=int, default=30)
-    parser.add_argument("--terminals", type=int, default=2)
+    parser.add_argument("--terminals", type=int, help="legacy override: use the same terminal count for both workloads")
+    parser.add_argument("--tpcc-terminals", type=int, default=10)
+    parser.add_argument("--twitter-terminals", type=int, default=16)
     parser.add_argument("--baseline-repeats", type=int, default=3)
     parser.add_argument("--source-profile-repeats", type=int, default=1)
     parser.add_argument("--max-observation-rounds", type=int, default=2)
@@ -44,11 +46,16 @@ def main() -> int:
     args = parser.parse_args()
     if min(args.tpcc_bo_budget, args.twitter_bo_budget) < 2:
         parser.error("each BO budget must be at least 2")
+    tpcc_terminals = args.terminals if args.terminals is not None else args.tpcc_terminals
+    twitter_terminals = args.terminals if args.terminals is not None else args.twitter_terminals
+    if min(tpcc_terminals, twitter_terminals) < 1:
+        parser.error("terminal counts must be at least 1")
     options = WorkflowOptions(suite_id=args.suite_id, tpcc_bo_budget=args.tpcc_bo_budget,
         twitter_bo_budget=args.twitter_bo_budget, bo_initial_points=args.bo_initial_points,
         bo_retest_repeats=args.bo_retest_repeats, directions=args.directions, repetitions=args.repetitions,
         diagnosis_rounds=args.diagnosis_rounds, diagnosis_measurements=args.diagnosis_measurements,
-        duration=args.duration, warmup_seconds=args.warmup_seconds, terminals=args.terminals,
+        duration=args.duration, warmup_seconds=args.warmup_seconds,
+        tpcc_terminals=tpcc_terminals, twitter_terminals=twitter_terminals,
         baseline_repeats=args.baseline_repeats, source_profile_repeats=args.source_profile_repeats,
         max_observation_rounds=args.max_observation_rounds, seed=args.seed, drift_percent=args.drift_percent,
         communication_topology=args.communication_topology,

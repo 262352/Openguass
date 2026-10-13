@@ -16,14 +16,15 @@ BO_INITIAL_POINTS=10 \
 BO_RETEST_REPEATS=3 \
 DIAGNOSIS_ROUNDS=12 \
 DIAGNOSIS_MEASUREMENTS=60 \
-DURATION=30 \
+DURATION=120 \
 WARMUP_SECONDS=30 \
-TERMINALS=2 \
+TPCC_TERMINALS=10 \
+TWITTER_TERMINALS=16 \
 REPETITIONS=1 \
 bash scripts/run_bo_reference_then_switch.sh
 ```
 
-诊断模型只看到源负载 BO 配置、源负载稳态、目标负载初始测量、当前 incumbent 和证据图。目标负载 BO 配置与参考 TPS 保存在套件的 `oracle/` 目录中，只由离线评价器读取。详细协议、分阶段命令和结果结构见 [`docs/bo_reference_switch_workflow.md`](docs/bo_reference_switch_workflow.md)。
+TPC-C 使用 scale factor 20 和 10 个终端，Twitter 使用 scale factor 100 和 16 个终端；两者均以 `TRANSACTION_SERIALIZABLE`、120 秒正式测量、30 秒独立预热和不限速模式运行。诊断模型只看到源负载 BO 配置、源负载稳态、目标负载初始测量、当前 incumbent 和证据图。目标负载 BO 配置与参考 TPS 保存在套件的 `oracle/` 目录中，只由离线评价器读取。详细协议、分阶段命令和结果结构见 [`docs/bo_reference_switch_workflow.md`](docs/bo_reference_switch_workflow.md)。
 
 ## 部署要求
 
@@ -106,9 +107,9 @@ SOURCE_WORKLOAD=twitter \
 TARGET_WORKLOAD=tpcc \
 MAX_ROUNDS=12 \
 MAX_MEASUREMENTS=60 \
-DURATION=30 \
+DURATION=120 \
 WARMUP_SECONDS=30 \
-TERMINALS=2 \
+TERMINALS=10 \
 BASELINE_REPEATS=3 \
 DRIFT_PERCENT=25 \
 sudo --preserve-env=SOURCE_WORKLOAD,TARGET_WORKLOAD,MAX_ROUNDS,MAX_MEASUREMENTS,DURATION,WARMUP_SECONDS,TERMINALS,BASELINE_REPEATS,DRIFT_PERCENT \

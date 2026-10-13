@@ -42,19 +42,31 @@ if [[ -n "${SOURCE_CONFIG:-}" ]]; then
   extra_args+=(--source-config "$SOURCE_CONFIG")
 fi
 
+case "$TARGET_WORKLOAD" in
+  tpcc) default_terminals=10 ;;
+  twitter) default_terminals=16 ;;
+  *) default_terminals=2 ;;
+esac
+case "$SOURCE_WORKLOAD" in
+  tpcc) default_source_terminals=10 ;;
+  twitter) default_source_terminals=16 ;;
+  *) default_source_terminals=2 ;;
+esac
+
 exec "$PYTHON_BIN" -m app.multi_agent.cli \
   --source "$SOURCE_WORKLOAD" \
   --target "$TARGET_WORKLOAD" \
   --experiment-id "$EXPERIMENT_ID" \
   --max-rounds "${MAX_ROUNDS:-12}" \
   --max-measurements "${MAX_MEASUREMENTS:-60}" \
-  --duration "${DURATION:-30}" \
+  --duration "${DURATION:-120}" \
   --warmup-seconds "${WARMUP_SECONDS:-30}" \
-  --terminals "${TERMINALS:-2}" \
+  --terminals "${TERMINALS:-$default_terminals}" \
   --seed "${BENCHMARK_SEED:-20261012}" \
   --baseline-repeats "${BASELINE_REPEATS:-3}" \
   --drift-percent "${DRIFT_PERCENT:-25}" \
   --source-profile-repeats "${SOURCE_PROFILE_REPEATS:-0}" \
+  --source-profile-terminals "${SOURCE_PROFILE_TERMINALS:-$default_source_terminals}" \
   --max-observation-rounds "${MAX_OBSERVATION_ROUNDS:-2}" \
   --communication-topology "${COMMUNICATION_TOPOLOGY:-blackboard}" \
   --expert-roles "${EXPERT_ROLES:-query_execution,memory_storage,concurrency_maintenance}" \

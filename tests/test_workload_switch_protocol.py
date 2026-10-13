@@ -95,7 +95,9 @@ def test_two_direction_workflow_passes_only_source_reference_to_runner(tmp_path,
 
     class FakeRunner:
         def __init__(self, root, episode_id, source, target, **kwargs):
-            calls.append({"source": source, "target": target, "source_config": kwargs["source_config"]})
+            calls.append({"source": source, "target": target, "source_config": kwargs["source_config"],
+                          "terminals": kwargs["terminals"],
+                          "source_profile_terminals": kwargs["source_profile_terminals"]})
             self.out = kwargs["output_root"] / f"{source}_to_{target}"
             self.out.mkdir(parents=True)
             visible = {"source_workload": source, "target_workload": target,
@@ -112,6 +114,8 @@ def test_two_direction_workflow_passes_only_source_reference_to_runner(tmp_path,
     assert len(result["episodes"]) == 2
     assert calls[0]["source_config"] == workflow.store.path("tpcc")
     assert calls[1]["source_config"] == workflow.store.path("twitter")
+    assert calls[0]["terminals"] == 16 and calls[0]["source_profile_terminals"] == 10
+    assert calls[1]["terminals"] == 10 and calls[1]["source_profile_terminals"] == 16
     first_visible = (workflow.directory / "episodes/repeat_01/tpcc_to_twitter/diagnosis_visible_context.json").read_text()
     assert "999" not in first_visible
     evaluations = sorted((workflow.directory / "oracle/evaluations").glob("*.json"))

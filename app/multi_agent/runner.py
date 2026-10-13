@@ -30,6 +30,7 @@ class MultiAgentRunner:
                  warmup_seconds: int = 30, terminals: int = 2, seed: int = 20261012,
                  baseline_repeats: int = 3, drift_percent: float = 25.0,
                  source_config: Path | None = None, source_profile_repeats: int = 0,
+                 source_profile_terminals: int | None = None,
                  max_observation_rounds: int = 2, communication_topology: str = "blackboard",
                  expert_roles: tuple[str, ...] = ("query_execution", "memory_storage", "concurrency_maintenance"),
                  output_root: Path | None = None):
@@ -46,6 +47,7 @@ class MultiAgentRunner:
         self.ledger = self.directory / "experiment_ledger.jsonl"
         self.source_config_path = source_config
         self.source_profile_repeats = source_profile_repeats
+        self.source_profile_terminals = source_profile_terminals or terminals
         self.max_observation_rounds = max_observation_rounds
         self.communication_topology = communication_topology
         self.expert_roles = expert_roles
@@ -82,7 +84,7 @@ class MultiAgentRunner:
             if self.source_profile_repeats:
                 source_executor = ExperimentExecutor(self.directory / "source_profile", self.source,
                     duration=self.executor.duration, warmup_seconds=self.executor.warmup_seconds,
-                    terminals=self.executor.terminals, seed=self.executor.seed)
+                    terminals=self.source_profile_terminals, seed=self.executor.seed)
                 source_executor.capture()
                 source_context = source_executor.context(source_hash, hardware)
                 for i in range(self.source_profile_repeats):

@@ -539,6 +539,10 @@ if ((check_only)); then
     [[ -s $snapshot ]] || { echo "Missing or empty snapshot: $snapshot" >&2; exit 1; }
     pg_restore --list "$snapshot" >/dev/null
   done
+  profile_file="artifacts/snapshots/workload_profile.sha256"
+  [[ -s $profile_file ]] && sha256sum --check --status "$profile_file" || {
+    echo "Snapshots do not match the current workload XML files; use --force-reload." >&2; exit 1;
+  }
 else
   mkdir -p artifacts/snapshots
   find artifacts/snapshots -maxdepth 1 -name '*.dump' -type f -size 0 -delete
@@ -546,6 +550,10 @@ else
   for workload in tpcc twitter ycsb; do
     [[ -s "artifacts/snapshots/${workload}.dump" ]] || snapshots_ready=0
   done
+  profile_file="artifacts/snapshots/workload_profile.sha256"
+  if [[ ! -s $profile_file ]] || ! sha256sum --check --status "$profile_file"; then
+    snapshots_ready=0
+  fi
 
   if ((force_reload || ! snapshots_ready)); then
     step "load and execute TPC-C, Twitter and YCSB"
@@ -557,6 +565,8 @@ else
       test -s "artifacts/snapshots/${workload}.dump"
       pg_restore --list "artifacts/snapshots/${workload}.dump" >/dev/null
     done
+    sha256sum benchmarks/postgres/tpcc.xml benchmarks/postgres/twitter.xml benchmarks/postgres/ycsb.xml \
+      > "$profile_file"
   elif ((skip_smoke == 0)); then
     step "execute smoke workloads from prepared data"
     "$python_bin" -m app.benchmark.cli all --duration "$duration" --terminals "$terminals" --reuse-data

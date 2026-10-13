@@ -31,9 +31,10 @@ class WorkflowOptions:
     repetitions: int = 1
     diagnosis_rounds: int = 12
     diagnosis_measurements: int = 60
-    duration: int = 30
+    duration: int = 120
     warmup_seconds: int = 30
-    terminals: int = 2
+    tpcc_terminals: int = 10
+    twitter_terminals: int = 16
     baseline_repeats: int = 3
     source_profile_repeats: int = 1
     max_observation_rounds: int = 2
@@ -41,6 +42,13 @@ class WorkflowOptions:
     drift_percent: float = 25.0
     communication_topology: str = "blackboard"
     expert_roles: tuple[str, ...] = ("query_execution", "memory_storage", "concurrency_maintenance")
+
+    def terminals_for(self, workload: str) -> int:
+        if workload == "tpcc":
+            return self.tpcc_terminals
+        if workload == "twitter":
+            return self.twitter_terminals
+        raise ValueError(f"unsupported workflow workload: {workload}")
 
 
 class WorkloadSwitchWorkflow:
@@ -60,7 +68,9 @@ class WorkloadSwitchWorkflow:
                         "diagnosis_rounds": options.diagnosis_rounds,
                         "diagnosis_measurements": options.diagnosis_measurements},
             "measurement": {"duration": options.duration, "warmup_seconds": options.warmup_seconds,
-                            "terminals": options.terminals, "seed": options.seed},
+                            "terminals_by_workload": {"tpcc": options.tpcc_terminals,
+                                                      "twitter": options.twitter_terminals},
+                            "rate": "unlimited", "seed": options.seed},
             "oracle_isolation": "target BO references are stored under oracle/ and never loaded by MultiAgentRunner",
             "environment": {"hostname": platform.node(), "machine": platform.machine(),
                             "kernel": platform.release(), "code_revision": self._revision()},
@@ -88,7 +98,7 @@ class WorkloadSwitchWorkflow:
             budget = self.options.tpcc_bo_budget if workload == "tpcc" else self.options.twitter_bo_budget
             run_id = f"{self.options.suite_id}-{workload}"
             runner = BayesianBaseline(run_id, budget, min(self.options.bo_initial_points, budget - 1),
-                self.options.duration, self.options.terminals, self.options.seed + offset, initial,
+                self.options.duration, self.options.terminals_for(workload), self.options.seed + offset, initial,
                 root=self.reference_run_root, workload=workload, retest_repeats=self.options.bo_retest_repeats,
                 warmup_seconds=self.options.warmup_seconds)
             results[workload] = runner.run()
@@ -113,7 +123,9 @@ class WorkloadSwitchWorkflow:
                     max_rounds=self.options.diagnosis_rounds,
                     max_measurements=self.options.diagnosis_measurements,
                     duration=self.options.duration, warmup_seconds=self.options.warmup_seconds,
-                    terminals=self.options.terminals, seed=self.options.seed + repeat * 100 + direction_index,
+                    terminals=self.options.terminals_for(target),
+                    source_profile_terminals=self.options.terminals_for(source),
+                    seed=self.options.seed + repeat * 100 + direction_index,
                     baseline_repeats=self.options.baseline_repeats, drift_percent=self.options.drift_percent,
                     source_config=self.store.source_config_file(source),
                     source_profile_repeats=self.options.source_profile_repeats,

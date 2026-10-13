@@ -17,6 +17,17 @@ def test_postgres_templates_cover_required_workloads():
         assert int(root.findtext("terminals")) >= 1
 
 
+def test_formal_tpcc_and_twitter_profiles_are_unlimited_and_sized():
+    expected = {"tpcc": (20, 10), "twitter": (100, 16)}
+    for workload, (scale, terminals) in expected.items():
+        root = ET.parse(ROOT / f"benchmarks/postgres/{workload}.xml").getroot()
+        assert root.findtext("isolation") == "TRANSACTION_SERIALIZABLE"
+        assert int(root.findtext("scalefactor")) == scale
+        assert int(root.findtext("terminals")) == terminals
+        assert root.findtext("./works/work/time") == "120"
+        assert root.findtext("./works/work/rate") == "unlimited"
+
+
 def test_runtime_config_reads_password_only_from_environment(tmp_path, monkeypatch):
     monkeypatch.setenv("POSTGRES_BENCH_PASSWORD", "test-only-password")
     runner = BenchBaseRunner(benchbase_root=tmp_path, artifacts_root=tmp_path)

@@ -13,7 +13,8 @@ Required prepared assets: .venv, BenchBase, tpcc.dump and twitter.dump.
 Main settings: SUITE_ID, TPCC_BO_BUDGET, TWITTER_BO_BUDGET,
 BO_INITIAL_POINTS, BO_RETEST_REPEATS, DIRECTIONS, REPETITIONS,
 DIAGNOSIS_ROUNDS, DIAGNOSIS_MEASUREMENTS, DURATION, WARMUP_SECONDS,
-TERMINALS, BASELINE_REPEATS, SOURCE_PROFILE_REPEATS and BENCHMARK_SEED.
+TPCC_TERMINALS, TWITTER_TERMINALS, BASELINE_REPEATS,
+SOURCE_PROFILE_REPEATS and BENCHMARK_SEED. TERMINALS remains a legacy override.
 DeepSeek calls default to a 300-second timeout and two SDK retries; override
 them with DEEPSEEK_TIMEOUT_SECONDS and DEEPSEEK_MAX_RETRIES in .env.
 EOF
@@ -33,6 +34,11 @@ PYTHON_BIN="${ROOT_DIR}/.venv/bin/python"
 for workload in tpcc twitter; do
   [[ -s "artifacts/snapshots/${workload}.dump" ]] || { echo "Missing snapshot for ${workload}." >&2; exit 1; }
 done
+profile_file="artifacts/snapshots/workload_profile.sha256"
+[[ -s "$profile_file" ]] && sha256sum --check --status "$profile_file" || {
+  echo "Snapshots do not match the current workload scale/configuration; rebuild them with scripts/bootstrap_test_environment.sh --force-reload." >&2
+  exit 1
+}
 [[ -s .benchbase/target/benchbase-postgres/benchbase.jar ]] || { echo "BenchBase is not prepared." >&2; exit 1; }
 
 exec "$PYTHON_BIN" -m app.experiment.cli "${STAGE:-all}" \
@@ -45,9 +51,10 @@ exec "$PYTHON_BIN" -m app.experiment.cli "${STAGE:-all}" \
   --repetitions "${REPETITIONS:-1}" \
   --diagnosis-rounds "${DIAGNOSIS_ROUNDS:-12}" \
   --diagnosis-measurements "${DIAGNOSIS_MEASUREMENTS:-60}" \
-  --duration "${DURATION:-30}" \
+  --duration "${DURATION:-120}" \
   --warmup-seconds "${WARMUP_SECONDS:-30}" \
-  --terminals "${TERMINALS:-2}" \
+  --tpcc-terminals "${TERMINALS:-${TPCC_TERMINALS:-10}}" \
+  --twitter-terminals "${TERMINALS:-${TWITTER_TERMINALS:-16}}" \
   --baseline-repeats "${BASELINE_REPEATS:-3}" \
   --source-profile-repeats "${SOURCE_PROFILE_REPEATS:-1}" \
   --max-observation-rounds "${MAX_OBSERVATION_ROUNDS:-2}" \
