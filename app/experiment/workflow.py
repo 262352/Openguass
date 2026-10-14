@@ -35,7 +35,7 @@ class WorkflowOptions:
     duration: int = 120
     warmup_seconds: int = 30
     tpcc_terminals: int = 10
-    twitter_terminals: int = 16
+    twitter_terminals: int = 8
     baseline_repeats: int = 3
     source_profile_repeats: int = 1
     max_observation_rounds: int = 2

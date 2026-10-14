@@ -39,6 +39,8 @@ done
 
 [[ $(id -u) -eq 0 ]] || { echo "Run as root with sudo." >&2; exit 1; }
 cd "$project_dir"
+# shellcheck disable=SC1091
+source "$project_dir/scripts/snapshot_profile.sh"
 [[ -f .env ]] || cp .env.example .env
 chmod 600 .env
 
@@ -100,7 +102,7 @@ else
     pg_restore --list "$snapshot" >/dev/null
   done
   profile_file="artifacts/snapshots/workload_profile.sha256"
-  [[ -s $profile_file ]] && sha256sum --check --status "$profile_file" || {
+  snapshot_profile_matches "$profile_file" || {
     echo "Snapshots were built for an older workload profile; run without --skip-bootstrap." >&2; exit 1;
   }
   pg_isready -h 127.0.0.1 -p 5432 >/dev/null
@@ -130,7 +132,7 @@ nohup env \
   DURATION="${DURATION:-120}" \
   WARMUP_SECONDS="${WARMUP_SECONDS:-30}" \
   TPCC_TERMINALS="${TPCC_TERMINALS:-10}" \
-  TWITTER_TERMINALS="${TWITTER_TERMINALS:-16}" \
+  TWITTER_TERMINALS="${TWITTER_TERMINALS:-8}" \
   BASELINE_REPEATS="${BASELINE_REPEATS:-3}" \
   SOURCE_PROFILE_REPEATS="${SOURCE_PROFILE_REPEATS:-1}" \
   MAX_OBSERVATION_ROUNDS="${MAX_OBSERVATION_ROUNDS:-2}" \

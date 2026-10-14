@@ -3,6 +3,8 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+# shellcheck disable=SC1091
+source "$ROOT_DIR/scripts/snapshot_profile.sh"
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   cat <<'EOF'
@@ -35,7 +37,7 @@ for workload in tpcc twitter; do
   [[ -s "artifacts/snapshots/${workload}.dump" ]] || { echo "Missing snapshot for ${workload}." >&2; exit 1; }
 done
 profile_file="artifacts/snapshots/workload_profile.sha256"
-[[ -s "$profile_file" ]] && sha256sum --check --status "$profile_file" || {
+snapshot_profile_matches "$profile_file" || {
   echo "Snapshots do not match the current workload scale/configuration; rebuild them with scripts/bootstrap_test_environment.sh --force-reload." >&2
   exit 1
 }
@@ -55,7 +57,7 @@ exec "$PYTHON_BIN" -m app.experiment.cli "${STAGE:-all}" \
   --duration "${DURATION:-120}" \
   --warmup-seconds "${WARMUP_SECONDS:-30}" \
   --tpcc-terminals "${TERMINALS:-${TPCC_TERMINALS:-10}}" \
-  --twitter-terminals "${TERMINALS:-${TWITTER_TERMINALS:-16}}" \
+  --twitter-terminals "${TERMINALS:-${TWITTER_TERMINALS:-8}}" \
   --baseline-repeats "${BASELINE_REPEATS:-3}" \
   --source-profile-repeats "${SOURCE_PROFILE_REPEATS:-1}" \
   --max-observation-rounds "${MAX_OBSERVATION_ROUNDS:-2}" \

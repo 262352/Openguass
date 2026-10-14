@@ -28,7 +28,7 @@ BO_INITIAL_POINTS=10 BO_RETEST_REPEATS=3 \
 DIRECTIONS="tpcc:twitter,twitter:tpcc" \
 REPETITIONS=1 \
 DIAGNOSIS_ROUNDS=12 DIAGNOSIS_MEASUREMENTS=60 \
-DURATION=120 WARMUP_SECONDS=30 TPCC_TERMINALS=10 TWITTER_TERMINALS=16 \
+DURATION=120 WARMUP_SECONDS=30 TPCC_TERMINALS=10 TWITTER_TERMINALS=8 \
 BASELINE_REPEATS=3 SOURCE_PROFILE_REPEATS=1 \
 MAX_OBSERVATION_ROUNDS=2 BENCHMARK_SEED=20261012 \
 bash scripts/run_bo_reference_then_switch.sh
@@ -52,7 +52,7 @@ nohup env \
   DURATION=120 \
   WARMUP_SECONDS=30 \
   TPCC_TERMINALS=10 \
-  TWITTER_TERMINALS=16 \
+  TWITTER_TERMINALS=8 \
   bash scripts/run_bo_reference_then_switch.sh \
   > "artifacts/${SUITE_ID}.nohup.log" 2>&1 &
 
@@ -61,7 +61,7 @@ echo "SUITE_ID=$SUITE_ID"
 ```
 
 正式 profile 为：TPC-C `scale factor=20`、`terminals=10`；Twitter
-`scale factor=100`、`terminals=16`。两者均使用
+`scale factor=100`、`terminals=8`。两者均使用
 `TRANSACTION_SERIALIZABLE`、`rate=unlimited`、120 秒正式测量。30 秒预热由执行器作为
 独立阶段运行，随后等待 PostgreSQL 后台活动收敛，再开始计入结果的正式测量。
 

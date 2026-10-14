@@ -33,7 +33,7 @@ def main() -> int:
     args = parser.parse_args()
     if args.source == args.target:
         parser.error("source and target must differ")
-    workload_terminals = {"tpcc": 10, "twitter": 16, "ycsb": 2}
+    workload_terminals = {"tpcc": 10, "twitter": 8, "ycsb": 2}
     terminals = args.terminals or workload_terminals[args.target]
     source_profile_terminals = args.source_profile_terminals or workload_terminals[args.source]
     experiment_id = args.experiment_id or "multi-agent-" + time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())

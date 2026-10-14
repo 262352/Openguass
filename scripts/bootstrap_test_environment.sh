@@ -2,6 +2,8 @@
 set -Eeuo pipefail
 
 project_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# shellcheck disable=SC1091
+source "$project_dir/scripts/snapshot_profile.sh"
 venv_dir="${VENV_DIR:-${project_dir}/.venv}"
 duration="${SMOKE_DURATION:-5}"
 terminals="${SMOKE_TERMINALS:-1}"
@@ -540,7 +542,7 @@ if ((check_only)); then
     pg_restore --list "$snapshot" >/dev/null
   done
   profile_file="artifacts/snapshots/workload_profile.sha256"
-  [[ -s $profile_file ]] && sha256sum --check --status "$profile_file" || {
+  snapshot_profile_matches "$profile_file" || {
     echo "Snapshots do not match the current workload XML files; use --force-reload." >&2; exit 1;
   }
 else
@@ -551,7 +553,7 @@ else
     [[ -s "artifacts/snapshots/${workload}.dump" ]] || snapshots_ready=0
   done
   profile_file="artifacts/snapshots/workload_profile.sha256"
-  if [[ ! -s $profile_file ]] || ! sha256sum --check --status "$profile_file"; then
+  if ! snapshot_profile_matches "$profile_file"; then
     snapshots_ready=0
   fi
 
