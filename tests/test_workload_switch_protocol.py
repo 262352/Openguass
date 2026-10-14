@@ -63,9 +63,30 @@ def test_bo_references_are_workload_specific(tmp_path, monkeypatch):
 
 def test_serializable_lock_ranges_exclude_default_scale100_exhaustion_region():
     dimensions = {item.name: item for item in FullKnobSpace().dimensions}
-    assert dimensions["max_locks_per_transaction"].low == 128
-    assert dimensions["max_pred_locks_per_transaction"].low == 256
-    assert dimensions["max_pred_locks_per_transaction"].high == 2048
+    assert dimensions["max_locks_per_transaction"].low == 256
+    assert dimensions["max_pred_locks_per_transaction"].low == 4096
+    assert dimensions["max_pred_locks_per_transaction"].high == 16384
+
+
+def test_baseline_retries_shared_lock_exhaustion_with_larger_tables(tmp_path):
+    runner = BayesianBaseline.__new__(BayesianBaseline)
+    runner.dir = tmp_path
+    calls = []
+
+    def measure(config, _space, _label):
+        calls.append(config["max_pred_locks_per_transaction"])
+        if len(calls) == 1:
+            raise RuntimeError("states=['53200']; diagnostic=out of shared memory")
+        return ({"throughput_rps": 100.0}, {"restart": True})
+
+    runner.measure = measure
+    space = FullKnobSpace()
+    start = space.current_config()
+    measurement, _applied, effective = runner.measure_baseline(start, space)
+    assert calls == [4096, 8192]
+    assert effective["max_pred_locks_per_transaction"] == 8192
+    assert len(measurement["baseline_safety_retries"]) == 1
+    assert (tmp_path / "baseline_resource_retries.jsonl").is_file()
 
 
 def test_reference_retest_rejects_failed_winner_and_falls_back_to_baseline(tmp_path):

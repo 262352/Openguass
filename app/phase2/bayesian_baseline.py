@@ -137,6 +137,39 @@ class BayesianBaseline:
                  "client_status": raw.get("status", "unknown"),
                  "artifact": str(Path(raw["summary_file"]).parent), "label": label}, applied)
 
+    def measure_baseline(self, start_config: dict[str, Any], space: FullKnobSpace) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+        """Establish a baseline, expanding SERIALIZABLE lock tables after SQLSTATE 53200."""
+        start_config = space.reconcile({name: space.clamp(name, start_config[name]) for name in space.names})
+        candidates = [start_config]
+        for pred_locks, regular_locks in ((8192, 512), (16384, 1024)):
+            candidate = dict(start_config)
+            candidate["max_pred_locks_per_transaction"] = space.clamp(
+                "max_pred_locks_per_transaction", pred_locks)
+            candidate["max_locks_per_transaction"] = space.clamp(
+                "max_locks_per_transaction", regular_locks)
+            candidate = space.reconcile(candidate)
+            if candidate not in candidates:
+                candidates.append(candidate)
+        failures = []
+        for attempt, candidate in enumerate(candidates, 1):
+            try:
+                measurement, applied = self.measure(candidate, space, f"baseline_attempt_{attempt}")
+                measurement["baseline_safety_retries"] = failures
+                return measurement, applied, candidate
+            except RuntimeError as error:
+                message = str(error)
+                if "states=['53200']" not in message or "out of shared memory" not in message:
+                    raise
+                failure = {"attempt": attempt,
+                           "max_pred_locks_per_transaction": candidate["max_pred_locks_per_transaction"],
+                           "max_locks_per_transaction": candidate["max_locks_per_transaction"],
+                           "error": message, "at": now()}
+                failures.append(failure)
+                append_jsonl(self.dir / "baseline_resource_retries.jsonl", failure)
+        raise RuntimeError(
+            "Twitter baseline exhausted shared lock memory even at the maximum safe lock-table settings; "
+            f"inspect {self.dir / 'baseline_resource_retries.jsonl'}")
+
     def benchmark_profile(self) -> dict[str, Any]:
         fingerprint = self.adapter.fingerprint()
         path = Path(__file__).resolve().parents[2] / fingerprint["config"]
@@ -234,7 +267,7 @@ class BayesianBaseline:
             if baseline_path.exists():
                 baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
             else:
-                measurement, applied = self.measure(start_config, space, "baseline")
+                measurement, applied, start_config = self.measure_baseline(start_config, space)
                 baseline = {**measurement, "apply": applied, "config": start_config}
                 atomic_json(baseline_path, baseline)
             trials = load_trials(self.trials_path)

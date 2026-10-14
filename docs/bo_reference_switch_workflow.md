@@ -142,7 +142,7 @@ BO budget 是搜索 trial 数；另有一次起点基线和 `BO_RETEST_REPEATS` 
 
 “BO 最优”只表示当前搜索空间、预算和环境内的最佳已测配置，不表示全局最优。
 
-无法启动、超时或违反 SQL 错误策略的候选配置作为零吞吐不可行样本反馈给 GP，帮助代理模型避开失败区域，但不会参与最佳 TPS 选择。最终候选必须通过全部复测；复测失败时会记录到 `reference_candidate_rejections.jsonl`，并按搜索 TPS 从高到低尝试下一候选，直至基线。针对串行化的 scale-100 Twitter，`max_pred_locks_per_transaction` 搜索范围为 256–2048，避免 PostgreSQL 默认 64 对应的谓词锁共享表过小。
+无法启动、超时或违反 SQL 错误策略的候选配置作为零吞吐不可行样本反馈给 GP，帮助代理模型避开失败区域，但不会参与最佳 TPS 选择。最终候选必须通过全部复测；复测失败时会记录到 `reference_candidate_rejections.jsonl`，并按搜索 TPS 从高到低尝试下一候选，直至基线。针对串行化的 scale-100 Twitter，`max_pred_locks_per_transaction` 搜索范围为 4096–16384。若基线仍返回 SQLSTATE 53200 `out of shared memory`，执行器会依次扩大谓词锁和普通锁共享表并重试，过程记录在 `baseline_resource_retries.jsonl`。
 
 BO 的 TPS 定义为 BenchBase Goodput，即每秒成功完成的事务数。`40P01` 死锁和 `40001`
 序列化冲突在比例不超过 `BENCHBASE_MAX_TRANSIENT_ERROR_RATIO`（默认 0.001，即 0.1%）时
