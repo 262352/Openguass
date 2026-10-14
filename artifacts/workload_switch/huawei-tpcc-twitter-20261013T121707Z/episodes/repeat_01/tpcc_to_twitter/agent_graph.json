@@ -1,0 +1,131 @@
+{
+  "schema_version": "andromeda.agent-graph/v1",
+  "episode_id": "huawei-tpcc-twitter-20261013T121707Z-r01-tpcc-to-twitter",
+  "topology": "blackboard",
+  "roles": [
+    "query_execution",
+    "memory_storage",
+    "concurrency_maintenance"
+  ],
+  "coordinator": "coordinator",
+  "limits": {
+    "expert_calls_per_round": 3,
+    "messages_per_round": 6
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "calls": [
+        {
+          "agent": "query_execution",
+          "kind": "graph_patch",
+          "patch_id": "round-001-query_execution"
+        },
+        {
+          "agent": "memory_storage",
+          "kind": "graph_patch",
+          "patch_id": "round-001-memory_storage"
+        },
+        {
+          "agent": "concurrency_maintenance",
+          "kind": "graph_patch",
+          "patch_id": "round-001-concurrency_maintenance"
+        }
+      ],
+      "messages": [
+        {
+          "from": "query_execution",
+          "to": "coordinator",
+          "patch_id": "round-001-query_execution"
+        },
+        {
+          "from": "memory_storage",
+          "to": "coordinator",
+          "patch_id": "round-001-memory_storage"
+        },
+        {
+          "from": "concurrency_maintenance",
+          "to": "coordinator",
+          "patch_id": "round-001-concurrency_maintenance"
+        }
+      ],
+      "recorded_at": "2026-10-14T09:24:25.149329+00:00"
+    },
+    {
+      "round": 2,
+      "calls": [
+        {
+          "agent": "query_execution",
+          "kind": "graph_patch",
+          "patch_id": "round-002-query_execution"
+        },
+        {
+          "agent": "memory_storage",
+          "kind": "graph_patch",
+          "patch_id": "round-002-memory_storage"
+        },
+        {
+          "agent": "concurrency_maintenance",
+          "kind": "graph_patch",
+          "patch_id": "round-002-concurrency_maintenance"
+        }
+      ],
+      "messages": [
+        {
+          "from": "query_execution",
+          "to": "coordinator",
+          "patch_id": "round-002-query_execution"
+        },
+        {
+          "from": "memory_storage",
+          "to": "coordinator",
+          "patch_id": "round-002-memory_storage"
+        },
+        {
+          "from": "concurrency_maintenance",
+          "to": "coordinator",
+          "patch_id": "round-002-concurrency_maintenance"
+        }
+      ],
+      "recorded_at": "2026-10-14T09:31:01.531899+00:00"
+    },
+    {
+      "round": 3,
+      "calls": [
+        {
+          "agent": "query_execution",
+          "kind": "graph_patch",
+          "patch_id": "round-003-query_execution"
+        },
+        {
+          "agent": "memory_storage",
+          "kind": "graph_patch",
+          "patch_id": "round-003-memory_storage"
+        },
+        {
+          "agent": "concurrency_maintenance",
+          "kind": "graph_patch",
+          "patch_id": "round-003-concurrency_maintenance"
+        }
+      ],
+      "messages": [
+        {
+          "from": "query_execution",
+          "to": "coordinator",
+          "patch_id": "round-003-query_execution"
+        },
+        {
+          "from": "memory_storage",
+          "to": "coordinator",
+          "patch_id": "round-003-memory_storage"
+        },
+        {
+          "from": "concurrency_maintenance",
+          "to": "coordinator",
+          "patch_id": "round-003-concurrency_maintenance"
+        }
+      ],
+      "recorded_at": "2026-10-14T09:38:22.288261+00:00"
+    }
+  ]
+}

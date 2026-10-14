@@ -1,0 +1,345 @@
+{
+  "schema_version": "andromeda.expert-proposal/v1",
+  "proposal_id": "r003_concurrency_maintenance",
+  "expert": "concurrency_maintenance",
+  "incumbent_config_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+  "workload_fingerprint_hash": "d0369ebe1c5bab05840febaf47e48b4a11b7b8d6729135267c6262b709ff9111",
+  "title": "No concurrency/maintenance lever exists on the verified incumbent: lock, connection, deadlock, conflict and autovacuum pressure are all measured at zero; the terminal budget is owned by a read-only class (observation-only)",
+  "anomaly": {
+    "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+    "source": "client BenchBase per-transaction latency (twitter.xml)",
+    "measurement_type": "per_transaction",
+    "unit": "fraction of 8-terminal closed-loop budget",
+    "aggregation": "total_latency_seconds / (terminals * elapsed_seconds)",
+    "sampling_window_seconds": 162.42458757711574,
+    "observed_value": 0.8813476427083333
+  },
+  "configuration_cause": "No configuration cause is supported inside the concurrency_maintenance domain. The incumbent's concurrency and maintenance knobs (max_connections=137 vs observed numbackends max 9; max_locks_per_transaction=256 and max_pred_locks_per_transaction=4096 with locks_waiting 0/0/0 and lock_waiting_backends max 0; deadlocks 0/s and conflicts 0/s; autovacuum_max_workers=5, autovacuum_naptime=21s, autovacuum_vacuum_cost_delay=7.57ms, autovacuum_vacuum_cost_limit=1064 against n_dead_tup 0/s and autovacuum_count 0.031/s) govern pressure that is measured absent. The 0.881 terminal share is a property of GetUserTweets call frequency (~3.19M of ~3.6M transactions) on a cache-resident index probe, not of any lock, connection, commit-queue or maintenance setting.",
+  "mechanism": "Closed loop identity: TPS = 8 terminals / weighted-mean client latency. The waiting_backends gauge (median 2, p95 7, max 7) resolves almost entirely into client_waiting_backends (max 6) and idle_in_transaction (median 0, p95 3, max 4) on ~9 backends, i.e. BenchBase terminals waiting for their own next request, not backends queued on a server lock, WAL or buffer resource. lock_waiting_backends max is 0, locks_waiting is 0/0/0, deadlocks and conflicts are 0/s, and the only WAL wait sample (wal_waiting_backends max 1 of 9 over 149 samples, median 0, p95 0) coincides with write_average_ms 0.138 and host_io some/full stall fraction 0.0, so there is no queue anywhere in the concurrency or maintenance subsystem for a knob to drain. With no queue, every allowed autovacuum/connection/lock knob is inert on the dominant read-only path and can only add variance.",
+  "intermediate_metrics": [
+    {
+      "metric_id": "server.pg_stat_activity.lock_waiting_backends.max",
+      "source": "pg_stat_activity gauge sampler",
+      "measurement_type": "state",
+      "unit": "backends",
+      "aggregation": "max over 149 samples",
+      "sampling_window_seconds": 162.42458757711574,
+      "observed_value": 0
+    },
+    {
+      "metric_id": "server.telemetry.deadlocks",
+      "source": "pg_stat_database delta",
+      "measurement_type": "rate_per_second",
+      "unit": "deadlocks/s",
+      "aggregation": "mean rate",
+      "sampling_window_seconds": 162.42458757711574,
+      "observed_value": 0.0
+    },
+    {
+      "metric_id": "server.telemetry.conflicts",
+      "source": "pg_stat_database delta",
+      "measurement_type": "rate_per_second",
+      "unit": "conflicts/s",
+      "aggregation": "mean rate",
+      "sampling_window_seconds": 162.42458757711574,
+      "observed_value": 0.0
+    },
+    {
+      "metric_id": "server.pg_stat_activity.numbackends.max",
+      "source": "pg_stat_activity gauge sampler",
+      "measurement_type": "state",
+      "unit": "backends",
+      "aggregation": "max over 149 samples (max_connections=137)",
+      "sampling_window_seconds": 162.42458757711574,
+      "observed_value": 9
+    },
+    {
+      "metric_id": "server.telemetry.autovacuum_count",
+      "source": "pg_stat_user_tables delta",
+      "measurement_type": "rate_per_second",
+      "unit": "autovacuum runs/s",
+      "aggregation": "mean rate",
+      "sampling_window_seconds": 162.42458757711574,
+      "observed_value": 0.030783458039503442
+    },
+    {
+      "metric_id": "server.pg_stat_activity.wal_waiting_backends.max",
+      "source": "pg_stat_activity gauge sampler",
+      "measurement_type": "state",
+      "unit": "backends",
+      "aggregation": "max over 149 samples (median 0, p95 0)",
+      "sampling_window_seconds": 162.42458757711574,
+      "observed_value": 1
+    }
+  ],
+  "query_effect": "GetUserTweets is a read-only cached index probe (p50 166us, p95 637us, p99 2626us; buffer_hit_ratio 0.99992; blk_read_per_txn 0.00074; temp_bytes_per_txn 0; plan = Index Scan, est_rows 1.0, est_cost 8.45). It holds no heavyweight lock beyond AccessShare, takes no XID, writes no WAL, and never enters the commit queue, so no concurrency or maintenance knob in the allowed set changes its per-call cost.",
+  "expected_tps_effect": "Unchanged: the incumbent is re-measured bit-identically, so goodput stays inside its own replicate band (verified 29,762.6-31,906.7 rps, median 30,213.6; observation run 29,589.3 rps).",
+  "expected_latency_effect": "Unchanged: GetUserTweets p50/p95/p99 and all per-class terminal shares stay within their observed replicate spread because no knob atom is altered.",
+  "knob_changes": [],
+  "predictions": [
+    {
+      "prediction_id": "r003_cm_p1",
+      "edge_id": "r003_concurrency_maintenance_e_noop_obj",
+      "metric_id": "client.goodput_rps",
+      "expected_direction": "unchanged",
+      "minimum_change": 8.0,
+      "comparison_method": "relative_percent",
+      "rationale": "knob_changes=[] leaves the configuration bit-identical, so the closed-loop identity TPS = 8 / weighted-mean latency is untouched; the four observed runs of this exact config span 28,257.5-31,906.7 rps (12.7% span), so an 8% tolerance is the tightest defensible no-op bound."
+    },
+    {
+      "prediction_id": "r003_cm_p2",
+      "edge_id": "r003_concurrency_maintenance_e_mech_obj",
+      "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+      "expected_direction": "unchanged",
+      "minimum_change": 3.0,
+      "comparison_method": "percentage_points",
+      "rationale": "0.8813 = 846.1s of the 960s terminal budget; the three verified baselines gave 0.8798/0.8817/0.8787 (span 0.3pp). Neither the call count (~3.19M) nor the mean latency (265.5us) is moved by any allowed concurrency/maintenance knob, so the fraction stays within 3pp."
+    },
+    {
+      "prediction_id": "r003_cm_p3",
+      "edge_id": "r003_concurrency_maintenance_e_lock_mech",
+      "metric_id": "server.pg_stat_activity.lock_waiting_backends.max",
+      "expected_direction": "unchanged",
+      "minimum_change": 1.0,
+      "comparison_method": "absolute_delta",
+      "rationale": "locks_waiting is 0/0/0, lock_waiting_backends max is 0 and GetUserTweets holds only AccessShare on a static snapshot; with no knob change there is no lock conflict to create or relieve, so the max must not rise by 1 backend."
+    },
+    {
+      "prediction_id": "r003_cm_p4",
+      "edge_id": "r003_concurrency_maintenance_e_conn_maint_mech",
+      "metric_id": "server.telemetry.autovacuum_count",
+      "expected_direction": "unchanged",
+      "minimum_change": 25.0,
+      "comparison_method": "relative_percent",
+      "rationale": "The workload is insert-only on a restored snapshot: n_dead_tup is 0/s and autovacuum_count is 0.031/s against autovacuum_vacuum_scale_factor 0.128; holding the maintenance knobs leaves that background rate within 25% of 0.031/s over a 120s window."
+    },
+    {
+      "prediction_id": "r003_cm_p5",
+      "edge_id": "r003_concurrency_maintenance_e_wal_mech",
+      "metric_id": "server.pg_stat_activity.wal_waiting_backends.max",
+      "expected_direction": "unchanged",
+      "minimum_change": 1.0,
+      "comparison_method": "absolute_delta",
+      "rationale": "The wal_wait alert rests on one instantaneous sample: median 0.0, p95 0.0, max 1 of ~9 backends across 149 samples, against wal_write 220/s and write_average_ms 0.138 with host_io some/full stall fraction 0.0. No commit/WAL/concurrency knob can remove a waiter already at the noise floor, so the max should not rise by 1 backend."
+    },
+    {
+      "prediction_id": "r003_cm_p6",
+      "edge_id": "r003_concurrency_maintenance_e_waitdec_mech",
+      "metric_id": "server.pg_stat_activity.client_waiting_backends.max",
+      "expected_direction": "unchanged",
+      "minimum_change": 1.0,
+      "comparison_method": "absolute_delta",
+      "rationale": "client_waiting_backends max 6 alongside idle_in_transaction max 4 and waiting_backends max 7 shows the wait gauge is BenchBase terminal idle, not a server resource wait; no concurrency/maintenance knob governs client think time, so the max stays within 1 backend of 6."
+    }
+  ],
+  "alternatives": [
+    {
+      "alternative_id": "r003_cm_alt_heavyweight_lock",
+      "statement": "The GetUserTweets tail is caused by heavyweight row/relation lock waits on the writer path (InsertTweet) blocking the dominant read class, so a lock-sizing knob should relieve it.",
+      "discriminating_metric_id": "server.pg_stat_activity.lock_waiting_backends.max",
+      "expected_direction": "increase"
+    },
+    {
+      "alternative_id": "r003_cm_alt_wal_fsync",
+      "statement": "A genuine WAL flush stall (the wal_wait alert) serializes the commit path and spills into the reader tail, so wal_writer/commit knobs should relieve it.",
+      "discriminating_metric_id": "server.wal_timing.write_average_ms",
+      "expected_direction": "increase"
+    },
+    {
+      "alternative_id": "r003_cm_alt_autovacuum_io",
+      "statement": "Autovacuum/autoanalyze on a growing heap contends for buffers and I/O with the read class, so aggressive autovacuum knobs should relieve it.",
+      "discriminating_metric_id": "server.telemetry.autovacuum_count",
+      "expected_direction": "increase"
+    },
+    {
+      "alternative_id": "r003_cm_alt_lwlock_nonscalable",
+      "statement": "The read tail is lightweight-lock contention (buffer-mapping / ProcArray / snapshot LWLock) that heavyweight lock metrics cannot see, so it would require session/connection-level concurrency changes rather than loud lock waits.",
+      "discriminating_metric_id": "server.pg_stat_activity.waiting_backends.max",
+      "expected_direction": "increase"
+    }
+  ],
+  "cross_domain_requirements": [
+    "Per-class wait_event_type/wait_event sampling for the GetUserTweets SQL (currently only aggregate waiting_backends is available, so LWLock attribution is not observable from the concurrency domain).",
+    "EXPLAIN (ANALYZE, BUFFERS) plus plan-level p99 for the exact GetUserTweets statement to separate execution cost from queueing."
+  ],
+  "why_exceeds_incumbent": "It does not need to beat the incumbent's throughput; it must avoid a regression. Every allowed concurrency/maintenance change targets pressure measured at zero (0 lock waiters, 0 deadlocks, 0 conflicts, 9 of 137 connections, 0.031 autovacuum/s, 0/s dead tuples), so any such change can only inject variance into a workload whose constraint is the frequency of a read-only cached index probe. Holding the incumbent preserves the verified 29,762.6-31,906.7 rps band (median 30,213.6) and the 0.881 terminal share within its observed 0.3pp spread.",
+  "cost": {
+    "restart_required": false,
+    "workload_measurements": 1,
+    "estimated_seconds": 120
+  },
+  "nodes": [
+    {
+      "node_id": "r003_concurrency_maintenance_ctx",
+      "kind": "context",
+      "label": "Verified incumbent f6d4b8d3, twitter snapshot, 8 client terminals, 120s measured window (30s warmup), seed 20261112; healthy with 0 failed / 0 timeouts",
+      "attributes": {
+        "terminals": 8,
+        "duration_s": 120,
+        "incumbent_config_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c"
+      }
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_mech",
+      "kind": "mechanism",
+      "label": "No concurrency/maintenance queue exists: the terminal budget is consumed by the read-only GetUserTweets frequency, and the wait gauge resolves into closed-loop client idle",
+      "attributes": {
+        "terminal_share": 0.8813476427083333,
+        "lock_waiting_backends_max": 0,
+        "numbackends_max": 9,
+        "max_connections": 137
+      }
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_ev_lock",
+      "kind": "evidence",
+      "label": "Zero lock pressure: locks_waiting median/p95/max 0/0/0, lock_waiting_backends max 0, deadlocks 0/s, conflicts 0/s, locks_total p95 2742 with no waiter",
+      "attributes": {
+        "locks_waiting_max": 0,
+        "deadlocks_per_s": 0.0,
+        "conflicts_per_s": 0.0
+      }
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_ev_conn_maint",
+      "kind": "evidence",
+      "label": "No connection or maintenance pressure: numbackends max 9 of max_connections 137, n_dead_tup 0/s, autovacuum_count 0.031/s, autoanalyze_count 0.018/s, checkpoints_req 0/s",
+      "attributes": {
+        "numbackends_max": 9,
+        "n_dead_tup_per_s": 0.0,
+        "autovacuum_count_per_s": 0.030783458039503442
+      }
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_ev_waitdec",
+      "kind": "evidence",
+      "label": "waiting_backends max 7 decomposes into closed-loop client idle: client_waiting_backends max 6, idle_in_transaction median 0 / p95 3 / max 4, io_waiting_backends max 0, lock_waiting_backends max 0",
+      "attributes": {
+        "waiting_backends_max": 7,
+        "client_waiting_backends_max": 6,
+        "idle_in_transaction_max": 4,
+        "io_waiting_backends_max": 0
+      }
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_ev_wal",
+      "kind": "evidence",
+      "label": "wal_wait alert is one instantaneous sample: wal_waiting_backends median 0 / p95 0 / max 1 of ~9 backends over 149 samples; wal_timing write_average_ms 0.138, sync_average_ms null (open_datasync), host_io some/full stall fraction 0.0",
+      "attributes": {
+        "wal_waiting_backends_max": 1,
+        "wal_write_average_ms": 0.1382131019256011,
+        "host_io_full_stall_fraction": 0.0
+      }
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_qe",
+      "kind": "query_effect",
+      "label": "GetUserTweets read path: cached index probe, p50 166us / p95 637us / p99 2626us, 9.62 blks_hit per txn, 0.00074 blks_read per txn, 0 temp bytes per txn",
+      "attributes": {
+        "count": 3186707,
+        "mean_us": 265.5072264252722,
+        "terminal_capacity_fraction": 0.8813476427083333
+      }
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_noop",
+      "kind": "intervention",
+      "label": "Observation-only: hold the incumbent, knob_changes=[]; no concurrency/maintenance lever is supported, spend the round on per-class wait_event sampling instead of perturbing an uncontended subsystem",
+      "attributes": {
+        "knob_changes": 0
+      }
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_obj",
+      "kind": "objective",
+      "label": "client.goodput_rps under the fixed 8-terminal closed loop (verified band 29,762.6-31,906.7, median 30,213.6; current observation 29,589.3)",
+      "attributes": {
+        "verified_median_rps": 30213.63545463285,
+        "observed_rps": 29589.255574452043
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "r003_concurrency_maintenance_e_ctx_mech",
+      "source": "r003_concurrency_maintenance_ctx",
+      "target": "r003_concurrency_maintenance_mech",
+      "relation": "imposes_finite_terminal_budget",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "r003_cm_p2"
+      ]
+    },
+    {
+      "edge_id": "r003_concurrency_maintenance_e_lock_mech",
+      "source": "r003_concurrency_maintenance_ev_lock",
+      "target": "r003_concurrency_maintenance_mech",
+      "relation": "refutes_heavyweight_lock_causation",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "r003_cm_p3"
+      ]
+    },
+    {
+      "edge_id": "r003_concurrency_maintenance_e_conn_maint_mech",
+      "source": "r003_concurrency_maintenance_ev_conn_maint",
+      "target": "r003_concurrency_maintenance_mech",
+      "relation": "refutes_connection_and_maintenance_causation",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "r003_cm_p4"
+      ]
+    },
+    {
+      "edge_id": "r003_concurrency_maintenance_e_waitdec_mech",
+      "source": "r003_concurrency_maintenance_ev_waitdec",
+      "target": "r003_concurrency_maintenance_mech",
+      "relation": "explains_wait_gauge_as_client_idle",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "r003_cm_p6"
+      ]
+    },
+    {
+      "edge_id": "r003_concurrency_maintenance_e_wal_mech",
+      "source": "r003_concurrency_maintenance_ev_wal",
+      "target": "r003_concurrency_maintenance_mech",
+      "relation": "refutes_wal_wait_causation_for_the_alert",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "r003_cm_p5"
+      ]
+    },
+    {
+      "edge_id": "r003_concurrency_maintenance_e_qe_mech",
+      "source": "r003_concurrency_maintenance_qe",
+      "target": "r003_concurrency_maintenance_mech",
+      "relation": "dominates_terminal_time_without_concurrency_cost",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "r003_cm_p2"
+      ]
+    },
+    {
+      "edge_id": "r003_concurrency_maintenance_e_mech_obj",
+      "source": "r003_concurrency_maintenance_mech",
+      "target": "r003_concurrency_maintenance_obj",
+      "relation": "no_concurrency_lever_on_the_critical_class",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "r003_cm_p2"
+      ]
+    },
+    {
+      "edge_id": "r003_concurrency_maintenance_e_noop_obj",
+      "source": "r003_concurrency_maintenance_noop",
+      "target": "r003_concurrency_maintenance_obj",
+      "relation": "preserves_incumbent_within_replicate_band",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "r003_cm_p1"
+      ]
+    }
+  ],
+  "created_at": "2026-10-14T09:35:00Z"
+}

@@ -1,0 +1,29 @@
+nohup: ignoring input
+[snapshot] restoring tpcc (transactional): /root/Openguass/artifacts/snapshots/tpcc.dump
+[snapshot] restored tpcc in 101.6s
+[snapshot] restoring twitter (transactional): /root/Openguass/artifacts/snapshots/twitter.dump
+[snapshot] restored twitter in 11.7s
+[snapshot] restoring twitter (transactional): /root/Openguass/artifacts/snapshots/twitter.dump
+[snapshot] restored twitter in 11.7s
+[snapshot] restoring twitter (transactional): /root/Openguass/artifacts/snapshots/twitter.dump
+[snapshot] restored twitter in 11.7s
+[snapshot] restoring twitter (transactional): /root/Openguass/artifacts/snapshots/twitter.dump
+[snapshot] restored twitter in 11.6s
+[snapshot] restoring twitter (transactional): /root/Openguass/artifacts/snapshots/twitter.dump
+[snapshot] restored twitter in 11.5s
+{
+  "diagnosis": {
+    "schema_version": "andromeda.workload-switch-diagnosis-summary/v1",
+    "suite_id": "huawei-tpcc-twitter-20261013T121707Z",
+    "episodes": [
+      {
+        "episode_id": "huawei-tpcc-twitter-20261013T121707Z-r01-tpcc-to-twitter",
+        "direction": "tpcc_to_twitter",
+        "report": "/root/Openguass/artifacts/workload_switch/huawei-tpcc-twitter-20261013T121707Z/episodes/repeat_01/tpcc_to_twitter/report.json",
+        "oracle_evaluation": "/root/Openguass/artifacts/workload_switch/huawei-tpcc-twitter-20261013T121707Z/oracle/evaluations/repeat_01_tpcc_to_twitter.json",
+        "stop_reason": "no_executable_or_discriminating_followup"
+      }
+    ],
+    "completed_at": "2026-10-14T09:38:24.735746+00:00"
+  }
+}

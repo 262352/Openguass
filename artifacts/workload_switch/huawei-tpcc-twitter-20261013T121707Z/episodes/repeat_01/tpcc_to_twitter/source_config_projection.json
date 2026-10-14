@@ -1,0 +1,14 @@
+{
+  "source_config": "/root/Openguass/artifacts/workload_switch/huawei-tpcc-twitter-20261013T121707Z/oracle/bo_references/tpcc/reference.json",
+  "projected_to_current_safe_space": true,
+  "changes": {
+    "max_locks_per_transaction": {
+      "requested": 160,
+      "effective": 256
+    },
+    "max_pred_locks_per_transaction": {
+      "requested": 105,
+      "effective": 4096
+    }
+  }
+}

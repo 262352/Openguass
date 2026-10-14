@@ -1,0 +1,725 @@
+{
+  "schema_version": "andromeda.incremental-causal-graph/v1",
+  "graph_kind": "pending",
+  "version": 1,
+  "generated_at": "2026-10-14T09:24:25.152718+00:00",
+  "nodes": [
+    {
+      "node_id": "r001_query_execution_node_context_twitter",
+      "kind": "context",
+      "label": "Closed-loop twitter workload: 8 client terminals, 120s measured window (30s warmup), seed 20261112",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "attributes": {
+        "terminals": 8,
+        "duration_s": 120,
+        "workload_fingerprint_hash": "d0369ebe1c5bab05840febaf47e48b4a11b7b8d6729135267c6262b709ff9111"
+      }
+    },
+    {
+      "node_id": "r001_query_execution_node_evidence_terminal_share",
+      "kind": "evidence",
+      "label": "GetUserTweets holds 843.5s of the 960s terminal budget (0.8787); 90% of ~3.83M client transactions",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "attributes": {
+        "count": 3449949,
+        "mean_us": 244.49754329701685,
+        "terminal_capacity_fraction": 0.8786500572916667
+      }
+    },
+    {
+      "node_id": "r001_query_execution_node_evidence_cache_resident",
+      "kind": "evidence",
+      "label": "Read path is cache-resident and index-only in access method: buffer_hit_ratio 0.9999213, blks_read 23.31/s, idx_scan 23774.29/s, seq_scan 0.0/s",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "attributes": {
+        "blks_hit_per_txn": 9.281504139470467,
+        "blks_read_per_txn": 0.000730493146653568
+      }
+    },
+    {
+      "node_id": "r001_query_execution_node_evidence_wal_fast",
+      "kind": "evidence",
+      "label": "WAL path is cheap and writer-exclusive to InsertTweet: write avg 0.1345ms, wal_write 229.0/s == InsertTweet 228.4/s, wal_bytes_per_txn 4.77B, host_io stalls 0.0, wal_waiting_backends median 0 / p95 0 / max 1",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "attributes": {
+        "wal_sync": 0.0,
+        "wal_sync_method": "open_datasync"
+      }
+    },
+    {
+      "node_id": "r001_query_execution_node_mech_closed_loop_budget",
+      "kind": "mechanism",
+      "label": "TPS = terminals / weighted-mean client latency; one transaction class owns the finite terminal budget",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "attributes": {
+        "identity_check_rps": 32128.5,
+        "observed_rps": 31906.716224756772
+      }
+    },
+    {
+      "node_id": "r001_query_execution_node_mech_readonly_no_fsync",
+      "kind": "mechanism",
+      "label": "GetUserTweets is read-only and never enqueues on the WAL commit path, so the wal_wait alert cannot explain the read tail",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "attributes": {
+        "wal_write_per_txn": 0.007177662665641375
+      }
+    },
+    {
+      "node_id": "r001_query_execution_node_noop_observation",
+      "kind": "intervention",
+      "label": "No-op: hold incumbent; measurement-only follow-up (EXPLAIN ANALYZE BUFFERS + wait-event timing for the exact GetUserTweets SQL)",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "attributes": {
+        "knob_changes": 0
+      }
+    },
+    {
+      "node_id": "r001_query_execution_node_objective_tps",
+      "kind": "objective",
+      "label": "goodput_rps (incumbent 29762.6-31906.7, median 30213.6) with p95 646us, p99 2349us, 0 failed / 0 timeouts",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "attributes": {
+        "replicate_spread_percent": 3.5
+      }
+    },
+    {
+      "node_id": "r001_memory_storage_obj:throughput",
+      "kind": "objective",
+      "label": "client goodput_rps under a fixed 8-terminal closed loop",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_memory_storage_mech:wal-flush-demand",
+      "kind": "mechanism",
+      "label": "WAL write/flush demand versus device service time (4.77 B and 0.0072 writes per transaction; 0.134 ms per write)",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_memory_storage_mech:commit-durability-path",
+      "kind": "mechanism",
+      "label": "commit durability path: commit_delay=671 us vs commit_siblings=12 (inert at ~9 backends), open_datasync, wal_writer_delay=215 ms",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "attributes": {
+        "commit_delay_us": 671,
+        "commit_siblings": 12,
+        "wal_sync_method": "open_datasync"
+      }
+    },
+    {
+      "node_id": "r001_memory_storage_mech:client-terminal-saturation",
+      "kind": "mechanism",
+      "label": "terminal saturation: GetUserTweets 0.8787 of capacity, all classes sum to ~0.996 of 8 terminals",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_memory_storage_query:getusertweets",
+      "kind": "query_effect",
+      "label": "GetUserTweets read path: 9.28 buffer hits/txn, 6.65e-6 ms blk_read_time/txn, p50 157 us, p99 2280 us",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_memory_storage_ev:wal-wait-max1",
+      "kind": "evidence",
+      "label": "wal_waiting_backends median 0.0 / p95 0.0 / max 1 out of ~9 backends (154 samples)",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_memory_storage_ev:io-stall-zero",
+      "kind": "evidence",
+      "label": "PSI io some/full stall fraction 0.0; wal write 0.134 ms average; wal_sync_time_per_txn 0.0; sync_average_ms null",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_memory_storage_ev:checkpoint-bgwriter-idle",
+      "kind": "evidence",
+      "label": "checkpoints_req 0, checkpoint write+sync time 0, buffers_clean 0/s, dirty_bytes median 4.28 MB, temp_bytes 0",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_memory_storage_ev:insert-tail",
+      "kind": "evidence",
+      "label": "InsertTweet p99 3336 us / max 54857 us across all classes with zero storage wait signals",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_concurrency_maintenance_ctx1",
+      "kind": "context",
+      "label": "Incumbent config f6d4b8d3",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_concurrency_maintenance_mech1",
+      "kind": "mechanism",
+      "label": "GetUserTweets dominates terminal time due to high frequency, not latency",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_concurrency_maintenance_ev1",
+      "kind": "evidence",
+      "label": "terminal_capacity_fraction=0.8786, p50=157us, p99=2280us",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_concurrency_maintenance_ev2",
+      "kind": "evidence",
+      "label": "No lock waits, no conflicts, buffer hit ratio 99.99%",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_concurrency_maintenance_obj1",
+      "kind": "objective",
+      "label": "Maximize throughput without regressions",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "r001_query_execution_edge_ctx_mech",
+      "source": "r001_query_execution_node_context_twitter",
+      "target": "r001_query_execution_node_mech_closed_loop_budget",
+      "relation": "imposes_terminal_budget",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "query_execution"
+      ],
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_query_execution_pred_tps_unchanged",
+          "edge_id": "r001_query_execution_edge_noop_obj",
+          "metric_id": "client.goodput_rps",
+          "expected_direction": "unchanged",
+          "minimum_change": 5.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Closed loop identity 8 terminals / 249us mean = 32.1k rps reproduces the measured 31.9k rps; with no change we predict throughput stays within +-5% of the incumbent band 29762.6-31906.7 rps."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_query_execution_edge_terminal_share_mech",
+      "source": "r001_query_execution_node_evidence_terminal_share",
+      "target": "r001_query_execution_node_mech_closed_loop_budget",
+      "relation": "quantifies_dominant_term",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "query_execution"
+      ],
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_query_execution_pred_terminal_fraction_unchanged",
+          "edge_id": "r001_query_execution_edge_terminal_share_mech",
+          "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+          "expected_direction": "unchanged",
+          "minimum_change": 5.0,
+          "comparison_method": "relative_percent",
+          "rationale": "0.8787 = 843.5s / (8 terminals * 120s); baselines were 0.8798/0.8817/0.8787. Count and mean latency are both unchanged by a no-op, so the fraction stays ~0.88 within +-5%."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_query_execution_edge_cache_mech",
+      "source": "r001_query_execution_node_evidence_cache_resident",
+      "target": "r001_query_execution_node_mech_closed_loop_budget",
+      "relation": "supports_cpu_bound_cached_read_path",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "query_execution"
+      ],
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_query_execution_pred_usertweets_p50_unchanged",
+          "edge_id": "r001_query_execution_edge_cache_mech",
+          "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+          "expected_direction": "unchanged",
+          "minimum_change": 10.0,
+          "comparison_method": "relative_percent",
+          "rationale": "p50 157us is a shared-memory index access (buffer_hit_ratio 0.9999213, blks_read_per_txn 0.00073); no allowed knob changes the executor path for this plan. Baseline p50s were 165/169/157us (+-4%), so a 10% tolerance bound is conservative."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_query_execution_edge_walevidence_mech",
+      "source": "r001_query_execution_node_evidence_wal_fast",
+      "target": "r001_query_execution_node_mech_readonly_no_fsync",
+      "relation": "refutes_wal_causation_for_read_tail",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "query_execution"
+      ],
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_query_execution_pred_wal_write_latency_unchanged",
+          "edge_id": "r001_query_execution_edge_walevidence_mech",
+          "metric_id": "server.telemetry.wal_timing.write_average_ms",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.5,
+          "comparison_method": "absolute_delta",
+          "rationale": "Measured 0.1345ms average per WAL write with host_io some/full stall fraction 0.0; the wal_wait alert rests on a single sample (wal_waiting_backends median 0, p95 0, max 1). A genuine WAL-stall mechanism would require an order-of-magnitude higher write latency or sustained waiters, so we predict the mean stays within +-0.5ms."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_query_execution_edge_mech_obj",
+      "source": "r001_query_execution_node_mech_closed_loop_budget",
+      "target": "r001_query_execution_node_objective_tps",
+      "relation": "caps_throughput_via_tail",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "query_execution"
+      ],
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_query_execution_pred_usertweets_p99_unchanged",
+          "edge_id": "r001_query_execution_edge_mech_obj",
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "expected_direction": "unchanged",
+          "minimum_change": 15.0,
+          "comparison_method": "relative_percent",
+          "rationale": "p99 2280us (baselines 2451/2486/2280us) is executor/lock-manager micro-stall on hot cached pages; the query_execution knob set contains no lever for that path, so we predict no movement beyond the observed replicate spread."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_query_execution_edge_noop_obj",
+      "source": "r001_query_execution_node_noop_observation",
+      "target": "r001_query_execution_node_objective_tps",
+      "relation": "preserves_incumbent_within_replicate_band",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "query_execution"
+      ],
+      "proposal_ids": [
+        "r001_query_execution"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_query_execution_pred_tps_unchanged",
+          "edge_id": "r001_query_execution_edge_noop_obj",
+          "metric_id": "client.goodput_rps",
+          "expected_direction": "unchanged",
+          "minimum_change": 5.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Closed loop identity 8 terminals / 249us mean = 32.1k rps reproduces the measured 31.9k rps; with no change we predict throughput stays within +-5% of the incumbent band 29762.6-31906.7 rps."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_memory_storage_e1",
+      "source": "r001_memory_storage_ev:wal-wait-max1",
+      "target": "r001_memory_storage_mech:wal-flush-demand",
+      "relation": "weak_single_sample_support",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_memory_storage_p3",
+          "edge_id": "r001_memory_storage_e1",
+          "metric_id": "pg_stat_activity.wal_waiting_backends.max",
+          "expected_direction": "unchanged",
+          "minimum_change": 1.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "The flagged wait is a single instantaneous sample: median 0.0, p95 0.0, max 1 out of ~9 backends. Reconfiguring the WAL/commit pipeline cannot remove a wait that is not present beyond the noise floor, so the max should not move by 1 or more backends."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_memory_storage_e2",
+      "source": "r001_memory_storage_ev:io-stall-zero",
+      "target": "r001_memory_storage_mech:wal-flush-demand",
+      "relation": "refutes_slow_device_service",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_memory_storage_p2",
+          "edge_id": "r001_memory_storage_e4",
+          "metric_id": "pg_stat_wal.wal_write_time_per_txn",
+          "expected_direction": "unchanged",
+          "minimum_change": 25.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Observed 9.65e-4 ms per transaction with write_average_ms=0.134 and PSI io stall fraction 0.0; the WAL write path has no queue to relieve, so no storage-side reconfiguration should change it by more than 25%."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_memory_storage_e3",
+      "source": "r001_memory_storage_ev:checkpoint-bgwriter-idle",
+      "target": "r001_memory_storage_mech:wal-flush-demand",
+      "relation": "refutes_writeback_pressure",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_memory_storage_p2",
+          "edge_id": "r001_memory_storage_e4",
+          "metric_id": "pg_stat_wal.wal_write_time_per_txn",
+          "expected_direction": "unchanged",
+          "minimum_change": 25.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Observed 9.65e-4 ms per transaction with write_average_ms=0.134 and PSI io stall fraction 0.0; the WAL write path has no queue to relieve, so no storage-side reconfiguration should change it by more than 25%."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_memory_storage_e4",
+      "source": "r001_memory_storage_mech:wal-flush-demand",
+      "target": "r001_memory_storage_obj:throughput",
+      "relation": "no_measurable_effect",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_memory_storage_p2",
+          "edge_id": "r001_memory_storage_e4",
+          "metric_id": "pg_stat_wal.wal_write_time_per_txn",
+          "expected_direction": "unchanged",
+          "minimum_change": 25.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Observed 9.65e-4 ms per transaction with write_average_ms=0.134 and PSI io stall fraction 0.0; the WAL write path has no queue to relieve, so no storage-side reconfiguration should change it by more than 25%."
+        },
+        {
+          "prediction_id": "r001_memory_storage_p3",
+          "edge_id": "r001_memory_storage_e1",
+          "metric_id": "pg_stat_activity.wal_waiting_backends.max",
+          "expected_direction": "unchanged",
+          "minimum_change": 1.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "The flagged wait is a single instantaneous sample: median 0.0, p95 0.0, max 1 out of ~9 backends. Reconfiguring the WAL/commit pipeline cannot remove a wait that is not present beyond the noise floor, so the max should not move by 1 or more backends."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_memory_storage_e5",
+      "source": "r001_memory_storage_mech:client-terminal-saturation",
+      "target": "r001_memory_storage_obj:throughput",
+      "relation": "rate_limits",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_memory_storage_p1",
+          "edge_id": "r001_memory_storage_e5",
+          "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.03,
+          "comparison_method": "percentage_points",
+          "rationale": "The class consumes 0.8787 of terminal capacity (843.50 s of 1347.54 s) at a 157 us median while its storage cost is ~6.65e-6 ms of block read time and zero temp bytes; no storage knob in the allowed set can shift this fraction by 3 points."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_memory_storage_e6",
+      "source": "r001_memory_storage_query:getusertweets",
+      "target": "r001_memory_storage_mech:client-terminal-saturation",
+      "relation": "dominates_terminal_time",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_memory_storage_p1",
+          "edge_id": "r001_memory_storage_e5",
+          "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.03,
+          "comparison_method": "percentage_points",
+          "rationale": "The class consumes 0.8787 of terminal capacity (843.50 s of 1347.54 s) at a 157 us median while its storage cost is ~6.65e-6 ms of block read time and zero temp bytes; no storage knob in the allowed set can shift this fraction by 3 points."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_memory_storage_e7",
+      "source": "r001_memory_storage_mech:commit-durability-path",
+      "target": "r001_memory_storage_ev:insert-tail",
+      "relation": "does_not_explain_tail",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r001_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_memory_storage_p4",
+          "edge_id": "r001_memory_storage_e7",
+          "metric_id": "client.transaction_latency.InsertTweet.p99_us",
+          "expected_direction": "unchanged",
+          "minimum_change": 10.0,
+          "comparison_method": "relative_percent",
+          "rationale": "InsertTweet p99 is 3336 us on 0.0072 WAL writes and zero recorded fsync time per transaction; the commit durability path is not the tail driver, so its p99 should not move by 10% from any permitted storage change."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_concurrency_maintenance_e1",
+      "source": "r001_concurrency_maintenance_ctx1",
+      "target": "r001_concurrency_maintenance_mech1",
+      "relation": "supports",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_concurrency_maintenance_p1",
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "metric_id": "throughput_rps",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.0,
+          "comparison_method": "relative_percent",
+          "rationale": "No intervention is applied; the incumbent is already healthy and the dominant transaction is frequent but not anomalous. Throughput is expected to remain stable."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_concurrency_maintenance_e2",
+      "source": "r001_concurrency_maintenance_ev1",
+      "target": "r001_concurrency_maintenance_mech1",
+      "relation": "supports",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_concurrency_maintenance_p1",
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "metric_id": "throughput_rps",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.0,
+          "comparison_method": "relative_percent",
+          "rationale": "No intervention is applied; the incumbent is already healthy and the dominant transaction is frequent but not anomalous. Throughput is expected to remain stable."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_concurrency_maintenance_e3",
+      "source": "r001_concurrency_maintenance_ev2",
+      "target": "r001_concurrency_maintenance_mech1",
+      "relation": "supports",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_concurrency_maintenance_p1",
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "metric_id": "throughput_rps",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.0,
+          "comparison_method": "relative_percent",
+          "rationale": "No intervention is applied; the incumbent is already healthy and the dominant transaction is frequent but not anomalous. Throughput is expected to remain stable."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r001_concurrency_maintenance_e4",
+      "source": "r001_concurrency_maintenance_mech1",
+      "target": "r001_concurrency_maintenance_obj1",
+      "relation": "no_action_needed",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_concurrency_maintenance_p1",
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "metric_id": "throughput_rps",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.0,
+          "comparison_method": "relative_percent",
+          "rationale": "No intervention is applied; the incumbent is already healthy and the dominant transaction is frequent but not anomalous. Throughput is expected to remain stable."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    }
+  ]
+}

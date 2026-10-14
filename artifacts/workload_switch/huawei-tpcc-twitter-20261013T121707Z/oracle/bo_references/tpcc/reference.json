@@ -1,0 +1,1063 @@
+{
+  "schema_version": "andromeda.bo-reference/v1",
+  "workload": "tpcc",
+  "definition": "best measured configuration within the declared search space and budget",
+  "experiment_id": "huawei-tpcc-twitter-20261013T121707Z-tpcc",
+  "config": {
+    "autovacuum_analyze_scale_factor": 0.276128,
+    "autovacuum_freeze_max_age": 215074097,
+    "autovacuum_max_workers": 5,
+    "autovacuum_naptime": 21,
+    "autovacuum_vacuum_cost_delay": 7.574291,
+    "autovacuum_vacuum_cost_limit": 1064,
+    "autovacuum_vacuum_scale_factor": 0.128231,
+    "backend_flush_after": 83,
+    "bgwriter_delay": 22,
+    "bgwriter_flush_after": 143,
+    "bgwriter_lru_maxpages": 338,
+    "bgwriter_lru_multiplier": 1.614034,
+    "checkpoint_completion_target": 0.83259,
+    "checkpoint_flush_after": 177,
+    "checkpoint_timeout": 100,
+    "checkpoint_warning": 10,
+    "commit_delay": 671,
+    "commit_siblings": 12,
+    "deadlock_timeout": 508,
+    "default_statistics_target": 144,
+    "effective_cache_size": 767339,
+    "effective_io_concurrency": 235,
+    "from_collapse_limit": 3,
+    "hot_standby_feedback": "off",
+    "huge_pages": "off",
+    "jit": "on",
+    "join_collapse_limit": 8,
+    "log_checkpoints": "off",
+    "log_connections": "off",
+    "log_disconnections": "on",
+    "log_min_duration_statement": 889,
+    "log_rotation_size": 27412,
+    "log_temp_files": 2223,
+    "logging_collector": "on",
+    "maintenance_work_mem": 36877,
+    "max_connections": 137,
+    "max_locks_per_transaction": 160,
+    "max_parallel_maintenance_workers": 2,
+    "max_parallel_workers": 11,
+    "max_parallel_workers_per_gather": 1,
+    "max_pred_locks_per_transaction": 105,
+    "max_replication_slots": 8,
+    "max_standby_streaming_delay": 38913,
+    "max_wal_senders": 10,
+    "max_wal_size": 3672,
+    "max_worker_processes": 24,
+    "min_wal_size": 181,
+    "random_page_cost": 4.485927,
+    "seq_page_cost": 1.262946,
+    "shared_buffers": 53504,
+    "temp_buffers": 10139,
+    "track_activity_query_size": 8326,
+    "vacuum_cost_delay": 7.875069,
+    "vacuum_cost_limit": 1236,
+    "wal_buffers": 637,
+    "wal_compression": "off",
+    "wal_sync_method": "open_datasync",
+    "wal_writer_delay": 215,
+    "wal_writer_flush_after": 367,
+    "work_mem": 15776
+  },
+  "selection": {
+    "kind": "trial",
+    "evaluation": 43
+  },
+  "search_budget": {
+    "total": 100,
+    "lhs": 10,
+    "gp_ei": 90
+  },
+  "measurement_protocol": {
+    "duration": 120,
+    "warmup_seconds": 30,
+    "terminals": 10,
+    "seed": 20261012,
+    "repeats": 3,
+    "snapshot_restored_before_each_run": true
+  },
+  "retests": [
+    {
+      "throughput_rps": 3659.8538367742963,
+      "goodput_rps": 3659.8538367742963,
+      "benchbase_reported_throughput_rps": 3653.5893695189884,
+      "sql_error_policy": {
+        "unexpected_sql_errors": 0,
+        "retryable_sql_errors": 0,
+        "nonretryable_sql_errors": 0,
+        "sql_states": [],
+        "measured_requests": 442084,
+        "unexpected_error_ratio": 0.0,
+        "maximum_retryable_error_ratio": 0.001,
+        "accepted": true,
+        "policy": "40P01/40001 are accepted only within the fixed retryable-error ratio"
+      },
+      "p95_us": 7152.0,
+      "average_us": 2732.0,
+      "p99_us": 11725.0,
+      "transaction_latency": {
+        "Payment": {
+          "count": 189971,
+          "mean_us": 1279.4779571618826,
+          "p50_us": 967.0,
+          "p95_us": 1524.0,
+          "p99_us": 9400.0,
+          "max_us": 182702.0,
+          "total_latency_seconds": 243.063707,
+          "terminal_capacity_fraction": 0.20255308916666667
+        },
+        "NewOrder": {
+          "count": 199292,
+          "mean_us": 3732.448763623226,
+          "p50_us": 3361.0,
+          "p95_us": 5119.0,
+          "p99_us": 12864.0,
+          "max_us": 182576.0,
+          "total_latency_seconds": 743.847179,
+          "terminal_capacity_fraction": 0.6198726491666666
+        },
+        "OrderStatus": {
+          "count": 17342,
+          "mean_us": 508.67921808326605,
+          "p50_us": 457.0,
+          "p95_us": 872.0,
+          "p99_us": 1280.0,
+          "max_us": 11547.0,
+          "total_latency_seconds": 8.821515,
+          "terminal_capacity_fraction": 0.0073512625
+        },
+        "Delivery": {
+          "count": 17867,
+          "mean_us": 8958.985559970895,
+          "p50_us": 8266.0,
+          "p95_us": 10939.0,
+          "p99_us": 21137.0,
+          "max_us": 164391.0,
+          "total_latency_seconds": 160.070195,
+          "terminal_capacity_fraction": 0.13339182916666667
+        },
+        "StockLevel": {
+          "count": 17612,
+          "mean_us": 2957.753577106518,
+          "p50_us": 2945.0,
+          "p95_us": 3876.0,
+          "p99_us": 4376.0,
+          "max_us": 12643.0,
+          "total_latency_seconds": 52.091956,
+          "terminal_capacity_fraction": 0.043409963333333336
+        }
+      },
+      "pre_measurement_quiescence": {
+        "checkpoint_completed": true,
+        "settle_seconds": 5.0,
+        "elapsed_seconds": 10.113
+      },
+      "client_status": "passed",
+      "artifact": "/root/Openguass/artifacts/runs/20261013T203520765637Z-tpcc",
+      "label": "reference_retest_1",
+      "apply": {
+        "session_settings": {
+          "backend_flush_after": "83",
+          "commit_siblings": "12",
+          "default_statistics_target": "144",
+          "effective_cache_size": "767339",
+          "effective_io_concurrency": "235",
+          "from_collapse_limit": "3",
+          "jit": "on",
+          "join_collapse_limit": "8",
+          "maintenance_work_mem": "36877",
+          "max_parallel_maintenance_workers": "2",
+          "max_parallel_workers": "11",
+          "max_parallel_workers_per_gather": "1",
+          "random_page_cost": "4.485927",
+          "seq_page_cost": "1.262946",
+          "temp_buffers": "10139",
+          "vacuum_cost_delay": "7.875069",
+          "vacuum_cost_limit": "1236",
+          "work_mem": "15776"
+        },
+        "global_settings": {
+          "autovacuum_analyze_scale_factor": 0.276128,
+          "autovacuum_freeze_max_age": 215074097,
+          "autovacuum_max_workers": 5,
+          "autovacuum_naptime": 21,
+          "autovacuum_vacuum_cost_delay": 7.574291,
+          "autovacuum_vacuum_cost_limit": 1064,
+          "autovacuum_vacuum_scale_factor": 0.128231,
+          "bgwriter_delay": 22,
+          "bgwriter_flush_after": 143,
+          "bgwriter_lru_maxpages": 338,
+          "bgwriter_lru_multiplier": 1.614034,
+          "checkpoint_completion_target": 0.83259,
+          "checkpoint_flush_after": 177,
+          "checkpoint_timeout": 100,
+          "checkpoint_warning": 10,
+          "commit_delay": 671,
+          "deadlock_timeout": 508,
+          "hot_standby_feedback": "off",
+          "huge_pages": "off",
+          "log_checkpoints": "off",
+          "log_connections": "off",
+          "log_disconnections": "on",
+          "log_min_duration_statement": 889,
+          "log_rotation_size": 27412,
+          "log_temp_files": 2223,
+          "logging_collector": "on",
+          "max_connections": 137,
+          "max_locks_per_transaction": 160,
+          "max_pred_locks_per_transaction": 105,
+          "max_replication_slots": 8,
+          "max_standby_streaming_delay": 38913,
+          "max_wal_senders": 10,
+          "max_wal_size": 3672,
+          "max_worker_processes": 24,
+          "min_wal_size": 181,
+          "shared_buffers": 53504,
+          "track_activity_query_size": 8326,
+          "wal_buffers": 637,
+          "wal_compression": "off",
+          "wal_sync_method": "open_datasync",
+          "wal_writer_delay": 215,
+          "wal_writer_flush_after": 367
+        },
+        "changed_global_count": 38,
+        "reload": true,
+        "restart": true,
+        "restart_seconds": 2.416,
+        "apply_seconds": 4.497,
+        "observed": {
+          "autovacuum_analyze_scale_factor": {
+            "setting": "0.276128",
+            "pending_restart": "f"
+          },
+          "autovacuum_freeze_max_age": {
+            "setting": "215074097",
+            "pending_restart": "f"
+          },
+          "autovacuum_max_workers": {
+            "setting": "5",
+            "pending_restart": "f"
+          },
+          "autovacuum_naptime": {
+            "setting": "21",
+            "pending_restart": "f"
+          },
+          "autovacuum_vacuum_cost_delay": {
+            "setting": "7.57429",
+            "pending_restart": "f"
+          },
+          "autovacuum_vacuum_cost_limit": {
+            "setting": "1064",
+            "pending_restart": "f"
+          },
+          "autovacuum_vacuum_scale_factor": {
+            "setting": "0.128231",
+            "pending_restart": "f"
+          },
+          "bgwriter_delay": {
+            "setting": "22",
+            "pending_restart": "f"
+          },
+          "bgwriter_flush_after": {
+            "setting": "143",
+            "pending_restart": "f"
+          },
+          "bgwriter_lru_maxpages": {
+            "setting": "338",
+            "pending_restart": "f"
+          },
+          "bgwriter_lru_multiplier": {
+            "setting": "1.61403",
+            "pending_restart": "f"
+          },
+          "checkpoint_completion_target": {
+            "setting": "0.83259",
+            "pending_restart": "f"
+          },
+          "checkpoint_flush_after": {
+            "setting": "177",
+            "pending_restart": "f"
+          },
+          "checkpoint_timeout": {
+            "setting": "100",
+            "pending_restart": "f"
+          },
+          "checkpoint_warning": {
+            "setting": "10",
+            "pending_restart": "f"
+          },
+          "commit_delay": {
+            "setting": "671",
+            "pending_restart": "f"
+          },
+          "deadlock_timeout": {
+            "setting": "508",
+            "pending_restart": "f"
+          },
+          "hot_standby_feedback": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "huge_pages": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "log_checkpoints": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "log_connections": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "log_disconnections": {
+            "setting": "on",
+            "pending_restart": "f"
+          },
+          "log_min_duration_statement": {
+            "setting": "889",
+            "pending_restart": "f"
+          },
+          "log_rotation_size": {
+            "setting": "27412",
+            "pending_restart": "f"
+          },
+          "log_temp_files": {
+            "setting": "2223",
+            "pending_restart": "f"
+          },
+          "logging_collector": {
+            "setting": "on",
+            "pending_restart": "f"
+          },
+          "max_connections": {
+            "setting": "137",
+            "pending_restart": "f"
+          },
+          "max_locks_per_transaction": {
+            "setting": "160",
+            "pending_restart": "f"
+          },
+          "max_pred_locks_per_transaction": {
+            "setting": "105",
+            "pending_restart": "f"
+          },
+          "max_replication_slots": {
+            "setting": "8",
+            "pending_restart": "f"
+          },
+          "max_standby_streaming_delay": {
+            "setting": "38913",
+            "pending_restart": "f"
+          },
+          "max_wal_senders": {
+            "setting": "10",
+            "pending_restart": "f"
+          },
+          "max_wal_size": {
+            "setting": "3672",
+            "pending_restart": "f"
+          },
+          "max_worker_processes": {
+            "setting": "24",
+            "pending_restart": "f"
+          },
+          "min_wal_size": {
+            "setting": "181",
+            "pending_restart": "f"
+          },
+          "shared_buffers": {
+            "setting": "53504",
+            "pending_restart": "f"
+          },
+          "track_activity_query_size": {
+            "setting": "8326",
+            "pending_restart": "f"
+          },
+          "wal_buffers": {
+            "setting": "637",
+            "pending_restart": "f"
+          },
+          "wal_compression": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "wal_sync_method": {
+            "setting": "open_datasync",
+            "pending_restart": "f"
+          },
+          "wal_writer_delay": {
+            "setting": "215",
+            "pending_restart": "f"
+          },
+          "wal_writer_flush_after": {
+            "setting": "367",
+            "pending_restart": "f"
+          }
+        }
+      }
+    },
+    {
+      "throughput_rps": 3827.2602639096754,
+      "goodput_rps": 3827.2602639096754,
+      "benchbase_reported_throughput_rps": 3818.557775326488,
+      "sql_error_policy": {
+        "unexpected_sql_errors": 0,
+        "retryable_sql_errors": 0,
+        "nonretryable_sql_errors": 0,
+        "sql_states": [],
+        "measured_requests": 462045,
+        "unexpected_error_ratio": 0.0,
+        "maximum_retryable_error_ratio": 0.001,
+        "accepted": true,
+        "policy": "40P01/40001 are accepted only within the fixed retryable-error ratio"
+      },
+      "p95_us": 6471.0,
+      "average_us": 2613.0,
+      "p99_us": 10580.0,
+      "transaction_latency": {
+        "NewOrder": {
+          "count": 207991,
+          "mean_us": 3600.012125524662,
+          "p50_us": 3307.0,
+          "p95_us": 5259.0,
+          "p99_us": 9908.0,
+          "max_us": 174210.0,
+          "total_latency_seconds": 748.770122,
+          "terminal_capacity_fraction": 0.6239751016666667
+        },
+        "Payment": {
+          "count": 198758,
+          "mean_us": 1230.7641755300415,
+          "p50_us": 976.0,
+          "p95_us": 1467.0,
+          "p99_us": 6079.0,
+          "max_us": 173863.0,
+          "total_latency_seconds": 244.624226,
+          "terminal_capacity_fraction": 0.20385352166666668
+        },
+        "Delivery": {
+          "count": 18322,
+          "mean_us": 8481.972328348433,
+          "p50_us": 7933.0,
+          "p95_us": 10686.0,
+          "p99_us": 14597.0,
+          "max_us": 118490.0,
+          "total_latency_seconds": 155.406697,
+          "terminal_capacity_fraction": 0.12950558083333333
+        },
+        "StockLevel": {
+          "count": 18427,
+          "mean_us": 2696.7778260161717,
+          "p50_us": 2598.0,
+          "p95_us": 3658.0,
+          "p99_us": 4167.0,
+          "max_us": 12938.0,
+          "total_latency_seconds": 49.693525,
+          "terminal_capacity_fraction": 0.04141127083333333
+        },
+        "OrderStatus": {
+          "count": 18547,
+          "mean_us": 497.5854316061897,
+          "p50_us": 455.0,
+          "p95_us": 814.0,
+          "p99_us": 1179.0,
+          "max_us": 31981.0,
+          "total_latency_seconds": 9.228717,
+          "terminal_capacity_fraction": 0.0076905975
+        }
+      },
+      "pre_measurement_quiescence": {
+        "checkpoint_completed": true,
+        "settle_seconds": 5.0,
+        "elapsed_seconds": 10.277
+      },
+      "client_status": "passed",
+      "artifact": "/root/Openguass/artifacts/runs/20261013T204006973331Z-tpcc",
+      "label": "reference_retest_2",
+      "apply": {
+        "session_settings": {
+          "backend_flush_after": "83",
+          "commit_siblings": "12",
+          "default_statistics_target": "144",
+          "effective_cache_size": "767339",
+          "effective_io_concurrency": "235",
+          "from_collapse_limit": "3",
+          "jit": "on",
+          "join_collapse_limit": "8",
+          "maintenance_work_mem": "36877",
+          "max_parallel_maintenance_workers": "2",
+          "max_parallel_workers": "11",
+          "max_parallel_workers_per_gather": "1",
+          "random_page_cost": "4.485927",
+          "seq_page_cost": "1.262946",
+          "temp_buffers": "10139",
+          "vacuum_cost_delay": "7.875069",
+          "vacuum_cost_limit": "1236",
+          "work_mem": "15776"
+        },
+        "global_settings": {
+          "autovacuum_analyze_scale_factor": 0.276128,
+          "autovacuum_freeze_max_age": 215074097,
+          "autovacuum_max_workers": 5,
+          "autovacuum_naptime": 21,
+          "autovacuum_vacuum_cost_delay": 7.574291,
+          "autovacuum_vacuum_cost_limit": 1064,
+          "autovacuum_vacuum_scale_factor": 0.128231,
+          "bgwriter_delay": 22,
+          "bgwriter_flush_after": 143,
+          "bgwriter_lru_maxpages": 338,
+          "bgwriter_lru_multiplier": 1.614034,
+          "checkpoint_completion_target": 0.83259,
+          "checkpoint_flush_after": 177,
+          "checkpoint_timeout": 100,
+          "checkpoint_warning": 10,
+          "commit_delay": 671,
+          "deadlock_timeout": 508,
+          "hot_standby_feedback": "off",
+          "huge_pages": "off",
+          "log_checkpoints": "off",
+          "log_connections": "off",
+          "log_disconnections": "on",
+          "log_min_duration_statement": 889,
+          "log_rotation_size": 27412,
+          "log_temp_files": 2223,
+          "logging_collector": "on",
+          "max_connections": 137,
+          "max_locks_per_transaction": 160,
+          "max_pred_locks_per_transaction": 105,
+          "max_replication_slots": 8,
+          "max_standby_streaming_delay": 38913,
+          "max_wal_senders": 10,
+          "max_wal_size": 3672,
+          "max_worker_processes": 24,
+          "min_wal_size": 181,
+          "shared_buffers": 53504,
+          "track_activity_query_size": 8326,
+          "wal_buffers": 637,
+          "wal_compression": "off",
+          "wal_sync_method": "open_datasync",
+          "wal_writer_delay": 215,
+          "wal_writer_flush_after": 367
+        },
+        "changed_global_count": 0,
+        "reload": false,
+        "restart": false,
+        "restart_seconds": 0.0,
+        "apply_seconds": 0.058,
+        "observed": {
+          "autovacuum_analyze_scale_factor": {
+            "setting": "0.276128",
+            "pending_restart": "f"
+          },
+          "autovacuum_freeze_max_age": {
+            "setting": "215074097",
+            "pending_restart": "f"
+          },
+          "autovacuum_max_workers": {
+            "setting": "5",
+            "pending_restart": "f"
+          },
+          "autovacuum_naptime": {
+            "setting": "21",
+            "pending_restart": "f"
+          },
+          "autovacuum_vacuum_cost_delay": {
+            "setting": "7.57429",
+            "pending_restart": "f"
+          },
+          "autovacuum_vacuum_cost_limit": {
+            "setting": "1064",
+            "pending_restart": "f"
+          },
+          "autovacuum_vacuum_scale_factor": {
+            "setting": "0.128231",
+            "pending_restart": "f"
+          },
+          "bgwriter_delay": {
+            "setting": "22",
+            "pending_restart": "f"
+          },
+          "bgwriter_flush_after": {
+            "setting": "143",
+            "pending_restart": "f"
+          },
+          "bgwriter_lru_maxpages": {
+            "setting": "338",
+            "pending_restart": "f"
+          },
+          "bgwriter_lru_multiplier": {
+            "setting": "1.61403",
+            "pending_restart": "f"
+          },
+          "checkpoint_completion_target": {
+            "setting": "0.83259",
+            "pending_restart": "f"
+          },
+          "checkpoint_flush_after": {
+            "setting": "177",
+            "pending_restart": "f"
+          },
+          "checkpoint_timeout": {
+            "setting": "100",
+            "pending_restart": "f"
+          },
+          "checkpoint_warning": {
+            "setting": "10",
+            "pending_restart": "f"
+          },
+          "commit_delay": {
+            "setting": "671",
+            "pending_restart": "f"
+          },
+          "deadlock_timeout": {
+            "setting": "508",
+            "pending_restart": "f"
+          },
+          "hot_standby_feedback": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "huge_pages": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "log_checkpoints": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "log_connections": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "log_disconnections": {
+            "setting": "on",
+            "pending_restart": "f"
+          },
+          "log_min_duration_statement": {
+            "setting": "889",
+            "pending_restart": "f"
+          },
+          "log_rotation_size": {
+            "setting": "27412",
+            "pending_restart": "f"
+          },
+          "log_temp_files": {
+            "setting": "2223",
+            "pending_restart": "f"
+          },
+          "logging_collector": {
+            "setting": "on",
+            "pending_restart": "f"
+          },
+          "max_connections": {
+            "setting": "137",
+            "pending_restart": "f"
+          },
+          "max_locks_per_transaction": {
+            "setting": "160",
+            "pending_restart": "f"
+          },
+          "max_pred_locks_per_transaction": {
+            "setting": "105",
+            "pending_restart": "f"
+          },
+          "max_replication_slots": {
+            "setting": "8",
+            "pending_restart": "f"
+          },
+          "max_standby_streaming_delay": {
+            "setting": "38913",
+            "pending_restart": "f"
+          },
+          "max_wal_senders": {
+            "setting": "10",
+            "pending_restart": "f"
+          },
+          "max_wal_size": {
+            "setting": "3672",
+            "pending_restart": "f"
+          },
+          "max_worker_processes": {
+            "setting": "24",
+            "pending_restart": "f"
+          },
+          "min_wal_size": {
+            "setting": "181",
+            "pending_restart": "f"
+          },
+          "shared_buffers": {
+            "setting": "53504",
+            "pending_restart": "f"
+          },
+          "track_activity_query_size": {
+            "setting": "8326",
+            "pending_restart": "f"
+          },
+          "wal_buffers": {
+            "setting": "637",
+            "pending_restart": "f"
+          },
+          "wal_compression": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "wal_sync_method": {
+            "setting": "open_datasync",
+            "pending_restart": "f"
+          },
+          "wal_writer_delay": {
+            "setting": "215",
+            "pending_restart": "f"
+          },
+          "wal_writer_flush_after": {
+            "setting": "367",
+            "pending_restart": "f"
+          }
+        }
+      }
+    },
+    {
+      "throughput_rps": 3673.9298716950057,
+      "goodput_rps": 3673.9298716950057,
+      "benchbase_reported_throughput_rps": 3665.409200676959,
+      "sql_error_policy": {
+        "unexpected_sql_errors": 0,
+        "retryable_sql_errors": 0,
+        "nonretryable_sql_errors": 0,
+        "sql_states": [],
+        "measured_requests": 443514,
+        "unexpected_error_ratio": 0.0,
+        "maximum_retryable_error_ratio": 0.001,
+        "accepted": true,
+        "policy": "40P01/40001 are accepted only within the fixed retryable-error ratio"
+      },
+      "p95_us": 6980.0,
+      "average_us": 2722.0,
+      "p99_us": 11043.0,
+      "transaction_latency": {
+        "NewOrder": {
+          "count": 199190,
+          "mean_us": 3723.5885687032483,
+          "p50_us": 3438.0,
+          "p95_us": 5178.0,
+          "p99_us": 10332.0,
+          "max_us": 157078.0,
+          "total_latency_seconds": 741.701607,
+          "terminal_capacity_fraction": 0.6180846725
+        },
+        "Payment": {
+          "count": 190857,
+          "mean_us": 1279.6019847320244,
+          "p50_us": 980.0,
+          "p95_us": 1557.0,
+          "p99_us": 5258.0,
+          "max_us": 160069.0,
+          "total_latency_seconds": 244.220996,
+          "terminal_capacity_fraction": 0.20351749666666666
+        },
+        "OrderStatus": {
+          "count": 17849,
+          "mean_us": 520.4633873046109,
+          "p50_us": 462.0,
+          "p95_us": 915.0,
+          "p99_us": 1313.0,
+          "max_us": 40385.0,
+          "total_latency_seconds": 9.289751,
+          "terminal_capacity_fraction": 0.007741459166666667
+        },
+        "StockLevel": {
+          "count": 17711,
+          "mean_us": 3100.443848455762,
+          "p50_us": 3065.0,
+          "p95_us": 4072.0,
+          "p99_us": 4590.0,
+          "max_us": 11147.0,
+          "total_latency_seconds": 54.911961,
+          "terminal_capacity_fraction": 0.0457599675
+        },
+        "Delivery": {
+          "count": 17907,
+          "mean_us": 8795.189646506953,
+          "p50_us": 8441.0,
+          "p95_us": 11176.0,
+          "p99_us": 14893.0,
+          "max_us": 157112.0,
+          "total_latency_seconds": 157.495461,
+          "terminal_capacity_fraction": 0.1312462175
+        }
+      },
+      "pre_measurement_quiescence": {
+        "checkpoint_completed": true,
+        "settle_seconds": 5.0,
+        "elapsed_seconds": 9.059
+      },
+      "client_status": "passed",
+      "artifact": "/root/Openguass/artifacts/runs/20261013T204436954284Z-tpcc",
+      "label": "reference_retest_3",
+      "apply": {
+        "session_settings": {
+          "backend_flush_after": "83",
+          "commit_siblings": "12",
+          "default_statistics_target": "144",
+          "effective_cache_size": "767339",
+          "effective_io_concurrency": "235",
+          "from_collapse_limit": "3",
+          "jit": "on",
+          "join_collapse_limit": "8",
+          "maintenance_work_mem": "36877",
+          "max_parallel_maintenance_workers": "2",
+          "max_parallel_workers": "11",
+          "max_parallel_workers_per_gather": "1",
+          "random_page_cost": "4.485927",
+          "seq_page_cost": "1.262946",
+          "temp_buffers": "10139",
+          "vacuum_cost_delay": "7.875069",
+          "vacuum_cost_limit": "1236",
+          "work_mem": "15776"
+        },
+        "global_settings": {
+          "autovacuum_analyze_scale_factor": 0.276128,
+          "autovacuum_freeze_max_age": 215074097,
+          "autovacuum_max_workers": 5,
+          "autovacuum_naptime": 21,
+          "autovacuum_vacuum_cost_delay": 7.574291,
+          "autovacuum_vacuum_cost_limit": 1064,
+          "autovacuum_vacuum_scale_factor": 0.128231,
+          "bgwriter_delay": 22,
+          "bgwriter_flush_after": 143,
+          "bgwriter_lru_maxpages": 338,
+          "bgwriter_lru_multiplier": 1.614034,
+          "checkpoint_completion_target": 0.83259,
+          "checkpoint_flush_after": 177,
+          "checkpoint_timeout": 100,
+          "checkpoint_warning": 10,
+          "commit_delay": 671,
+          "deadlock_timeout": 508,
+          "hot_standby_feedback": "off",
+          "huge_pages": "off",
+          "log_checkpoints": "off",
+          "log_connections": "off",
+          "log_disconnections": "on",
+          "log_min_duration_statement": 889,
+          "log_rotation_size": 27412,
+          "log_temp_files": 2223,
+          "logging_collector": "on",
+          "max_connections": 137,
+          "max_locks_per_transaction": 160,
+          "max_pred_locks_per_transaction": 105,
+          "max_replication_slots": 8,
+          "max_standby_streaming_delay": 38913,
+          "max_wal_senders": 10,
+          "max_wal_size": 3672,
+          "max_worker_processes": 24,
+          "min_wal_size": 181,
+          "shared_buffers": 53504,
+          "track_activity_query_size": 8326,
+          "wal_buffers": 637,
+          "wal_compression": "off",
+          "wal_sync_method": "open_datasync",
+          "wal_writer_delay": 215,
+          "wal_writer_flush_after": 367
+        },
+        "changed_global_count": 0,
+        "reload": false,
+        "restart": false,
+        "restart_seconds": 0.0,
+        "apply_seconds": 0.059,
+        "observed": {
+          "autovacuum_analyze_scale_factor": {
+            "setting": "0.276128",
+            "pending_restart": "f"
+          },
+          "autovacuum_freeze_max_age": {
+            "setting": "215074097",
+            "pending_restart": "f"
+          },
+          "autovacuum_max_workers": {
+            "setting": "5",
+            "pending_restart": "f"
+          },
+          "autovacuum_naptime": {
+            "setting": "21",
+            "pending_restart": "f"
+          },
+          "autovacuum_vacuum_cost_delay": {
+            "setting": "7.57429",
+            "pending_restart": "f"
+          },
+          "autovacuum_vacuum_cost_limit": {
+            "setting": "1064",
+            "pending_restart": "f"
+          },
+          "autovacuum_vacuum_scale_factor": {
+            "setting": "0.128231",
+            "pending_restart": "f"
+          },
+          "bgwriter_delay": {
+            "setting": "22",
+            "pending_restart": "f"
+          },
+          "bgwriter_flush_after": {
+            "setting": "143",
+            "pending_restart": "f"
+          },
+          "bgwriter_lru_maxpages": {
+            "setting": "338",
+            "pending_restart": "f"
+          },
+          "bgwriter_lru_multiplier": {
+            "setting": "1.61403",
+            "pending_restart": "f"
+          },
+          "checkpoint_completion_target": {
+            "setting": "0.83259",
+            "pending_restart": "f"
+          },
+          "checkpoint_flush_after": {
+            "setting": "177",
+            "pending_restart": "f"
+          },
+          "checkpoint_timeout": {
+            "setting": "100",
+            "pending_restart": "f"
+          },
+          "checkpoint_warning": {
+            "setting": "10",
+            "pending_restart": "f"
+          },
+          "commit_delay": {
+            "setting": "671",
+            "pending_restart": "f"
+          },
+          "deadlock_timeout": {
+            "setting": "508",
+            "pending_restart": "f"
+          },
+          "hot_standby_feedback": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "huge_pages": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "log_checkpoints": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "log_connections": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "log_disconnections": {
+            "setting": "on",
+            "pending_restart": "f"
+          },
+          "log_min_duration_statement": {
+            "setting": "889",
+            "pending_restart": "f"
+          },
+          "log_rotation_size": {
+            "setting": "27412",
+            "pending_restart": "f"
+          },
+          "log_temp_files": {
+            "setting": "2223",
+            "pending_restart": "f"
+          },
+          "logging_collector": {
+            "setting": "on",
+            "pending_restart": "f"
+          },
+          "max_connections": {
+            "setting": "137",
+            "pending_restart": "f"
+          },
+          "max_locks_per_transaction": {
+            "setting": "160",
+            "pending_restart": "f"
+          },
+          "max_pred_locks_per_transaction": {
+            "setting": "105",
+            "pending_restart": "f"
+          },
+          "max_replication_slots": {
+            "setting": "8",
+            "pending_restart": "f"
+          },
+          "max_standby_streaming_delay": {
+            "setting": "38913",
+            "pending_restart": "f"
+          },
+          "max_wal_senders": {
+            "setting": "10",
+            "pending_restart": "f"
+          },
+          "max_wal_size": {
+            "setting": "3672",
+            "pending_restart": "f"
+          },
+          "max_worker_processes": {
+            "setting": "24",
+            "pending_restart": "f"
+          },
+          "min_wal_size": {
+            "setting": "181",
+            "pending_restart": "f"
+          },
+          "shared_buffers": {
+            "setting": "53504",
+            "pending_restart": "f"
+          },
+          "track_activity_query_size": {
+            "setting": "8326",
+            "pending_restart": "f"
+          },
+          "wal_buffers": {
+            "setting": "637",
+            "pending_restart": "f"
+          },
+          "wal_compression": {
+            "setting": "off",
+            "pending_restart": "f"
+          },
+          "wal_sync_method": {
+            "setting": "open_datasync",
+            "pending_restart": "f"
+          },
+          "wal_writer_delay": {
+            "setting": "215",
+            "pending_restart": "f"
+          },
+          "wal_writer_flush_after": {
+            "setting": "367",
+            "pending_restart": "f"
+          }
+        }
+      }
+    }
+  ],
+  "metrics": {
+    "throughput_rps_values": [
+      3659.8538367742963,
+      3827.2602639096754,
+      3673.9298716950057
+    ],
+    "throughput_rps_min": 3659.8538367742963,
+    "throughput_rps_median": 3673.9298716950057,
+    "p95_us_values": [
+      7152.0,
+      6471.0,
+      6980.0
+    ],
+    "p95_us_max": 7152.0
+  },
+  "created_at": "2026-10-13T20:46:45.484809+00:00"
+}

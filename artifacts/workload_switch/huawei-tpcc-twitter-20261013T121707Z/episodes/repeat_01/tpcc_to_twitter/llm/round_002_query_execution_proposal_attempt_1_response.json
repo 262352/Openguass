@@ -1,0 +1,295 @@
+{
+  "schema_version": "andromeda.expert-proposal/v1",
+  "proposal_id": "r002_query_execution",
+  "expert": "query_execution",
+  "incumbent_config_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+  "workload_fingerprint_hash": "d0369ebe1c5bab05840febaf47e48b4a11b7b8d6729135267c6262b709ff9111",
+  "title": "No query_execution knob change is justified: GetUserTweets terminal saturation is structural (fully cached, index-driven read path), not a planner/executor misconfiguration",
+  "anomaly": {
+    "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+    "source": "client BenchBase Twitter transaction-latency instrumentation",
+    "measurement_type": "per_transaction",
+    "unit": "fraction of total terminal capacity (0-1)",
+    "aggregation": "sum(total_latency_seconds) / (terminals * duration_seconds)",
+    "sampling_window_seconds": 120,
+    "observed_value": 0.8837676916666667
+  },
+  "configuration_cause": "None attributable to any allowed query_execution knob. The incumbent plan evidence is an Index Scan with estimated_rows=1.0 and estimated_total_cost=8.45, i.e. the planner already picks the only sensible access path; the read side is fully cache-resident (buffer_hit_ratio 0.9999265, blks_read 20.1/s, blks_hit 273328/s) with seq_scan=0.0/s, temp_files=0.0/s, temp_bytes=0.0, deadlocks=0.0/s and lock_waiting_backends 0 at every percentile, so there is no observable mis-estimation, spill, or lock stall for default_statistics_target / random_page_cost / seq_page_cost / work_mem / jit / parallelism to correct.",
+  "mechanism": "Closed-loop terminal-budget identity: goodput_rps ~= terminals / weighted-mean client latency = 8 / 283us ~= 28.3k rps, which reproduces the measured 28257 rps. GetUserTweets is ~90% of the transaction mix (3048834 of ~3.4M transactions) at a 169us p50 / 278us mean on a fully cached index path (9.67 buffer hits/txn, 7.27 tuples fetched/txn, blk_read_time 7.2e-6 ms/txn, zero temp bytes), so it owns 0.884 of the finite 8-terminal budget. That cost is per-query executor CPU on hot shared buffers plus the client round trip; the statement never enqueues on the WAL commit path (wal_write_per_txn 0.0075, wal_bytes_per_txn 5.17B) and never waits on a lock. Consequently no knob in the query_execution set changes the dominant term: the tail (p99 2813us) has no accompanying I/O, lock, or WAL signal to attribute it to.",
+  "intermediate_metrics": [
+    {
+      "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+      "source": "client BenchBase Twitter transaction-latency instrumentation",
+      "measurement_type": "per_transaction",
+      "unit": "microseconds",
+      "aggregation": "p50 over 120s window",
+      "sampling_window_seconds": 120,
+      "observed_value": 169.0
+    },
+    {
+      "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+      "source": "client BenchBase Twitter transaction-latency instrumentation",
+      "measurement_type": "per_transaction",
+      "unit": "microseconds",
+      "aggregation": "p99 over 120s window",
+      "sampling_window_seconds": 120,
+      "observed_value": 2813.0
+    },
+    {
+      "metric_id": "server.telemetry.rates_per_second.blks_hit",
+      "source": "pg_stat_database delta / elapsed",
+      "measurement_type": "rate_per_second",
+      "unit": "blocks/s",
+      "aggregation": "mean rate over 148 samples / 161.57s",
+      "sampling_window_seconds": 161.5676350593567,
+      "observed_value": 273328.06464473007
+    },
+    {
+      "metric_id": "server.telemetry.rates_per_second.seq_scan",
+      "source": "pg_stat_database delta / elapsed",
+      "measurement_type": "rate_per_second",
+      "unit": "scans/s",
+      "aggregation": "mean rate over 148 samples / 161.57s",
+      "sampling_window_seconds": 161.5676350593567,
+      "observed_value": 0.0
+    },
+    {
+      "metric_id": "server.wal_timing.write_average_ms",
+      "source": "pg_stat_wal / track_wal_io_timing",
+      "measurement_type": "state",
+      "unit": "ms per WAL write",
+      "aggregation": "mean over 120s window",
+      "sampling_window_seconds": 120,
+      "observed_value": 0.13794471762343627
+    },
+    {
+      "metric_id": "server.telemetry.gauges.wal_waiting_backends.max",
+      "source": "pg_stat_activity sampling",
+      "measurement_type": "state",
+      "unit": "backends",
+      "aggregation": "max over 148 samples",
+      "sampling_window_seconds": 161.5676350593567,
+      "observed_value": 1.0
+    }
+  ],
+  "query_effect": "GetUserTweets performs an index access returning ~7 rows per transaction entirely from shared buffers; no sequential scans, no sorts or temp spills, no heap-read stalls and no lock acquisition beyond instantaneous buffer pins. Its latency is fixed per-query planner+executor CPU plus client round trip, which none of the allowed planner/statistics/executor knobs reduce without an observable defect to correct.",
+  "expected_tps_effect": "unchanged within +/-5% of the incumbent band 29762.6-31906.7 rps (median 30213.6); the 28257 rps observation is a low draw of the same configuration, not a configuration regression.",
+  "expected_latency_effect": "unchanged; GetUserTweets p50 ~169us and overall p95 ~754us stay within the observed replicate spread (baseline p50 157-169us, p95 646-696us).",
+  "predictions": [
+    {
+      "prediction_id": "r002_qe_pred_tps_unchanged",
+      "edge_id": "r002_qe_edge_noop_obj",
+      "metric_id": "client.goodput_rps",
+      "expected_direction": "unchanged",
+      "minimum_change": 5.0,
+      "comparison_method": "relative_percent",
+      "rationale": "Closed-loop identity 8 terminals / 283us mean = 28.3k rps matches the measured 28257 rps. With knob_changes=[] the configuration is bit-identical to the incumbent, so throughput must stay within +/-5% of the 29762.6-31906.7 rps replicate band; the current 28257 rps is inside the run-to-run spread already seen across baseline_1..3 (7% band)."
+    },
+    {
+      "prediction_id": "r002_qe_pred_termfrac_unchanged",
+      "edge_id": "r002_qe_edge_terminal_share_mech",
+      "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+      "expected_direction": "unchanged",
+      "minimum_change": 5.0,
+      "comparison_method": "relative_percent",
+      "rationale": "0.8838 = 848.4s of 960s of terminal time at ~3.05M transactions; baselines were 0.8798/0.8817/0.8787. With identical config, count (~3.05M) and mean latency (278us) are unchanged, so the fraction stays ~0.88 within +/-5%; no query_execution knob alters transaction frequency or the cached-read mean."
+    },
+    {
+      "prediction_id": "r002_qe_pred_p50_unchanged",
+      "edge_id": "r002_qe_edge_cache_mech",
+      "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+      "expected_direction": "unchanged",
+      "minimum_change": 10.0,
+      "comparison_method": "relative_percent",
+      "rationale": "p50 169us is a shared-buffer index access (0.9999265 hit ratio, 9.67 blks_hit/txn, 7.2e-6 ms blk_read_time/txn, 0 temp bytes). No allowed knob changes the executor path for this Index Scan (est_rows 1.0, est_cost 8.45); baseline p50s were 165/169/157us (+/-4%), so a 10% tolerance is conservative."
+    },
+    {
+      "prediction_id": "r002_qe_pred_walwrite_unchanged",
+      "edge_id": "r002_qe_edge_wal_mech",
+      "metric_id": "server.wal_timing.write_average_ms",
+      "expected_direction": "unchanged",
+      "minimum_change": 0.5,
+      "comparison_method": "absolute_delta",
+      "rationale": "Measured WAL write average 0.138ms with host_io some/full stall fraction 0.0, wal_sync=0.0/s and wal_sync_time_per_txn=0.0; the wal_wait alert rests on one instantaneous sample (wal_waiting_backends median 0, p95 0, max 1 of ~9 backends) and on 5.17 WAL bytes/txn. A genuine WAL-stall mechanism would need order-of-magnitude higher write latency or sustained waiters, so the mean stays within +/-0.5ms."
+    }
+  ],
+  "alternatives": [
+    {
+      "alternative_id": "r002_qe_alt_plan_misestimate",
+      "statement": "GetUserTweets latency is partly planner-induced (a mis-estimated or heap-fetch-heavy plan) that a cost-constant / statistics-target change could shorten; the supplied plan_evidence only covers the trivial probe (id=1) and not the real GetUserTweets SQL.",
+      "discriminating_metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+      "expected_direction": "decrease"
+    },
+    {
+      "alternative_id": "r002_qe_alt_run_noise",
+      "statement": "The 28257 rps observation is simply a low draw of the unchanged configuration and would recover to the 29762-31907 rps band on a repeat with no knob change.",
+      "discriminating_metric_id": "client.goodput_rps",
+      "expected_direction": "increase"
+    },
+    {
+      "alternative_id": "r002_qe_alt_wal_writer_only",
+      "statement": "The wal_wait alert is real but affects only the single-table writer path (InsertTweet) via rare WAL flush grouping, leaving the read-dominant GetUserTweets untouched.",
+      "discriminating_metric_id": "client.transaction_latency.InsertTweet.p99_us",
+      "expected_direction": "increase"
+    }
+  ],
+  "cross_domain_requirements": [
+    "concurrency_maintenance: attribute the GetUserTweets p99 (2813us) and max (30888us) tail to LWLock/buffer-pin wait or CPU scheduling, since lock_waiting_backends=0 and locks_waiting=0 at all percentiles.",
+    "memory_storage: confirm whether the wal_wait alert is a single-sample artifact (wal_waiting_backends p95=0, host_io stalls 0.0, write_average_ms 0.138) and whether any commit-path change is justified."
+  ],
+  "why_exceeds_incumbent": "It does not exceed the incumbent; the incumbent is already at the terminal-budget ceiling for this transaction mix. Because seq_scan=0.0/s, temp_bytes=0, deadlocks=0, lock_waiting_backends=0 and buffer_hit_ratio=0.9999265, there is no observable planner/executor defect for any allowed query_execution knob (default_statistics_target, random_page_cost, seq_page_cost, effective_cache_size, work_mem, jit, from/join_collapse_limit, max_parallel_workers_per_gather) to correct. Applying an un-evidenced planner change would only add regression risk to a healthy, guardrail-passing incumbent.",
+  "cost": {
+    "restart_required": false,
+    "workload_measurements": 1,
+    "estimated_seconds": 170
+  },
+  "nodes": [
+    {
+      "node_id": "r002_qe_ctx",
+      "kind": "context",
+      "label": "Closed-loop twitter workload: 8 terminals, 120s window (30s warmup), seed 20261112, incumbent healthy with 0 failed / 0 timeouts",
+      "attributes": {
+        "terminals": 8,
+        "duration_s": 120,
+        "incumbent_config_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c"
+      }
+    },
+    {
+      "node_id": "r002_qe_ev_terminal",
+      "kind": "evidence",
+      "label": "GetUserTweets holds 848.4s of the 960s terminal budget (0.8838) at 3048834 transactions ~90% of the mix",
+      "attributes": {
+        "terminal_capacity_fraction": 0.8837676916666667,
+        "count": 3048834,
+        "mean_us": 278.27588645364096
+      }
+    },
+    {
+      "node_id": "r002_qe_ev_cache",
+      "kind": "evidence",
+      "label": "Read path is cache-resident and index-only in access method: buffer_hit_ratio 0.9999265, blks_read 20.1/s, idx_scan 21945/s, seq_scan 0.0/s, temp_bytes 0, plan = Index Scan (est_rows 1.0, est_cost 8.45)",
+      "attributes": {
+        "blks_hit_per_txn": 9.672764202876891,
+        "blks_read_per_txn": 0.0007112041714198179
+      }
+    },
+    {
+      "node_id": "r002_qe_ev_wal",
+      "kind": "evidence",
+      "label": "WAL path cheap and writer-exclusive: write_average_ms 0.138, wal_write 212.7/s, wal_bytes_per_txn 5.17B, wal_sync 0.0/s, host_io some/full stall 0.0, wal_waiting_backends median 0 / p95 0 / max 1",
+      "attributes": {
+        "wal_sync": 0.0,
+        "wal_sync_method": "open_datasync"
+      }
+    },
+    {
+      "node_id": "r002_qe_mech_budget",
+      "kind": "mechanism",
+      "label": "TPS = terminals / weighted-mean client latency; one transaction class owns the finite terminal budget",
+      "attributes": {
+        "identity_check_rps": 28268.0,
+        "observed_rps": 28257.492781994657
+      }
+    },
+    {
+      "node_id": "r002_qe_mech_inert",
+      "kind": "mechanism",
+      "label": "GetUserTweets is read-only (never enqueues on the commit/WAL path) and its plan is the unique index access on hot shared buffers, so no allowed planner/statistics/executor knob moves the dominant term",
+      "attributes": {
+        "wal_write_per_txn": 0.007527987732530866,
+        "seq_scan_per_txn": 0.0
+      }
+    },
+    {
+      "node_id": "r002_qe_qe",
+      "kind": "query_effect",
+      "label": "GetUserTweets read path: ~7 rows/txn from shared buffers, 9.67 buffer hits/txn, 7.2e-6 ms blk_read_time/txn, p50 169us, p99 2813us",
+      "attributes": {
+        "tup_fetched_per_txn": 7.271676933474176
+      }
+    },
+    {
+      "node_id": "r002_qe_noop",
+      "kind": "intervention",
+      "label": "No-op: hold the incumbent; measurement-only follow-up (EXPLAIN ANALYZE BUFFERS + wait-event timing on the real GetUserTweets SQL)",
+      "attributes": {
+        "knob_changes": 0
+      }
+    },
+    {
+      "node_id": "r002_qe_obj",
+      "kind": "objective",
+      "label": "goodput_rps (incumbent 29762.6-31906.7, median 30213.6) with p95 754us, p99 2899us, 0 failed / 0 timeouts",
+      "attributes": {
+        "replicate_spread_percent": 7.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "r002_qe_edge_ctx_mech",
+      "source": "r002_qe_ctx",
+      "target": "r002_qe_mech_budget",
+      "relation": "imposes_terminal_budget",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["r002_qe_pred_tps_unchanged"]
+    },
+    {
+      "edge_id": "r002_qe_edge_terminal_share_mech",
+      "source": "r002_qe_ev_terminal",
+      "target": "r002_qe_mech_budget",
+      "relation": "quantifies_dominant_term",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["r002_qe_pred_termfrac_unchanged"]
+    },
+    {
+      "edge_id": "r002_qe_edge_cache_mech",
+      "source": "r002_qe_ev_cache",
+      "target": "r002_qe_mech_inert",
+      "relation": "supports_cached_index_path_without_planner_lever",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["r002_qe_pred_p50_unchanged"]
+    },
+    {
+      "edge_id": "r002_qe_edge_wal_mech",
+      "source": "r002_qe_ev_wal",
+      "target": "r002_qe_mech_inert",
+      "relation": "refutes_wal_causation_for_read_tail",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["r002_qe_pred_walwrite_unchanged"]
+    },
+    {
+      "edge_id": "r002_qe_edge_qe_mech",
+      "source": "r002_qe_qe",
+      "target": "r002_qe_mech_budget",
+      "relation": "dominates_terminal_time",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["r002_qe_pred_termfrac_unchanged"]
+    },
+    {
+      "edge_id": "r002_qe_edge_mech_obj",
+      "source": "r002_qe_mech_budget",
+      "target": "r002_qe_obj",
+      "relation": "caps_throughput_via_terminal_budget",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["r002_qe_pred_tps_unchanged"]
+    },
+    {
+      "edge_id": "r002_qe_edge_inert_obj",
+      "source": "r002_qe_mech_inert",
+      "target": "r002_qe_obj",
+      "relation": "no_query_execution_lever",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["r002_qe_pred_p50_unchanged"]
+    },
+    {
+      "edge_id": "r002_qe_edge_noop_obj",
+      "source": "r002_qe_noop",
+      "target": "r002_qe_obj",
+      "relation": "preserves_incumbent_within_replicate_band",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["r002_qe_pred_tps_unchanged"]
+    }
+  ],
+  "created_at": "2026-10-14T09:30:00+00:00"
+}

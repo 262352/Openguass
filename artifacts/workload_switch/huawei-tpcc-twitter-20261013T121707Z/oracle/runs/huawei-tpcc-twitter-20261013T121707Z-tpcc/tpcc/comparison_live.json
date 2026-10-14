@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-10-13T20:33:00.739418+00:00",
+  "bayesian": {
+    "experiment_id": "huawei-tpcc-twitter-20261013T121707Z-tpcc",
+    "state": "running",
+    "workload": "tpcc",
+    "knob_count": 60,
+    "objective": "maximize throughput_rps",
+    "budget": 100,
+    "completed": 100,
+    "remaining": 0,
+    "lhs_completed": 10,
+    "gp_completed": 90,
+    "baseline_tps": 2386.216592215808,
+    "best_tps": 3845.533680542778,
+    "improvement_percent": 61.15610347725677,
+    "best_trial": 43,
+    "elapsed_seconds": 29751.104,
+    "updated_at": "2026-10-13T20:33:00.738625+00:00"
+  },
+  "andromeda": null
+}

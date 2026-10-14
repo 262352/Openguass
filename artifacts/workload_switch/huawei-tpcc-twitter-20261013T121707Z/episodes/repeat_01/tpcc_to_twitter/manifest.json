@@ -1,0 +1,65 @@
+{
+  "schema_version": "andromeda.multi-agent-experiment/v2",
+  "experiment_id": "huawei-tpcc-twitter-20261013T121707Z-r01-tpcc-to-twitter",
+  "source": "tpcc",
+  "target": "twitter",
+  "created_at": "2026-10-14T09:02:24.241904+00:00",
+  "context": {
+    "source_config_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+    "workload_fingerprint": {
+      "workload": "twitter",
+      "sha256": "be6382086d95710936d64fb682bc328122dc087da57c12b48875677937c05286",
+      "config": "benchmarks/postgres/twitter.xml"
+    },
+    "snapshot": {
+      "path_name": "twitter.dump",
+      "sha256": "758fbc378a888decd0e80d371b5a4b52a112077dc0085e209ea061aa1da1ae68"
+    },
+    "hardware": {
+      "hostname": "dev-261013-200329-1791893057-worker-0",
+      "machine": "aarch64",
+      "kernel": "5.10.0-287.0.0.190.oe2203sp4.aarch64",
+      "cpu_count": 192,
+      "memory_bytes": 2162876633088,
+      "postgresql_version": "14.24 (Ubuntu 14.24-0ubuntu0.22.04.1)",
+      "data_directory_hash": "cc584515691196675fc7bf7482d392b5c1ecbe0aa88a138190248618fac9cd7a",
+      "cluster_version": "14",
+      "cluster_name": "main"
+    },
+    "duration": 120,
+    "warmup_seconds": 30,
+    "snapshot_settle_seconds": 5.0,
+    "terminals": 8,
+    "seed": 20261112,
+    "diagnostic_instrumentation": {
+      "before": {
+        "track_io_timing": "off",
+        "track_wal_io_timing": "off"
+      },
+      "after": {
+        "track_io_timing": "on",
+        "track_wal_io_timing": "on"
+      },
+      "changed": [
+        "track_io_timing",
+        "track_wal_io_timing"
+      ],
+      "restored_with_postgresql_auto_conf": true
+    }
+  },
+  "budgets": {
+    "rounds": 12,
+    "workload_measurements": 60
+  },
+  "agent_protocol": {
+    "topology": "blackboard",
+    "roles": [
+      "query_execution",
+      "memory_storage",
+      "concurrency_maintenance"
+    ],
+    "expert_calls_per_round": 3,
+    "peer_review_calls": 0
+  },
+  "policy": "No GP/EI/Bayesian result for the target workload participates in online decisions."
+}

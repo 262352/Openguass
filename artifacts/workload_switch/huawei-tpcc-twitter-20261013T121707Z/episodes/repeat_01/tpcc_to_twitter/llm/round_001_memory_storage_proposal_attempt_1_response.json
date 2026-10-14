@@ -1,0 +1,287 @@
+{
+  "schema_version": "andromeda.expert-proposal/v1",
+  "proposal_id": "ms-twitter-f6d4b8d3-observation-01",
+  "expert": "memory_storage",
+  "incumbent_config_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+  "workload_fingerprint_hash": "d0369ebe1c5bab05840febaf47e48b4a11b7b8d6729135267c6262b709ff9111",
+  "title": "Observation only: the flagged wal_wait is a single-backend wait below the storage noise floor, while GetUserTweets consumes 87.87% of terminal capacity",
+  "anomaly": {
+    "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+    "source": "current_measurement.client.transaction_latency (label baseline_3, run 20261014T091542952493Z-twitter, 8 terminals, 168.44 s)",
+    "measurement_type": "per_transaction",
+    "unit": "fraction_of_terminal_capacity",
+    "aggregation": "sum(count*mean_us)/(terminals*elapsed_seconds) per transaction class",
+    "sampling_window_seconds": 168.44235052121803,
+    "observed_value": 0.8786500572916667
+  },
+  "configuration_cause": "No incumbent storage setting is causally implicated by the measured evidence. The only settings that could generate the flagged wal_wait are the durability pipeline: wal_sync_method=open_datasync, wal_writer_delay=215 ms, wal_writer_flush_after=367 pages, wal_buffers=637 pages, commit_delay=671 us with commit_siblings=12. Their own telemetry refutes queueing on that path (wal_write_time_per_txn=9.65e-4 ms, wal_sync_time_per_txn=0.0, wal_timing.write_average_ms=0.134, host_io some/full stall fraction=0.0, wal_waiting_backends median=0/p95=0/max=1 out of ~9 backends). commit_delay is moreover inert at this concurrency: it arms only when at least commit_siblings=12 other sessions are in active transactions, and numbackends peaks at 10 (active max 9). shared_buffers=53504 pages (~418 MB) with buffer_hit_ratio=0.999921 and 7.30e-4 blks_read per transaction shows no cache shortfall, and temp_files=temp_bytes=0 rules out spill. Checkpoint/bgwriter are idle, not misconfigured for this load: checkpoints_req=0, checkpoint_write_time=0, checkpoint_sync_time=0, buffers_clean=0.0/s, buffers_checkpoint_per_txn=2.36e-4.",
+  "mechanism": "Storage demand in this incumbent is two to four orders of magnitude below device capacity, so the storage layer cannot be the rate limiter. WAL generation is 152.1 kB/s, i.e. 4.77 bytes and 0.0072 WAL writes per transaction; WAL write service time is 0.134 ms per write and 9.65e-4 ms per transaction (about 1e-5 % of wall time per transaction), and no backend ever recorded an fsync (wal_sync=0.0/s, wal_sync_time=0.0, wal_timing.sync_average_ms=null). The buffer path is equally idle: 9.28 buffer hits per transaction at a 0.999921 hit ratio, 7.30e-4 block reads per transaction, and blk_read_time_per_txn=6.65e-6 ms. Writeback is quiescent: buffers_clean=0.0/s, dirty_bytes median 4.28 MB / p95 33.0 MB, writeback_bytes median 0, PSI some/full I/O stall fraction 0.0, io_waiting_backends max 1, wal_waiting_backends max 1. A single instantaneous WALWrite wait on at most one of ~9 backends across 154 samples is below the queueing/sampling noise floor of an 8-terminal closed loop. Meanwhile the client side is the binding resource: GetUserTweets alone consumes 0.8787 of terminal capacity (843.50 s of 8 x 168.44 s = 1347.54 s) at a 157 us median / 244.5 us mean / 593 us p95, and the sum of all transaction-class fractions is ~0.996, i.e. the eight terminals are effectively 100% busy. In a saturation-limited closed loop, throughput equals terminals/latency, so only reductions in client-observed per-transaction latency can raise TPS, and the storage share of that latency is ~1e-6 to 1e-3 ms per transaction. The multi-millisecond tails (GetUserTweets max 27.2 ms, GetTweetsFromFollowing max 31.5 ms, InsertTweet max 54.9 ms) appear across read-only and write classes alike and coincide with zero PSI stall and zero checkpoint write/sync time, so they are not explained by storage service time.",
+  "intermediate_metrics": [
+    {
+      "metric_id": "pg_stat_wal.wal_write_time_per_txn",
+      "source": "telemetry.per_transaction (pg_stat_wal, 154 samples, run 20261014T091542952493Z-twitter)",
+      "measurement_type": "per_transaction",
+      "unit": "ms",
+      "aggregation": "mean per transaction over 168.44 s",
+      "sampling_window_seconds": 168.44264006614685,
+      "observed_value": 0.0009651081573337888
+    },
+    {
+      "metric_id": "pg_stat_wal.wal_sync_time_per_txn",
+      "source": "telemetry.per_transaction (pg_stat_wal) plus wal_timing.sync_average_ms",
+      "measurement_type": "per_transaction",
+      "unit": "ms",
+      "aggregation": "mean per transaction over 168.44 s (sync_average_ms reported as null: no sync event recorded)",
+      "sampling_window_seconds": 168.44264006614685,
+      "observed_value": 0.0
+    },
+    {
+      "metric_id": "node.pressure.io.full_stall_fraction",
+      "source": "host_io (PSI /proc/pressure/io, sample-aligned to the run)",
+      "measurement_type": "state",
+      "unit": "fraction",
+      "aggregation": "max over run",
+      "sampling_window_seconds": 168.44264006614685,
+      "observed_value": 0.0
+    },
+    {
+      "metric_id": "pg_stat_activity.wal_waiting_backends.max",
+      "source": "telemetry.gauges.wal_waiting_backends (median 0.0, p95 0.0)",
+      "measurement_type": "state",
+      "unit": "backends",
+      "aggregation": "max of 154 samples",
+      "sampling_window_seconds": 168.44264006614685,
+      "observed_value": 1
+    },
+    {
+      "metric_id": "pg_stat_wal.wal_bytes_per_txn",
+      "source": "telemetry.per_transaction.wal_bytes_per_txn",
+      "measurement_type": "per_transaction",
+      "unit": "bytes",
+      "aggregation": "mean per transaction over 168.44 s",
+      "sampling_window_seconds": 168.44264006614685,
+      "observed_value": 4.768521200754691
+    },
+    {
+      "metric_id": "pg_stat_database.blk_read_time_per_txn",
+      "source": "telemetry.per_transaction.blk_read_time_per_txn",
+      "measurement_type": "per_transaction",
+      "unit": "ms",
+      "aggregation": "mean per transaction over 168.44 s",
+      "sampling_window_seconds": 168.44264006614685,
+      "observed_value": 6.647934191709624e-06
+    }
+  ],
+  "query_effect": "None. The read path already resolves through shared buffers (EXPLAIN plan evidence: Index Scan on tweets id=1, uses_index=true, estimated_rows=1) at a 0.999921 hit ratio with 9.28 buffer hits per transaction; no plan or access-path change is available inside the storage domain.",
+  "expected_tps_effect": "None from this domain. With storage service time per transaction between ~1e-6 ms (block reads) and ~1e-3 ms (WAL writes), and the eight terminals ~99.6% busy, no permitted storage knob can move the incumbent's 31906.7 rps in the next round.",
+  "expected_latency_effect": "None attributable to storage. The 157 us p50 / 244.5 us mean of GetUserTweets is parse, plan, buffer access and round-trip; the storage component is less than 0.001% of that latency. InsertTweet's p99 of 3336 us is likewise not sync-dominated, since wal_sync_time is zero and host I/O stalls are zero.",
+  "knob_changes": [],
+  "predictions": [
+    {
+      "prediction_id": "p1",
+      "edge_id": "e5",
+      "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+      "expected_direction": "unchanged",
+      "minimum_change": 0.03,
+      "comparison_method": "percentage_points",
+      "rationale": "The class consumes 0.8787 of terminal capacity (843.50 s of 1347.54 s) at a 157 us median while its storage cost is ~6.65e-6 ms of block read time and zero temp bytes; no storage knob in the allowed set can shift this fraction by 3 points."
+    },
+    {
+      "prediction_id": "p2",
+      "edge_id": "e4",
+      "metric_id": "pg_stat_wal.wal_write_time_per_txn",
+      "expected_direction": "unchanged",
+      "minimum_change": 25,
+      "comparison_method": "relative_percent",
+      "rationale": "Observed 9.65e-4 ms per transaction with write_average_ms=0.134 and PSI io stall fraction 0.0; the WAL write path has no queue to relieve, so no storage-side reconfiguration should change it by more than 25%."
+    },
+    {
+      "prediction_id": "p3",
+      "edge_id": "e1",
+      "metric_id": "pg_stat_activity.wal_waiting_backends.max",
+      "expected_direction": "unchanged",
+      "minimum_change": 1,
+      "comparison_method": "absolute_delta",
+      "rationale": "The flagged wait is a single instantaneous sample: median 0.0, p95 0.0, max 1 out of ~9 backends. Reconfiguring the WAL/commit pipeline cannot remove a wait that is not present beyond the noise floor, so the max should not move by 1 or more backends."
+    },
+    {
+      "prediction_id": "p4",
+      "edge_id": "e7",
+      "metric_id": "client.transaction_latency.InsertTweet.p99_us",
+      "expected_direction": "unchanged",
+      "minimum_change": 10,
+      "comparison_method": "relative_percent",
+      "rationale": "InsertTweet p99 is 3336 us on 0.0072 WAL writes and zero recorded fsync time per transaction; the commit durability path is not the tail driver, so its p99 should not move by 10% from any permitted storage change."
+    }
+  ],
+  "alternatives": [
+    {
+      "alternative_id": "alt-slow-fsync",
+      "statement": "A slow durable flush (fsync/open_datasync) on the commit path inflates InsertTweet's tail and forces backends to queue on WAL.",
+      "discriminating_metric_id": "pg_stat_wal.wal_sync_time_per_txn",
+      "expected_direction": "increase"
+    },
+    {
+      "alternative_id": "alt-writeback-stall",
+      "statement": "Background-writer or checkpoint writeback bursts stall readers and produce the 17-31 ms maxima seen across read-only classes.",
+      "discriminating_metric_id": "pg_stat_bgwriter.buffers_clean_per_txn",
+      "expected_direction": "increase"
+    },
+    {
+      "alternative_id": "alt-cache-shortfall",
+      "statement": "shared_buffers is too small for the twitter working set, so the read path pays buffer misses that dominate GetUserTweets latency.",
+      "discriminating_metric_id": "pg_stat_database.blks_read_per_txn",
+      "expected_direction": "increase"
+    }
+  ],
+  "cross_domain_requirements": [
+    "query_execution: attribute the 244.5 us GetUserTweets mean and 2280 us p99 to parse/plan/round-trip cost, since storage contributes <0.001% of per-transaction latency here.",
+    "concurrency_maintenance: with eight terminals ~99.6% busy, validate the terminal/admission model before any server-side micro-tuning; throughput is terminal-time-bound, not resource-bound.",
+    "measurement: keep track_io_timing and track_wal_io_timing enabled so wal_timing and host_io evidence remain available to falsify any storage hypothesis in the next round."
+  ],
+  "why_exceeds_incumbent": "It does not claim a TPS gain; it claims the incumbent storage configuration is already non-binding and left untouched, which strictly dominates any unfalsifiable storage edit. Every storage path shows >=99.9% idle headroom: wal_write_time_per_txn 9.65e-4 ms, wal_sync_time_per_txn 0, blk_read_time_per_txn 6.65e-6 ms, checkpoint write+sync time 0, buffers_clean 0/s, PSI full/some io stall 0.0, temp_bytes 0. Acting on the wal_wait alert would spend measurement budget on a no-op while risking a real regression (e.g. enlarging wal_buffers/shared_buffers at 418 MB with a 0.999921 hit ratio, or trading commit-path latency for a group-commit benefit that cannot materialise because commit_delay needs >=12 concurrent sibling transactions and only ~9 backends exist).",
+  "cost": {
+    "restart_required": false,
+    "workload_measurements": 1,
+    "estimated_seconds": 120
+  },
+  "nodes": [
+    {
+      "node_id": "ctx:incumbent-f6d4b8d3",
+      "kind": "context",
+      "label": "twitter incumbent f6d4b8d3: 8 terminals, 168.44 s, 31906.7 rps, p95 646 us",
+      "attributes": {
+        "config_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+        "workload": "twitter",
+        "terminals": 8
+      }
+    },
+    {
+      "node_id": "obj:throughput",
+      "kind": "objective",
+      "label": "client goodput_rps under a fixed 8-terminal closed loop"
+    },
+    {
+      "node_id": "mech:wal-flush-demand",
+      "kind": "mechanism",
+      "label": "WAL write/flush demand versus device service time (4.77 B and 0.0072 writes per transaction; 0.134 ms per write)"
+    },
+    {
+      "node_id": "mech:commit-durability-path",
+      "kind": "mechanism",
+      "label": "commit durability path: commit_delay=671 us vs commit_siblings=12 (inert at ~9 backends), open_datasync, wal_writer_delay=215 ms",
+      "attributes": {
+        "commit_delay_us": 671,
+        "commit_siblings": 12,
+        "wal_sync_method": "open_datasync"
+      }
+    },
+    {
+      "node_id": "mech:client-terminal-saturation",
+      "kind": "mechanism",
+      "label": "terminal saturation: GetUserTweets 0.8787 of capacity, all classes sum to ~0.996 of 8 terminals"
+    },
+    {
+      "node_id": "query:getusertweets",
+      "kind": "query_effect",
+      "label": "GetUserTweets read path: 9.28 buffer hits/txn, 6.65e-6 ms blk_read_time/txn, p50 157 us, p99 2280 us"
+    },
+    {
+      "node_id": "ev:wal-wait-max1",
+      "kind": "evidence",
+      "label": "wal_waiting_backends median 0.0 / p95 0.0 / max 1 out of ~9 backends (154 samples)"
+    },
+    {
+      "node_id": "ev:io-stall-zero",
+      "kind": "evidence",
+      "label": "PSI io some/full stall fraction 0.0; wal write 0.134 ms average; wal_sync_time_per_txn 0.0; sync_average_ms null"
+    },
+    {
+      "node_id": "ev:checkpoint-bgwriter-idle",
+      "kind": "evidence",
+      "label": "checkpoints_req 0, checkpoint write+sync time 0, buffers_clean 0/s, dirty_bytes median 4.28 MB, temp_bytes 0"
+    },
+    {
+      "node_id": "ev:insert-tail",
+      "kind": "evidence",
+      "label": "InsertTweet p99 3336 us / max 54857 us across all classes with zero storage wait signals"
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "e1",
+      "source": "ev:wal-wait-max1",
+      "target": "mech:wal-flush-demand",
+      "relation": "weak_single_sample_support",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "p3"
+      ]
+    },
+    {
+      "edge_id": "e2",
+      "source": "ev:io-stall-zero",
+      "target": "mech:wal-flush-demand",
+      "relation": "refutes_slow_device_service",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "p2"
+      ]
+    },
+    {
+      "edge_id": "e3",
+      "source": "ev:checkpoint-bgwriter-idle",
+      "target": "mech:wal-flush-demand",
+      "relation": "refutes_writeback_pressure",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "p2"
+      ]
+    },
+    {
+      "edge_id": "e4",
+      "source": "mech:wal-flush-demand",
+      "target": "obj:throughput",
+      "relation": "no_measurable_effect",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "p2",
+        "p3"
+      ]
+    },
+    {
+      "edge_id": "e5",
+      "source": "mech:client-terminal-saturation",
+      "target": "obj:throughput",
+      "relation": "rate_limits",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "p1"
+      ]
+    },
+    {
+      "edge_id": "e6",
+      "source": "query:getusertweets",
+      "target": "mech:client-terminal-saturation",
+      "relation": "dominates_terminal_time",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "p1"
+      ]
+    },
+    {
+      "edge_id": "e7",
+      "source": "mech:commit-durability-path",
+      "target": "ev:insert-tail",
+      "relation": "does_not_explain_tail",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": [
+        "p4"
+      ]
+    }
+  ],
+  "interaction_factors": [],
+  "interaction_predictions": {},
+  "interaction_design": null,
+  "created_at": "2026-10-14T09:19:00+00:00"
+}

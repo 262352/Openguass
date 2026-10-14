@@ -1,0 +1,37 @@
+{
+  "schema_version": "andromeda.workload-switch-suite/v1",
+  "suite_id": "huawei-tpcc-twitter-20261013T121707Z",
+  "created_at": "2026-10-14T09:02:23.642114+00:00",
+  "workloads": [
+    "tpcc",
+    "twitter"
+  ],
+  "directions": [
+    "tpcc_to_twitter"
+  ],
+  "budgets": {
+    "bo": {
+      "tpcc": 100,
+      "twitter": 100
+    },
+    "diagnosis_rounds": 12,
+    "diagnosis_measurements": 60
+  },
+  "measurement": {
+    "duration": 120,
+    "warmup_seconds": 30,
+    "terminals_by_workload": {
+      "tpcc": 10,
+      "twitter": 8
+    },
+    "rate": "unlimited",
+    "seed": 20261012
+  },
+  "oracle_isolation": "target BO references are stored under oracle/ and never loaded by MultiAgentRunner",
+  "environment": {
+    "hostname": "dev-261013-200329-1791893057-worker-0",
+    "machine": "aarch64",
+    "kernel": "5.10.0-287.0.0.190.oe2203sp4.aarch64",
+    "code_revision": "ba6b4d43770b19e9b2cf0e9b2b431f9aae63f2c5"
+  }
+}

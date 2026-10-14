@@ -1,0 +1,18 @@
+{
+  "stable": true,
+  "values": [
+    30213.63545463285,
+    29762.640891327097,
+    31906.716224756772
+  ],
+  "median": 30213.63545463285,
+  "spread_percent": 7.096383143462169,
+  "max_min_ratio": 1.0720391493906196,
+  "reason": "stable",
+  "historical_comparison": {
+    "comparable": true,
+    "prior_count": 0,
+    "prior_medians": [],
+    "maximum_ratio": 1.0
+  }
+}

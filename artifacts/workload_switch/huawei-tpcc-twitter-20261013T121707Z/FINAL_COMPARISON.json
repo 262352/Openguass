@@ -1,0 +1,28 @@
+{
+  "schema_version": "andromeda.workload-switch-final-comparison/v1",
+  "suite_id": "huawei-tpcc-twitter-20261013T121707Z",
+  "completed_at": "2026-10-14T09:38:24.736227+00:00",
+  "episodes": [
+    {
+      "episode_id": "huawei-tpcc-twitter-20261013T121707Z-r01-tpcc-to-twitter",
+      "direction": "tpcc_to_twitter",
+      "report": "/root/Openguass/artifacts/workload_switch/huawei-tpcc-twitter-20261013T121707Z/episodes/repeat_01/tpcc_to_twitter/report.json",
+      "oracle_evaluation": "/root/Openguass/artifacts/workload_switch/huawei-tpcc-twitter-20261013T121707Z/oracle/evaluations/repeat_01_tpcc_to_twitter.json",
+      "stop_reason": "no_executable_or_discriminating_followup",
+      "evaluation": {
+        "schema_version": "andromeda.oracle-evaluation/v1",
+        "workload": "twitter",
+        "episode_initial_tps": 29762.640891327097,
+        "episode_final_tps": 29762.640891327097,
+        "bo_reference_verified_tps": 24138.795566038247,
+        "absolute_improvement": 0.0,
+        "relative_improvement_percent": 0.0,
+        "initial_gap_to_bo_reference": -5623.84532528885,
+        "final_gap_to_bo_reference": -5623.84532528885,
+        "gap_closed_percent": -0.0,
+        "visibility": "offline evaluator only; never supplied to diagnosis agents",
+        "episode_id": "huawei-tpcc-twitter-20261013T121707Z-r01-tpcc-to-twitter"
+      }
+    }
+  ]
+}

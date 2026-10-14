@@ -1,0 +1,12 @@
+{
+  "before": {
+    "track_io_timing": "on",
+    "track_wal_io_timing": "on"
+  },
+  "after": {
+    "track_io_timing": "on",
+    "track_wal_io_timing": "on"
+  },
+  "changed": [],
+  "restored_with_postgresql_auto_conf": true
+}

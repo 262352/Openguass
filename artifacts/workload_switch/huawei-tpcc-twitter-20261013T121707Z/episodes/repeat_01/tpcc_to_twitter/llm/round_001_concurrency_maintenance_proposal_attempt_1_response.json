@@ -1,0 +1,171 @@
+{
+  "schema_version": "andromeda.expert-proposal/v1",
+  "proposal_id": "obs-1",
+  "expert": "concurrency_maintenance",
+  "incumbent_config_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+  "workload_fingerprint_hash": "d0369ebe1c5bab05840febaf47e48b4a11b7b8d6729135267c6262b709ff9111",
+  "title": "Observation-only: No configuration cause for GetUserTweets dominance",
+  "anomaly": {
+    "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+    "source": "client",
+    "measurement_type": "state",
+    "unit": "fraction",
+    "aggregation": "max",
+    "sampling_window_seconds": 168.44235052121803,
+    "observed_value": 0.8786500572916667
+  },
+  "configuration_cause": "No configuration cause identified. The incumbent's autovacuum, WAL, and concurrency settings are within healthy ranges, and there are zero lock waits, zero conflicts, and a 99.99% buffer hit ratio. The critical transaction GetUserTweets is the most frequent transaction, not anomalously slow.",
+  "mechanism": "The terminal capacity fraction of GetUserTweets is 87.9% because it represents 3.45 million of the 3.8 million total transactions, not because of excessive per-transaction latency (p50=157us, p99=2280us). The overall system is healthy: no lock waits, no deadlocks, negligible WAL waits (max 1 backend), and no I/O stalls. Therefore, no knob change is justified.",
+  "intermediate_metrics": [
+    {
+      "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+      "source": "client",
+      "measurement_type": "per_transaction",
+      "unit": "us",
+      "aggregation": "p50",
+      "sampling_window_seconds": 168.44,
+      "observed_value": 157.0
+    },
+    {
+      "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+      "source": "client",
+      "measurement_type": "per_transaction",
+      "unit": "us",
+      "aggregation": "p99",
+      "sampling_window_seconds": 168.44,
+      "observed_value": 2280.0
+    },
+    {
+      "metric_id": "locks_waiting",
+      "source": "pg_stat_activity",
+      "measurement_type": "state",
+      "unit": "count",
+      "aggregation": "max",
+      "sampling_window_seconds": 168.44,
+      "observed_value": 0
+    },
+    {
+      "metric_id": "wal_waiting_backends",
+      "source": "pg_stat_activity",
+      "measurement_type": "state",
+      "unit": "count",
+      "aggregation": "max",
+      "sampling_window_seconds": 168.44,
+      "observed_value": 1
+    },
+    {
+      "metric_id": "buffer_hit_ratio",
+      "source": "pg_stat_database",
+      "measurement_type": "rate_per_second",
+      "unit": "ratio",
+      "aggregation": "mean",
+      "sampling_window_seconds": 168.44,
+      "observed_value": 0.9999213020166409
+    },
+    {
+      "metric_id": "autovacuum_count_rate",
+      "source": "pg_stat_database",
+      "measurement_type": "rate_per_second",
+      "unit": "per_second",
+      "aggregation": "mean",
+      "sampling_window_seconds": 168.44,
+      "observed_value": 0.03562043433683906
+    }
+  ],
+  "query_effect": "No change expected.",
+  "expected_tps_effect": "No change expected; throughput remains around 31,900 rps.",
+  "expected_latency_effect": "No change expected; overall p95 remains around 646us.",
+  "knob_changes": [],
+  "predictions": [
+    {
+      "prediction_id": "p1",
+      "edge_id": "e1",
+      "metric_id": "throughput_rps",
+      "expected_direction": "unchanged",
+      "minimum_change": 0.0,
+      "comparison_method": "relative_percent",
+      "rationale": "No intervention is applied; the incumbent is already healthy and the dominant transaction is frequent but not anomalous. Throughput is expected to remain stable."
+    }
+  ],
+  "alternatives": [
+    {
+      "alternative_id": "alt1",
+      "statement": "Stale statistics from infrequent autovacuum analyze cause suboptimal query plans for GetUserTweets.",
+      "discriminating_metric_id": "autoanalyze_count_rate",
+      "expected_direction": "increase"
+    },
+    {
+      "alternative_id": "alt2",
+      "statement": "Long wal_writer_delay causes occasional WAL flushes that indirectly delay read transactions via I/O contention.",
+      "discriminating_metric_id": "wal_writer_delay",
+      "expected_direction": "decrease"
+    }
+  ],
+  "why_exceeds_incumbent": "No change is proposed; therefore no improvement over the incumbent is claimed. This observation-only proposal avoids unnecessary configuration churn.",
+  "cost": {
+    "restart_required": false,
+    "workload_measurements": 1,
+    "estimated_seconds": 10
+  },
+  "nodes": [
+    {
+      "node_id": "ctx1",
+      "kind": "context",
+      "label": "Incumbent config f6d4b8d3"
+    },
+    {
+      "node_id": "mech1",
+      "kind": "mechanism",
+      "label": "GetUserTweets dominates terminal time due to high frequency, not latency"
+    },
+    {
+      "node_id": "ev1",
+      "kind": "evidence",
+      "label": "terminal_capacity_fraction=0.8786, p50=157us, p99=2280us"
+    },
+    {
+      "node_id": "ev2",
+      "kind": "evidence",
+      "label": "No lock waits, no conflicts, buffer hit ratio 99.99%"
+    },
+    {
+      "node_id": "obj1",
+      "kind": "objective",
+      "label": "Maximize throughput without regressions"
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "e1",
+      "source": "ctx1",
+      "target": "mech1",
+      "relation": "supports",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["p1"]
+    },
+    {
+      "edge_id": "e2",
+      "source": "ev1",
+      "target": "mech1",
+      "relation": "supports",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["p1"]
+    },
+    {
+      "edge_id": "e3",
+      "source": "ev2",
+      "target": "mech1",
+      "relation": "supports",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["p1"]
+    },
+    {
+      "edge_id": "e4",
+      "source": "mech1",
+      "target": "obj1",
+      "relation": "no_action_needed",
+      "context_hash": "f6d4b8d367c7e40328ecd942458760992e37f410fb160b630ec667b47d69427c",
+      "prediction_ids": ["p1"]
+    }
+  ]
+}

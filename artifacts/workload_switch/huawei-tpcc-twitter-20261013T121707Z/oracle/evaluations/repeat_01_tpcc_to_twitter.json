@@ -1,0 +1,14 @@
+{
+  "schema_version": "andromeda.oracle-evaluation/v1",
+  "workload": "twitter",
+  "episode_initial_tps": 29762.640891327097,
+  "episode_final_tps": 29762.640891327097,
+  "bo_reference_verified_tps": 24138.795566038247,
+  "absolute_improvement": 0.0,
+  "relative_improvement_percent": 0.0,
+  "initial_gap_to_bo_reference": -5623.84532528885,
+  "final_gap_to_bo_reference": -5623.84532528885,
+  "gap_closed_percent": -0.0,
+  "visibility": "offline evaluator only; never supplied to diagnosis agents",
+  "episode_id": "huawei-tpcc-twitter-20261013T121707Z-r01-tpcc-to-twitter"
+}
