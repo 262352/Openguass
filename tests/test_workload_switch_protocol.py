@@ -5,6 +5,7 @@ import pytest
 from app.experiment.isolation import OracleReferenceStore, assert_diagnosis_context_isolated, evaluate_episode
 from app.multi_agent.graph_protocol import AgentGraph, EvidenceBlackboard, GraphPatch, PatchOperation
 from app.phase2.bayesian_baseline import BayesianBaseline
+from app.experiment.cli import workloads
 from app.experiment.workflow import WorkflowOptions, WorkloadSwitchWorkflow
 from app.phase2.space import FullKnobSpace
 
@@ -15,6 +16,13 @@ def patch(base_version=0, *, episode="e1", workload="twitter", reference=None):
         references=[reference] if reference else [])]
     return GraphPatch(patch_id=f"patch-{base_version}", episode_id=episode, workload=workload,
         author="memory_storage", base_version=base_version, operations=operations, confidence=.6)
+
+
+def test_bo_workload_selector_supports_twitter_only():
+    assert workloads("twitter") == ("twitter",)
+    assert workloads("tpcc,twitter") == ("tpcc", "twitter")
+    with pytest.raises(Exception):
+        workloads("ycsb")
 
 
 def test_graph_patch_store_validates_version_references_and_provenance(tmp_path):

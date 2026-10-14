@@ -61,7 +61,17 @@ class MultiAgentRunner:
             start_config = json.loads(source_file.read_text(encoding="utf-8")).get("config", start_config)
         elif self.source_config_path is not None:
             raise FileNotFoundError(f"source BO configuration does not exist: {source_file}")
-        start_config = self.executor.space.reconcile(start_config)
+        requested_start_config = dict(start_config)
+        start_config = self.executor.space.reconcile({
+            name: self.executor.space.clamp(name, start_config[name])
+            for name in self.executor.space.names
+        })
+        projection = {name: {"requested": requested_start_config[name], "effective": start_config[name]}
+                      for name in self.executor.space.names
+                      if str(requested_start_config[name]).lower() != str(start_config[name]).lower()}
+        (self.directory / "source_config_projection.json").write_text(json.dumps({
+            "source_config": str(source_file), "projected_to_current_safe_space": bool(projection),
+            "changes": projection}, ensure_ascii=False, indent=2), encoding="utf-8")
         source_hash = stable_hash(start_config)
         context = self.executor.context(source_hash, hardware)
         context_hash = stable_hash(context)

@@ -10,7 +10,7 @@ Usage: bash scripts/run_bo_reference_then_switch.sh
 
 Stages are selected with STAGE=bo, STAGE=diagnose, or STAGE=all (default).
 Required prepared assets: .venv, BenchBase, tpcc.dump and twitter.dump.
-Main settings: SUITE_ID, TPCC_BO_BUDGET, TWITTER_BO_BUDGET,
+Main settings: SUITE_ID, BO_WORKLOADS, TPCC_BO_BUDGET, TWITTER_BO_BUDGET,
 BO_INITIAL_POINTS, BO_RETEST_REPEATS, DIRECTIONS, REPETITIONS,
 DIAGNOSIS_ROUNDS, DIAGNOSIS_MEASUREMENTS, DURATION, WARMUP_SECONDS,
 TPCC_TERMINALS, TWITTER_TERMINALS, BASELINE_REPEATS,
@@ -47,6 +47,7 @@ exec "$PYTHON_BIN" -m app.experiment.cli "${STAGE:-all}" \
   --twitter-bo-budget "${TWITTER_BO_BUDGET:-100}" \
   --bo-initial-points "${BO_INITIAL_POINTS:-10}" \
   --bo-retest-repeats "${BO_RETEST_REPEATS:-3}" \
+  --bo-workloads "${BO_WORKLOADS:-tpcc,twitter}" \
   --directions "${DIRECTIONS:-tpcc:twitter,twitter:tpcc}" \
   --repetitions "${REPETITIONS:-1}" \
   --diagnosis-rounds "${DIAGNOSIS_ROUNDS:-12}" \

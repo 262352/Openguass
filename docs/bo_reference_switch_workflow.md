@@ -79,6 +79,16 @@ sudo bash scripts/bootstrap_test_environment.sh --mirror tsinghua --force-reload
 STAGE=bo SUITE_ID=bo-switch-formal bash scripts/run_bo_reference_then_switch.sh
 ```
 
+如果同一套件的 TPC-C reference 已经完成，只补跑 Twitter BO：
+
+```bash
+STAGE=bo BO_WORKLOADS=twitter SUITE_ID=bo-switch-formal \
+  bash scripts/run_bo_reference_then_switch.sh
+```
+
+该命令要求 `oracle/bo_references/tpcc/reference.json` 已存在。它不会重新执行 TPC-C；
+Twitter 完成后会合并更新 `bo_stage_summary.json` 并生成双负载参考标准。
+
 BO 完成后只运行双向诊断：
 
 ```bash

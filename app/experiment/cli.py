@@ -18,6 +18,13 @@ def directions(value: str) -> tuple[tuple[str, str], ...]:
     return tuple(result)
 
 
+def workloads(value: str) -> tuple[str, ...]:
+    result = tuple(item.strip() for item in value.split(",") if item.strip())
+    if not result or len(set(result)) != len(result) or any(item not in {"tpcc", "twitter"} for item in result):
+        raise argparse.ArgumentTypeError("BO workloads must be tpcc, twitter, or tpcc,twitter")
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="BO references followed by isolated evidence-graph diagnosis")
     parser.add_argument("stage", choices=("bo", "diagnose", "all"))
@@ -26,6 +33,7 @@ def main() -> int:
     parser.add_argument("--twitter-bo-budget", type=int, default=100)
     parser.add_argument("--bo-initial-points", type=int, default=10)
     parser.add_argument("--bo-retest-repeats", type=int, default=3)
+    parser.add_argument("--bo-workloads", type=workloads, default=workloads("tpcc,twitter"))
     parser.add_argument("--directions", type=directions, default=directions("tpcc:twitter,twitter:tpcc"))
     parser.add_argument("--repetitions", type=int, default=1)
     parser.add_argument("--diagnosis-rounds", type=int, default=12)
@@ -52,7 +60,8 @@ def main() -> int:
         parser.error("terminal counts must be at least 1")
     options = WorkflowOptions(suite_id=args.suite_id, tpcc_bo_budget=args.tpcc_bo_budget,
         twitter_bo_budget=args.twitter_bo_budget, bo_initial_points=args.bo_initial_points,
-        bo_retest_repeats=args.bo_retest_repeats, directions=args.directions, repetitions=args.repetitions,
+        bo_retest_repeats=args.bo_retest_repeats, bo_workloads=args.bo_workloads,
+        directions=args.directions, repetitions=args.repetitions,
         diagnosis_rounds=args.diagnosis_rounds, diagnosis_measurements=args.diagnosis_measurements,
         duration=args.duration, warmup_seconds=args.warmup_seconds,
         tpcc_terminals=tpcc_terminals, twitter_terminals=twitter_terminals,

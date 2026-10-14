@@ -59,3 +59,5 @@ def test_huawei_comparison_runs_bo_then_only_tpcc_to_twitter_diagnosis():
     assert 'DURATION="${DURATION:-120}"' in script
     assert 'TPCC_TERMINALS="${TPCC_TERMINALS:-10}"' in script
     assert 'TWITTER_TERMINALS="${TWITTER_TERMINALS:-16}"' in script
+    runner = read_script("run_bo_reference_then_switch.sh")
+    assert '--bo-workloads "${BO_WORKLOADS:-tpcc,twitter}"' in runner

@@ -27,6 +27,7 @@ class WorkflowOptions:
     twitter_bo_budget: int = 100
     bo_initial_points: int = 10
     bo_retest_repeats: int = 3
+    bo_workloads: tuple[str, ...] = ("tpcc", "twitter")
     directions: tuple[tuple[str, str], ...] = (("tpcc", "twitter"), ("twitter", "tpcc"))
     repetitions: int = 1
     diagnosis_rounds: int = 12
@@ -93,12 +94,15 @@ class WorkloadSwitchWorkflow:
 
     def run_bo(self) -> dict[str, Any]:
         initial = self._initial_config()
-        results = {}
-        for offset, workload in enumerate(("tpcc", "twitter")):
+        summary_path = self.directory / "bo_stage_summary.json"
+        results = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.exists() else {}
+        workload_seed_offsets = {"tpcc": 0, "twitter": 1}
+        for workload in self.options.bo_workloads:
             budget = self.options.tpcc_bo_budget if workload == "tpcc" else self.options.twitter_bo_budget
             run_id = f"{self.options.suite_id}-{workload}"
             runner = BayesianBaseline(run_id, budget, min(self.options.bo_initial_points, budget - 1),
-                self.options.duration, self.options.terminals_for(workload), self.options.seed + offset, initial,
+                self.options.duration, self.options.terminals_for(workload),
+                self.options.seed + workload_seed_offsets[workload], initial,
                 root=self.reference_run_root, workload=workload, retest_repeats=self.options.bo_retest_repeats,
                 warmup_seconds=self.options.warmup_seconds)
             results[workload] = runner.run()
@@ -106,7 +110,12 @@ class WorkloadSwitchWorkflow:
             target = self.oracle_root / workload / "reference.json"
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-        atomic_json(self.directory / "bo_stage_summary.json", results)
+        atomic_json(summary_path, results)
+        missing = [workload for workload in ("tpcc", "twitter") if not self.store.path(workload).is_file()]
+        if missing:
+            raise FileNotFoundError(
+                f"BO stage completed requested workloads but references are still missing: {missing}; "
+                "run the missing workload before diagnosis")
         self._write_reference_standard()
         return results
 
