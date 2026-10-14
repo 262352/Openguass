@@ -79,6 +79,23 @@ NewOrder/01 [   2]
     assert result["nonretryable_sql_errors"] == 1
 
 
+def test_resource_error_keeps_postgres_message_and_hint():
+    stdout = """
+Results(state=EXIT, nanoSeconds=1, measuredRequests=1000) = 100 requests/sec
+org.postgresql.util.PSQLException: ERROR: out of shared memory
+  Hint: You might need to increase "max_pred_locks_per_transaction".
+SQLException occurred and will not be retried... sql state [53200], error code [0].
+Unexpected SQL Errors:
+GetUserTweets/04 [  10]
+
+""".replace("Hint:", "HINT:")
+    result = classify_sql_errors(stdout)
+    assert not result["accepted"]
+    assert result["sql_states"] == ["53200"]
+    assert result["messages"] == ["out of shared memory"]
+    assert "max_pred_locks_per_transaction" in result["hints"][0]
+
+
 def test_no_unexpected_sql_errors_is_accepted():
     result = classify_sql_errors("Unexpected SQL Errors:\n<EMPTY>\n\n")
     assert result["accepted"] and result["unexpected_sql_errors"] == 0

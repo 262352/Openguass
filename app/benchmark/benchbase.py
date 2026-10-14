@@ -72,6 +72,9 @@ def classify_sql_errors(stdout: str, *, maximum_retryable_ratio: float = 0.001) 
     states = sorted(set(re.findall(
         r"will not be retried[^\n]*sql state \[([0-9A-Z]{5})\]", stdout, re.IGNORECASE)))
     states = [value.upper() for value in states]
+    messages = list(dict.fromkeys(re.findall(r"(?:PSQLException:\s*)?ERROR:\s*([^\r\n]+)", stdout)))
+    details = list(dict.fromkeys(re.findall(r"DETAIL:\s*([^\r\n]+)", stdout)))
+    hints = list(dict.fromkeys(re.findall(r"HINT:\s*([^\r\n]+)", stdout)))
     measured = re.search(r"measuredRequests=(\d+)", stdout)
     measured_requests = int(measured.group(1)) if measured else 0
     ratio = unexpected / measured_requests if measured_requests else (1.0 if unexpected else 0.0)
@@ -83,6 +86,9 @@ def classify_sql_errors(stdout: str, *, maximum_retryable_ratio: float = 0.001) 
         "retryable_sql_errors": retryable,
         "nonretryable_sql_errors": nonretryable,
         "sql_states": states,
+        "messages": messages[:20],
+        "details": details[:20],
+        "hints": hints[:20],
         "measured_requests": measured_requests,
         "unexpected_error_ratio": ratio,
         "maximum_retryable_error_ratio": maximum_retryable_ratio,
@@ -220,9 +226,11 @@ class BenchBaseRunner:
         maximum_retryable_ratio = float(os.getenv("BENCHBASE_MAX_TRANSIENT_ERROR_RATIO", "0.001"))
         sql_errors = classify_sql_errors(stdout, maximum_retryable_ratio=maximum_retryable_ratio)
         if not sql_errors["accepted"]:
+            diagnostic = "; ".join([*sql_errors["messages"], *sql_errors["hints"]])
             raise RuntimeError(
                 f"{workload} failed SQL error policy: unexpected={sql_errors['unexpected_sql_errors']} "
                 f"ratio={sql_errors['unexpected_error_ratio']:.6f} states={sql_errors['sql_states']}; "
+                f"diagnostic={diagnostic or 'see stdout'}; "
                 f"inspect {run_dir / 'stdout.log'}")
         raw_files = sorted(run_dir.glob("*raw.csv"))
         reported_throughput = summary.get("Throughput (requests/second)")

@@ -6,6 +6,7 @@ from app.experiment.isolation import OracleReferenceStore, assert_diagnosis_cont
 from app.multi_agent.graph_protocol import AgentGraph, EvidenceBlackboard, GraphPatch, PatchOperation
 from app.phase2.bayesian_baseline import BayesianBaseline
 from app.experiment.workflow import WorkflowOptions, WorkloadSwitchWorkflow
+from app.phase2.space import FullKnobSpace
 
 
 def patch(base_version=0, *, episode="e1", workload="twitter", reference=None):
@@ -50,6 +51,44 @@ def test_bo_references_are_workload_specific(tmp_path, monkeypatch):
     assert tpcc.workload == "tpcc" and twitter.workload == "twitter"
     assert tpcc.dir != twitter.dir
     assert tpcc.adapter.name == "tpcc" and twitter.adapter.name == "twitter"
+
+
+def test_serializable_lock_ranges_exclude_default_scale100_exhaustion_region():
+    dimensions = {item.name: item for item in FullKnobSpace().dimensions}
+    assert dimensions["max_locks_per_transaction"].low == 128
+    assert dimensions["max_pred_locks_per_transaction"].low == 256
+    assert dimensions["max_pred_locks_per_transaction"].high == 2048
+
+
+def test_reference_retest_rejects_failed_winner_and_falls_back_to_baseline(tmp_path):
+    runner = BayesianBaseline.__new__(BayesianBaseline)
+    runner.retest_repeats = 2
+    runner.dir = tmp_path
+    runner.experiment_id = "test"
+    runner.workload = "twitter"
+    runner.budget = 2
+    runner.initial_points = 1
+    runner.duration = 120
+    runner.warmup_seconds = 30
+    runner.terminals = 16
+    runner.seed = 1
+    calls = []
+
+    def measure(config, _space, label):
+        calls.append(label)
+        if config["candidate"] == "winner":
+            raise RuntimeError("SQLSTATE 53200: out of shared memory")
+        return ({"throughput_rps": 100.0, "p95_us": 10.0}, {"restart": False})
+
+    runner.measure = measure
+    baseline = {"throughput_rps": 100.0, "config": {"candidate": "baseline"}}
+    trials = [{"valid": True, "throughput_rps": 150.0, "evaluation": 1,
+               "config": {"candidate": "winner"}}]
+    reference = runner._build_reference(baseline, trials, object())
+    assert reference["selection"] == {"kind": "baseline", "evaluation": 0}
+    assert reference["retest_attempts"] == 3
+    assert len(reference["rejected_reference_candidates"]) == 1
+    assert "53200" in (tmp_path / "reference_candidate_rejections.jsonl").read_text()
 
 
 def test_target_bo_oracle_is_rejected_from_online_context(tmp_path):

@@ -238,8 +238,11 @@ class BayesianBaseline:
                 baseline = {**measurement, "apply": applied, "config": start_config}
                 atomic_json(baseline_path, baseline)
             trials = load_trials(self.trials_path)
-            xs = [space.encode(start_config)] + [item["point"] for item in trials if item.get("valid")]
-            ys = [baseline["throughput_rps"]] + [item["throughput_rps"] for item in trials if item.get("valid")]
+            xs = [space.encode(start_config)] + [item["point"] for item in trials]
+            ys = [baseline["throughput_rps"]] + [
+                item["throughput_rps"] if item.get("valid") else item.get("surrogate_tps", 0.0)
+                for item in trials
+            ]
             design = latin_hypercube(self.initial_points, 60, self.seed)
             self.write_progress(trials, baseline)
             for index in range(len(trials) + 1, self.budget + 1):
@@ -263,6 +266,13 @@ class BayesianBaseline:
                     ys.append(measurement["throughput_rps"])
                 except Exception as error:
                     trial["error"] = f"{type(error).__name__}: {error}"
+                    # Failed configurations are infeasible observations. Giving
+                    # the surrogate a zero-throughput penalty teaches it to avoid
+                    # the failed region while keeping the trial out of best-TPS
+                    # selection and reference construction.
+                    trial["surrogate_tps"] = 0.0
+                    xs.append(point)
+                    ys.append(0.0)
                 trial["elapsed_seconds"] = round(time.monotonic() - self.started, 3)
                 best_tps = max(ys)
                 trial["improvement_percent"] = (best_tps / baseline["throughput_rps"] - 1) * 100
@@ -276,10 +286,10 @@ class BayesianBaseline:
             atomic_json(self.status_path, summary)
             reference_runs = 0
             if final_state == "completed":
-                self._build_reference(baseline, trials, space)
+                reference = self._build_reference(baseline, trials, space)
                 summary["reference_file"] = str(self.dir / "reference.json")
                 summary["reference_retests"] = self.retest_repeats
-                reference_runs = self.retest_repeats
+                reference_runs = reference["retest_attempts"]
             else:
                 summary["reference_file"] = None
                 summary["reference_retests"] = 0
@@ -298,22 +308,44 @@ class BayesianBaseline:
 
     def _build_reference(self, baseline: dict[str, Any], trials: list[dict[str, Any]],
                          space: FullKnobSpace) -> dict[str, Any]:
-        valid = [item for item in trials if item.get("valid")]
-        best = max(valid, key=lambda item: float(item["throughput_rps"]), default=None)
-        if best is not None and float(best["throughput_rps"]) > float(baseline["throughput_rps"]):
-            config, origin = best["config"], {"kind": "trial", "evaluation": best["evaluation"]}
-        else:
-            config, origin = baseline["config"], {"kind": "baseline", "evaluation": 0}
-        repeats = []
-        for index in range(1, self.retest_repeats + 1):
-            measurement, applied = self.measure(config, space, f"reference_retest_{index}")
-            repeats.append({**measurement, "apply": applied})
+        valid = sorted((item for item in trials if item.get("valid")),
+                       key=lambda item: float(item["throughput_rps"]), reverse=True)
+        candidates = [
+            (item["config"], {"kind": "trial", "evaluation": item["evaluation"]})
+            for item in valid if float(item["throughput_rps"]) > float(baseline["throughput_rps"])
+        ]
+        candidates.append((baseline["config"], {"kind": "baseline", "evaluation": 0}))
+        attempts, rejected = 0, []
+        repeats: list[dict[str, Any]] = []
+        config: dict[str, Any] = {}
+        origin: dict[str, Any] = {}
+        for candidate_config, candidate_origin in candidates:
+            candidate_repeats = []
+            try:
+                for index in range(1, self.retest_repeats + 1):
+                    attempts += 1
+                    measurement, applied = self.measure(
+                        candidate_config, space,
+                        f"reference_{candidate_origin['kind']}_{candidate_origin['evaluation']}_retest_{index}")
+                    candidate_repeats.append({**measurement, "apply": applied})
+            except Exception as error:
+                rejection = {"selection": candidate_origin,
+                             "completed_retests": len(candidate_repeats),
+                             "error": f"{type(error).__name__}: {error}", "at": now()}
+                rejected.append(rejection)
+                append_jsonl(self.dir / "reference_candidate_rejections.jsonl", rejection)
+                continue
+            config, origin, repeats = candidate_config, candidate_origin, candidate_repeats
+            break
+        if not repeats:
+            raise RuntimeError("no BO candidate, including baseline, passed all reference retests")
         tps = [float(item["throughput_rps"]) for item in repeats]
         p95 = [float(item["p95_us"]) for item in repeats]
         reference = {
             "schema_version": "andromeda.bo-reference/v1", "workload": self.workload,
             "definition": "best measured configuration within the declared search space and budget",
             "experiment_id": self.experiment_id, "config": config, "selection": origin,
+            "retest_attempts": attempts, "rejected_reference_candidates": rejected,
             "search_budget": {"total": self.budget, "lhs": self.initial_points,
                               "gp_ei": self.budget - self.initial_points},
             "measurement_protocol": {"duration": self.duration, "warmup_seconds": self.warmup_seconds,

@@ -81,11 +81,13 @@ RANGES: dict[str, tuple[float, float, bool]] = {
     "log_temp_files": (-1, 10240, False),
     "maintenance_work_mem": (16384, 524288, True),
     "max_connections": (100, 300, False),
-    "max_locks_per_transaction": (64, 256, False),
+    # The formal workloads use SERIALIZABLE. Scale-100 Twitter can exhaust the
+    # regular or predicate lock tables at PostgreSQL's default value of 64.
+    "max_locks_per_transaction": (128, 1024, True),
     "max_parallel_maintenance_workers": (0, 8, False),
     "max_parallel_workers": (0, 16, False),
     "max_parallel_workers_per_gather": (0, 8, False),
-    "max_pred_locks_per_transaction": (64, 256, False),
+    "max_pred_locks_per_transaction": (256, 2048, True),
     "max_replication_slots": (0, 16, False),
     "max_standby_streaming_delay": (-1, 60000, False),
     "max_wal_senders": (0, 16, False),
