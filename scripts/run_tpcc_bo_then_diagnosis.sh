@@ -11,6 +11,30 @@ if [[ -f .env ]]; then
 fi
 : "${DEEPSEEK_API_KEY:?Set DEEPSEEK_API_KEY in .env or the environment}"
 
+ensure_postgresql_ready() {
+  local host="${PGHOST:-127.0.0.1}"
+  local port="${PGPORT:-5432}"
+  local version="${PG_CLUSTER_VERSION:-14}"
+  local cluster="${PG_CLUSTER_NAME:-main}"
+  if pg_isready -h "$host" -p "$port" >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "[tpcc-only] PostgreSQL is not responding at ${host}:${port}; attempting ${version}/${cluster} startup"
+  if [[ "$host" == "127.0.0.1" || "$host" == "localhost" ]] && command -v pg_ctlcluster >/dev/null; then
+    pg_ctlcluster "$version" "$cluster" start >/dev/null 2>&1 || true
+    for _ in {1..30}; do
+      pg_isready -h "$host" -p "$port" >/dev/null 2>&1 && return 0
+      sleep 1
+    done
+  fi
+  echo "[tpcc-only] PostgreSQL preflight failed: no response at ${host}:${port}" >&2
+  command -v pg_lsclusters >/dev/null && pg_lsclusters >&2 || true
+  echo "Check: systemctl status postgresql --no-pager; ss -ltnp | grep postgres" >&2
+  return 1
+}
+
+ensure_postgresql_ready
+
 SUITE_ID="${SUITE_ID:-tpcc-only-$(date -u +%Y%m%dT%H%M%SZ)}"
 METHOD_EXPERIMENT_ID="${METHOD_EXPERIMENT_ID:-${SUITE_ID}-diagnosis}"
 mkdir -p artifacts
