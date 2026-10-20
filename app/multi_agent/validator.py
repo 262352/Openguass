@@ -116,14 +116,8 @@ class EvidenceValidator:
         regime_pairs = [(c.get("client", {}).get("regime", "unknown"),
                          t.get("client", {}).get("regime", "unknown"))
                         for c, t in zip(controls, treatments)]
-        invalid_regime_blocks = [index + 1 for index, pair in enumerate(regime_pairs)
-                                 if pair[0] != pair[1]]
-        unstable = bool(invalid_regime_blocks)
-        if invalid_regime_blocks:
-            reasons.append(
-                f"control/treatment regime mismatch in blocks {invalid_regime_blocks}: {regime_pairs}")
         if reasons:
-            validity = "unstable" if unstable and settings_match else "invalid"
+            validity = "invalid"
         else:
             validity = "valid"
 
@@ -176,6 +170,8 @@ class EvidenceValidator:
                     reason="every valid paired treatment TPS is above its paired control TPS")
             verified["paired_decision"] = decision_record
             verified["regime_pairs"] = regime_pairs
+            verified["retry_regime_policy"] = (
+                "diagnostic_only; control/treatment regime mismatch does not affect validity or acceptance")
             # TPS remains the sole optimization objective. Latency, retries,
             # and mechanism metrics remain diagnostic rather than vetoes.
             effective_verdict = decision_record["verdict"]

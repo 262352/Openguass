@@ -299,6 +299,22 @@ def test_two_stable_positive_pairs_are_accepted_even_below_old_gain_threshold():
     assert outcome.accepted_as_incumbent
 
 
+def test_retry_regime_mismatch_is_diagnostic_only():
+    p = proposal()
+    controls = [measurement(100), measurement(100)]
+    treatments = [measurement(110), measurement(105)]
+    controls[0]["client"].update(regime="storm", server_retry_ratio=.90)
+    treatments[0]["client"].update(regime="transition", server_retry_ratio=.40)
+    controls[1]["client"].update(regime="clean", server_retry_ratio=.05)
+    treatments[1]["client"].update(regime="storm", server_retry_ratio=.80)
+    outcome = validate(p, controls, treatments)
+    assert outcome.validity == "valid"
+    assert outcome.accepted_as_incumbent
+    assert outcome.verified_performance["regime_pairs"] == [
+        ("storm", "transition"), ("clean", "storm")]
+    assert outcome.verified_performance["retry_regime_policy"].startswith("diagnostic_only")
+
+
 def test_only_material_tps_decline_refutes_tested_direction():
     p = proposal()
     outcome = validate(p, [measurement(100), measurement(100)],

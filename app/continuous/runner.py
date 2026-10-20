@@ -121,8 +121,8 @@ class TwitterContinuousRunner:
             },
             "acceptance_rule": (
                 "randomized paired blocks; accept when every one of at least two valid treatment blocks beats "
-                "its paired control; bootstrap confidence classifies harmful/equivalent/unresolved results; "
-                "latency is diagnostic only"),
+                "its paired control; retry regime and latency are diagnostic only; bootstrap confidence "
+                "classifies harmful/equivalent/unresolved results"),
             "evidence_refresh": (
                 "after every intervention, all untested sibling hypotheses are superseded and all experts "
                 "must observe the result before proposing the next graph frontier"),
