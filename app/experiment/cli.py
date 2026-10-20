@@ -41,7 +41,7 @@ def main() -> int:
     parser.add_argument("--duration", type=int, default=120)
     parser.add_argument("--warmup-seconds", type=int, default=30)
     parser.add_argument("--terminals", type=int, help="legacy override: use the same terminal count for both workloads")
-    parser.add_argument("--tpcc-terminals", type=int, default=10)
+    parser.add_argument("--tpcc-terminals", type=int, default=5)
     parser.add_argument("--twitter-terminals", type=int, default=8)
     parser.add_argument("--baseline-repeats", type=int, default=3)
     parser.add_argument("--source-profile-repeats", type=int, default=1)

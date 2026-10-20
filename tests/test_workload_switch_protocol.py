@@ -61,10 +61,11 @@ def test_bo_references_are_workload_specific(tmp_path, monkeypatch):
     assert tpcc.adapter.name == "tpcc" and twitter.adapter.name == "twitter"
 
 
-def test_serializable_lock_ranges_exclude_default_scale100_exhaustion_region():
+def test_serializable_lock_ranges_include_defaults_and_large_probe_region():
     dimensions = {item.name: item for item in FullKnobSpace().dimensions}
-    assert dimensions["max_locks_per_transaction"].low == 256
-    assert dimensions["max_pred_locks_per_transaction"].low == 4096
+    assert dimensions["max_locks_per_transaction"].low == 64
+    assert dimensions["max_pred_locks_per_transaction"].low == 64
+    assert dimensions["max_pred_locks_per_transaction"].high >= 4096
     assert dimensions["max_pred_locks_per_transaction"].high == 16384
 
 
@@ -83,7 +84,7 @@ def test_baseline_retries_shared_lock_exhaustion_with_larger_tables(tmp_path):
     space = FullKnobSpace()
     start = space.current_config()
     measurement, _applied, effective = runner.measure_baseline(start, space)
-    assert calls == [4096, 8192]
+    assert calls == [64, 8192]
     assert effective["max_pred_locks_per_transaction"] == 8192
     assert len(measurement["baseline_safety_retries"]) == 1
     assert (tmp_path / "baseline_resource_retries.jsonl").is_file()
@@ -182,8 +183,8 @@ def test_two_direction_workflow_passes_only_source_reference_to_runner(tmp_path,
     assert len(result["episodes"]) == 2
     assert calls[0]["source_config"] == workflow.store.path("tpcc")
     assert calls[1]["source_config"] == workflow.store.path("twitter")
-    assert calls[0]["terminals"] == 8 and calls[0]["source_profile_terminals"] == 10
-    assert calls[1]["terminals"] == 10 and calls[1]["source_profile_terminals"] == 8
+    assert calls[0]["terminals"] == 8 and calls[0]["source_profile_terminals"] == 5
+    assert calls[1]["terminals"] == 5 and calls[1]["source_profile_terminals"] == 8
     first_visible = (workflow.directory / "episodes/repeat_01/tpcc_to_twitter/diagnosis_visible_context.json").read_text()
     assert "999" not in first_visible
     evaluations = sorted((workflow.directory / "oracle/evaluations").glob("*.json"))

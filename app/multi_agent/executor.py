@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import random
 import json
 import os
 import platform
@@ -13,6 +14,7 @@ from app.lab.workloads import PostgresBenchBaseAdapter
 from app.phase2.executor import PostgreSQLKnobExecutor
 from app.phase2.space import FullKnobSpace
 from app.phase2.telemetry import DiagnosticSampler, normalize_by_transactions, summarize
+from app.continuous.query_evidence import PgStatStatementsWindow
 from .models import ExpertProposal
 
 
@@ -46,20 +48,27 @@ class ExperimentExecutor:
     def __init__(self, directory: Path, workload: str, *, duration: int, warmup_seconds: int, terminals: int, seed: int):
         self.directory = directory
         self.system_dir = directory / "system"
-        self.executor = PostgreSQLKnobExecutor(self.system_dir)
+        self.executor = PostgreSQLKnobExecutor(self.system_dir, database=workload)
         self.adapter = PostgresBenchBaseAdapter(workload)
         self.space = FullKnobSpace()
         self.workload = workload
         self.duration, self.warmup_seconds, self.terminals, self.seed = duration, warmup_seconds, terminals, seed
         self.measurement_count = 0
+        self.paired_blocks = max(2, int(os.getenv("PAIRED_BLOCKS", "3")))
         self.warmup_count = 0
         self.restart_count = 0
         self.apply_count = 0
         self.experiment_context: dict[str, Any] = {}
+        self.query_evidence = PgStatStatementsWindow(
+            self.executor._psql,
+            top_n=int(os.getenv("QUERY_EVIDENCE_TOP_N", "10")),
+            wait_interval=float(os.getenv("QUERY_WAIT_SAMPLE_SECONDS", "1")),
+        )
 
     def capture(self) -> tuple[dict[str, Any], dict[str, Any]]:
         raw = self.executor.capture()
         self.executor.enable_diagnostic_timing()
+        self.query_evidence.prepare()
         self.space = FullKnobSpace(raw)
         config = self.space.current_config()
         return config, EnvironmentProbe(self.executor).inspect()
@@ -94,22 +103,57 @@ class ExperimentExecutor:
             self.adapter.warmup(self.warmup_seconds, self.terminals, seed=self.seed)
             self.warmup_count += 1
         quiescence = self.executor.quiesce()
+        query_window = self.query_evidence.begin()
         sampler = DiagnosticSampler(self.workload).start()
         started = time.monotonic()
         try:
             raw = self.adapter.run(self.duration, self.terminals, config=config, seed=self.seed)
         finally:
             samples = sampler.stop()
+            query_evidence = self.query_evidence.finish(query_window)
         parsed = self.adapter.parse_result(raw)
+        policy = raw.get("sql_error_policy", {})
+        successful_transactions = int(policy.get("completed_transactions", 0) or 0)
+        transaction_attempts = int(policy.get("transaction_attempts", 0) or 0)
+        final_failures = int(policy.get("aborted_transactions", 0) or 0) \
+            + int(policy.get("nonretryable_sql_errors", 0) or 0)
         self.measurement_count += 1
+        retry_ratio = float(policy.get("server_retry_ratio", 0.0) or 0.0)
+        normalized_retry_ratio = retry_ratio / 100.0 if retry_ratio > 1.0 else retry_ratio
+        regime = ("storm" if normalized_retry_ratio >= 0.50 else
+                  "clean" if normalized_retry_ratio <= 0.10 else "transition")
         measurement = {**parsed, "healthy": True, "label": label, "run_id": raw.get("run_id"),
             "elapsed_seconds": time.monotonic() - started,
             "telemetry": normalize_by_transactions(summarize(samples), parsed["throughput_rps"]),
+            "query_evidence": query_evidence,
             "plan_evidence": collect_plan_evidence(self.workload),
             "client": {"failed": 0, "timeouts": 0,
-                       "unexpected_sql_errors": raw.get("sql_error_policy", {}).get("nonretryable_sql_errors", 0),
-                       "retryable_database_aborts": raw.get("sql_error_policy", {}).get("retryable_sql_errors", 0),
-                       "unexpected_error_ratio": raw.get("sql_error_policy", {}).get("unexpected_error_ratio", 0),
+                       "objective": "successful completed transaction Goodput",
+                       "successful_transactions": successful_transactions,
+                       "completed_transactions_by_type": {
+                           name: int(values.get("count", 0) or 0)
+                           for name, values in parsed.get("transaction_latency", {}).items()},
+                       "transaction_attempts": transaction_attempts,
+                       "aborted_transactions": int(policy.get("aborted_transactions", 0) or 0),
+                       "final_failures": final_failures,
+                       "reconnect_retry_transactions": int(policy.get("reconnect_retry_transactions", 0) or 0),
+                       "successful_transaction_tps": raw.get("goodput_rps", parsed.get("throughput_rps")),
+                       "attempted_transaction_tps": transaction_attempts / max(float(self.duration), 1.0),
+                       "counter_window": {"scope": "single_benchbase_run_histograms",
+                                          "run_id": raw.get("run_id"),
+                                          "duration_seconds": self.duration,
+                                          "cumulative_postgresql_counters": False},
+                       "unexpected_sql_errors": policy.get("nonretryable_sql_errors", 0),
+                       "retryable_database_aborts": (
+                           policy.get("retryable_sql_errors", 0)
+                           + policy.get("server_retry_transactions", 0)),
+                       "server_retry_transactions": policy.get("server_retry_transactions", 0),
+                       "server_retry_ratio": policy.get("server_retry_ratio", 0.0),
+                       "regime": regime,
+                       "regime_basis": {"metric": "server_retry_ratio",
+                                        "normalized_value": normalized_retry_ratio,
+                                        "clean_max": 0.10, "storm_min": 0.50},
+                       "unexpected_error_ratio": policy.get("unexpected_error_ratio", 0),
                        "status": raw.get("status"), "goodput_rps": raw.get("goodput_rps"),
                        "benchbase_reported_throughput_rps": raw.get("benchbase_reported_throughput_rps"),
                        "average_latency_us": parsed.get("average_us"), "p99_latency_us": parsed.get("p99_us"),
@@ -143,18 +187,24 @@ class ExperimentExecutor:
                           else "no transaction type consumes half of terminal capacity"}
 
     def run_paired(self, incumbent: dict[str, Any], candidate: dict[str, Any], round_number: int) -> dict[str, Any]:
-        # Alternate temporal order across rounds while retaining C1/T1 and C2/T2 pair identities.
-        order = [("control_1", incumbent), ("treatment_1", candidate), ("control_2", incumbent), ("treatment_2", candidate)]
-        if round_number % 2 == 0:
-            order = [("treatment_1", candidate), ("control_1", incumbent), ("treatment_2", candidate), ("control_2", incumbent)]
+        # Randomized paired blocks prevent a fixed temporal order from being
+        # confounded with cache, checkpoint, and background-task drift.
+        rng = random.Random(self.seed + round_number)
+        order = []
+        for block in range(1, self.paired_blocks + 1):
+            pair = [(f"control_{block}", incumbent), (f"treatment_{block}", candidate)]
+            rng.shuffle(pair)
+            order.extend(pair)
         values, applies = {}, {}
         for label, config in order:
             values[label], applies[label] = self.measure(config, f"round_{round_number:03d}_{label}")
-        candidate_apply = applies["treatment_2"]
+        candidate_apply = applies[f"treatment_{self.paired_blocks}"]
         observed = dict(candidate_apply.get("observed", {}))
         observed.update(candidate_apply.get("session_settings", {}))
-        return {"order": [x[0] for x in order], "controls": [values["control_1"], values["control_2"]],
-                "treatments": [values["treatment_1"], values["treatment_2"]], "applies": applies,
+        return {"order": [x[0] for x in order],
+                "controls": [values[f"control_{i}"] for i in range(1, self.paired_blocks + 1)],
+                "treatments": [values[f"treatment_{i}"] for i in range(1, self.paired_blocks + 1)],
+                "paired_blocks": self.paired_blocks, "applies": applies,
                 "observed_candidate_settings": observed}
 
     def run_factorial(self, incumbent: dict[str, Any], candidate: dict[str, Any], proposal: ExpertProposal, round_number: int) -> dict[str, Any]:

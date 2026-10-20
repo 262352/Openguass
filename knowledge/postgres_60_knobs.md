@@ -1,6 +1,9 @@
 # PostgreSQL 14 tuning-knob catalog
 
-All 60 requested knobs exist on the test server.
+The shared BO/diagnosis catalog contains 62 PostgreSQL knobs. Runtime metadata
+is recaptured from `pg_settings` at the start of every experiment. The two
+additional SSI dimensions are `max_pred_locks_per_relation` and
+`max_pred_locks_per_page`.
 
 | Knob | Context | Execution | Type | Current | Unit |
 |---|---|---|---|---:|---|

@@ -108,7 +108,7 @@ else
   pg_isready -h 127.0.0.1 -p 5432 >/dev/null
   .venv/bin/python - <<'PY'
 from app.phase2.space import FullKnobSpace
-assert len(FullKnobSpace().names) == 60
+assert len(FullKnobSpace().names) == 62
 print("Prepared TPC-C/Twitter environment is valid")
 PY
 fi
@@ -131,7 +131,7 @@ nohup env \
   DIAGNOSIS_MEASUREMENTS="${DIAGNOSIS_MEASUREMENTS:-60}" \
   DURATION="${DURATION:-120}" \
   WARMUP_SECONDS="${WARMUP_SECONDS:-30}" \
-  TPCC_TERMINALS="${TPCC_TERMINALS:-10}" \
+  TPCC_TERMINALS="${TPCC_TERMINALS:-5}" \
   TWITTER_TERMINALS="${TWITTER_TERMINALS:-8}" \
   BASELINE_REPEATS="${BASELINE_REPEATS:-3}" \
   SOURCE_PROFILE_REPEATS="${SOURCE_PROFILE_REPEATS:-1}" \

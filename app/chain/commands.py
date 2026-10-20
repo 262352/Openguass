@@ -16,7 +16,7 @@ from .loop import _hash
 
 
 def capture_source_config(root: Path, workload: str, output: Path | None = None) -> dict[str, Any]:
-    """Capture the currently active 60-knob configuration as a named source input."""
+    """Capture the currently active catalog configuration as a named source input."""
     output = output or root / "artifacts" / "source_configs" / f"{workload}.json"
     if not output.is_absolute():
         output = root / output

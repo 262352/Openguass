@@ -12,7 +12,10 @@ def utc_now() -> str:
 
 ExpertRole = Literal["query_execution", "memory_storage", "concurrency_maintenance"]
 NodeKind = Literal["context", "intervention", "mechanism", "evidence", "query_effect", "objective", "interaction"]
-EdgeState = Literal["proposed", "tested_supported", "tested_refuted", "inconclusive", "stale"]
+EdgeState = Literal[
+    "proposed", "parked", "underpowered", "tested_supported",
+    "tested_refuted", "inconclusive", "stale", "carried_prior",
+]
 ReviewKind = Literal["metric_supplement", "competing_explanation", "side_effect", "same_mechanism", "interaction"]
 
 
@@ -34,6 +37,23 @@ class KnobChange(BaseModel):
     new_value: str | int | float | bool
     numerical_basis: str
     mechanism_role: str
+    recommended_min: str | int | float | bool | None = None
+    recommended_max: str | int | float | bool | None = None
+    initial_step: int | float | None = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def range_contains_target(self):
+        if (self.recommended_min is None) != (self.recommended_max is None):
+            raise ValueError("recommended_min and recommended_max must be provided together")
+        if self.recommended_min is not None:
+            try:
+                low, high, target = (float(self.recommended_min), float(self.recommended_max),
+                                     float(self.new_value))
+            except (TypeError, ValueError):
+                raise ValueError("numeric recommended bounds require a numeric new_value")
+            if low > high or not low <= target <= high:
+                raise ValueError("new_value must lie inside the recommended range")
+        return self
 
 
 class FrozenPrediction(BaseModel):

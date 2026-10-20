@@ -144,7 +144,7 @@ class TransitionComparison:
                 diagnosis = llm.diagnose(index, {
                     "objective": visible["objective"], "transition": visible["transition"],
                     "metric_narrative": narrative.model_dump(mode="json"), "current_config": current,
-                    "all_60_allowed_knobs": all_knobs, "retrieved_official_postgresql_14_knowledge": retrieved,
+                    "all_catalog_allowed_knobs": all_knobs, "retrieved_official_postgresql_14_knowledge": retrieved,
                 }, space)
                 diagnosis_data = diagnosis.model_dump(mode="json")
                 if diagnosis.decision == "change":
@@ -173,7 +173,7 @@ class TransitionComparison:
         method_started = time.monotonic()
         xs = [space.encode(start_config)]
         ys = [baseline["throughput_rps"]]
-        initial = latin_hypercube(min(8, self.budget), 60, self.seed)
+        initial = latin_hypercube(min(8, self.budget), len(space), self.seed)
         for index in range(1, self.budget + 1):
             point = initial[index - 1] if index <= len(initial) else propose(xs, ys, self.seed + index, pool=4096)[0]
             config = space.decode(point)
@@ -239,7 +239,7 @@ class TransitionComparison:
                 "experiment_id": self.id, "transition": f"{self.source}->{self.target}",
                 "objective": {"metric": "target_workload_throughput_rps", "direction": "maximize", "other_metrics": "diagnostic_only"},
                 "fairness": {"same_start_config": True, "same_snapshot": True, "same_budget_per_method": self.budget, "same_duration_seconds": self.duration, "same_terminals": self.terminals, "restart_time_charged": True},
-                "knob_count": 60, "source_config": start_config, "target_baseline_tps": baseline["throughput_rps"],
+                "knob_count": len(space), "source_config": start_config, "target_baseline_tps": baseline["throughput_rps"],
                 "posthoc_union_best_tps": posthoc_best,
                 "methods": {"andromeda": self._method_summary(andromeda, baseline["throughput_rps"], posthoc_best), "gp": self._method_summary(gp, baseline["throughput_rps"], posthoc_best)},
                 "state": "completed", "completed_at": datetime.now(timezone.utc).isoformat(),
@@ -258,4 +258,3 @@ class TransitionComparison:
             finally:
                 for sig, handler in old_handlers.items():
                     signal.signal(sig, handler)
-

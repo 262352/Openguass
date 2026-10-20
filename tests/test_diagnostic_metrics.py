@@ -27,4 +27,14 @@ def test_telemetry_reports_wal_latency_waits_and_host_io_pressure():
              "track_wal_io_timing_enabled": 1}
     result = summarize([before, after])
     assert result["wal_timing"]["sync_average_ms"] == 20
+    assert result["counter_window"]["aligned_to"] == "current BenchBase measurement only"
+    assert result["counter_window"]["counter_resets"] == []
     assert {"wal_sync_latency", "wal_wait", "host_io_pressure"} <= set(result["anomalies"])
+
+
+def test_telemetry_marks_counter_reset_instead_of_silently_trusting_delta():
+    before = {"timestamp": 0, "xact_commit": 100, "xact_rollback": 200}
+    after = {"timestamp": 10, "xact_commit": 5, "xact_rollback": 8}
+    result = summarize([before, after])
+    assert set(result["counter_window"]["counter_resets"]) >= {"xact_commit", "xact_rollback"}
+    assert "counter_reset_detected" in result["anomalies"]

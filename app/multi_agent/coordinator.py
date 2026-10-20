@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from typing import Any
 
 from app.phase2.space import FullKnobSpace
@@ -11,8 +11,9 @@ from .models import CrossReview, ExpertProposal, ExperimentSelection
 class Coordinator:
     """Transparent rules for retaining competition and choosing one serialized experiment."""
 
-    def __init__(self, space: FullKnobSpace | None = None):
+    def __init__(self, space: FullKnobSpace | None = None, *, required_measurements: int = 4):
         self.space = space or FullKnobSpace()
+        self.required_measurements = required_measurements
 
     def merge_exact_duplicates(self, proposals: list[ExpertProposal]) -> tuple[list[ExpertProposal], dict[str, list[ExpertProposal]]]:
         buckets: dict[tuple[Any, ...], list[ExpertProposal]] = defaultdict(list)
@@ -27,7 +28,8 @@ class Coordinator:
 
     def select(self, proposals: list[ExpertProposal], reviews: list[CrossReview], *,
                current_config: dict[str, Any], refuted_signatures: set[tuple[Any, ...]] | None = None,
-               remaining_measurements: int = 1) -> ExperimentSelection:
+               remaining_measurements: int = 1,
+               knob_experiment_counts: Counter[str] | None = None) -> ExperimentSelection:
         refuted_signatures = refuted_signatures or set()
         review_map: dict[str, list[CrossReview]] = defaultdict(list)
         for review in reviews:
@@ -43,7 +45,10 @@ class Coordinator:
             knob_penalty = max(0, len(proposal.knob_changes) - 1) * .25
             cost_penalty = proposal.cost.estimated_seconds / 600.0
             # Different predictions are information; executable incumbent benefit remains mandatory.
-            score = 4.0 * differentiators + 2.0 * len(proposal.alternatives) - constraints - restart_penalty - knob_penalty - cost_penalty
+            coverage_bonus = sum(2.0 / (1 + (knob_experiment_counts or Counter())[change.knob])
+                                 for change in proposal.knob_changes)
+            score = (4.0 * differentiators + 2.0 * len(proposal.alternatives)
+                     + coverage_bonus - constraints - restart_penalty - knob_penalty - cost_penalty)
             candidates.append((score, proposal))
         if not candidates:
             return ExperimentSelection(selected_proposal_id=None, reason="no executable evidence-backed proposal remains",
@@ -63,7 +68,7 @@ class Coordinator:
             return "observation-only proposal"
         if proposal.merge_signature() in refuted:
             return "same action and context were already sufficiently refuted"
-        required_measurements = 4
+        required_measurements = self.required_measurements
         if proposal.interaction_design:
             required_measurements = 4 * proposal.interaction_design.repeats_per_cell
         if max(proposal.cost.workload_measurements, required_measurements) > budget:
@@ -81,8 +86,10 @@ class Coordinator:
             if str(current.get(change.knob)).lower() != str(change.old_value).lower():
                 return f"proposal old value for {change.knob} does not match incumbent"
             families.add(self._family(change.knob))
-        if len(families) > 1 and not proposal.interaction_factors:
-            return "action crosses independent mechanisms without a pre-registered interaction design"
+        # A diagnosis may require a coherent multi-knob action spanning catalog
+        # families (for example shared_buffers plus bgwriter controls). It is
+        # still one mechanism test; factorial registration is required only
+        # when the proposal claims an interaction effect.
         return None
 
     @staticmethod

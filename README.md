@@ -18,13 +18,13 @@ DIAGNOSIS_ROUNDS=12 \
 DIAGNOSIS_MEASUREMENTS=60 \
 DURATION=120 \
 WARMUP_SECONDS=30 \
-TPCC_TERMINALS=10 \
+TPCC_TERMINALS=5 \
 TWITTER_TERMINALS=8 \
 REPETITIONS=1 \
 bash scripts/run_bo_reference_then_switch.sh
 ```
 
-TPC-C 使用 scale factor 20 和 10 个终端，Twitter 使用 scale factor 100 和 8 个终端；两者均以 `TRANSACTION_SERIALIZABLE`、120 秒正式测量、30 秒独立预热和 `rate=unlimited` 模式运行。Twitter 不再存在 10000 TPS 人为上限，并降低并发以避免串行化谓词锁压力主导实验。诊断模型只看到源负载 BO 配置、源负载稳态、目标负载初始测量、当前 incumbent 和证据图。目标负载 BO 配置与参考 TPS 保存在套件的 `oracle/` 目录中，只由离线评价器读取。详细协议、分阶段命令和结果结构见 [`docs/bo_reference_switch_workflow.md`](docs/bo_reference_switch_workflow.md)。
+当前本地实验配置中，TPC-C 使用 scale factor 5 和 5 个终端（每个 warehouse 一个 terminal），Twitter 使用 scale factor 100 和 8 个终端；两者均以 `TRANSACTION_SERIALIZABLE`、120 秒正式测量、30 秒独立预热和 `rate=unlimited` 模式运行。Twitter 不再存在 10000 TPS 人为上限，并降低并发以避免串行化谓词锁压力主导实验。诊断模型只看到源负载 BO 配置、源负载稳态、目标负载初始测量、当前 incumbent 和证据图。目标负载 BO 配置与参考 TPS 保存在套件的 `oracle/` 目录中，只由离线评价器读取。详细协议、分阶段命令和结果结构见 [`docs/bo_reference_switch_workflow.md`](docs/bo_reference_switch_workflow.md)。
 
 ## 部署要求
 
@@ -206,3 +206,8 @@ cat "artifacts/workload_switch/${SUITE_ID}/FINAL_COMPARISON.md"
 正式实验中的 TPS 使用 BenchBase Goodput（成功完成事务/秒）。少量 PostgreSQL `40P01`
 死锁或 `40001` 序列化冲突不会终止整个 BO；默认允许比例上限为 0.1%，错误数、SQLSTATE 和
 比例会写入测量记录。超过上限或出现其他 SQL 错误时，该轮配置判为无效且不参与 GP 拟合。
+# Twitter 默认配置持续诊断调优（10-15）
+
+独立入口 `scripts/run_twitter_continuous.sh` 只使用 Twitter、本轮默认基线和本轮实测证据。
+它不读取 TPC-C、BO/GP 参考配置或历史最佳 TPS。完整方法、输出字段、冒烟与正式命令见
+[`docs/TWITTER_CONTINUOUS_TUNING_10-15.md`](docs/TWITTER_CONTINUOUS_TUNING_10-15.md)。

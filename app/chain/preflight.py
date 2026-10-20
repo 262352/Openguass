@@ -30,7 +30,8 @@ def chain_preflight(root: Path = Path(".")) -> dict:
         checks["postgresql_benchbase"] = {"ok": False, "error_type": type(error).__name__}
     try:
         space = FullKnobSpace()
-        checks["knob_catalog"] = {"ok": len(space.names) == 60, "count": len(space.names)}
+        checks["knob_catalog"] = {"ok": len(space.names) >= 62, "count": len(space.names),
+                                  "names": space.names}
     except Exception as error:
         checks["knob_catalog"] = {"ok": False, "error_type": type(error).__name__}
     try:
@@ -43,7 +44,8 @@ def chain_preflight(root: Path = Path(".")) -> dict:
     try:
         executor = PostgreSQLKnobExecutor(root / "artifacts" / "v3_v4" / "preflight" / "system")
         captured = executor.capture()
-        checks["rollback_backup"] = {"ok": len(captured) == 60 and executor.backup.is_file(), "captured_knobs": len(captured)}
+        checks["rollback_backup"] = {"ok": len(captured) == len(space) and executor.backup.is_file(),
+                                     "captured_knobs": len(captured)}
     except Exception as error:
         checks["rollback_backup"] = {"ok": False, "error_type": type(error).__name__}
     try:

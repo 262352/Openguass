@@ -17,10 +17,12 @@ COUNTERS = (
     "wal_write_time", "wal_sync_time", "io_pressure_some_total_us", "io_pressure_full_total_us",
     "seq_scan", "idx_scan", "n_live_tup", "n_dead_tup", "vacuum_count", "autovacuum_count",
     "analyze_count", "autoanalyze_count",
+    "host_cpu_total_ticks", "host_cpu_busy_ticks", "disk_read_bytes", "disk_write_bytes",
 )
 GAUGES = ("numbackends", "active_backends", "waiting_backends", "idle_in_transaction", "locks_total", "locks_waiting",
           "client_waiting_backends", "io_waiting_backends", "lock_waiting_backends", "wal_waiting_backends",
           "dirty_bytes", "writeback_bytes", "track_io_timing_enabled", "track_wal_io_timing_enabled")
+GAUGES = GAUGES + ("load1", "load5", "memory_available_bytes", "memory_total_bytes")
 
 
 class DiagnosticSampler:
@@ -79,7 +81,11 @@ where d.datname=current_database()
     @staticmethod
     def _host_io_sample() -> dict[str, float]:
         result = {"io_pressure_some_total_us": 0.0, "io_pressure_full_total_us": 0.0,
-                  "dirty_bytes": 0.0, "writeback_bytes": 0.0}
+                  "dirty_bytes": 0.0, "writeback_bytes": 0.0,
+                  "host_cpu_total_ticks": 0.0, "host_cpu_busy_ticks": 0.0,
+                  "disk_read_bytes": 0.0, "disk_write_bytes": 0.0,
+                  "load1": 0.0, "load5": 0.0,
+                  "memory_available_bytes": 0.0, "memory_total_bytes": 0.0}
         try:
             for line in open("/proc/pressure/io", encoding="utf-8"):
                 parts = line.split()
@@ -93,6 +99,34 @@ where d.datname=current_database()
                 key, _, value = line.partition(":")
                 if key in {"Dirty", "Writeback"}:
                     result[f"{key.lower()}_bytes"] = float(value.strip().split()[0]) * 1024.0
+                elif key == "MemAvailable":
+                    result["memory_available_bytes"] = float(value.strip().split()[0]) * 1024.0
+                elif key == "MemTotal":
+                    result["memory_total_bytes"] = float(value.strip().split()[0]) * 1024.0
+        except (OSError, ValueError, IndexError):
+            pass
+        try:
+            fields = open("/proc/stat", encoding="utf-8").readline().split()[1:]
+            ticks = [float(value) for value in fields]
+            result["host_cpu_total_ticks"] = sum(ticks)
+            idle = sum(ticks[index] for index in (3, 4) if index < len(ticks))
+            result["host_cpu_busy_ticks"] = sum(ticks) - idle
+        except (OSError, ValueError, IndexError):
+            pass
+        try:
+            load = open("/proc/loadavg", encoding="utf-8").read().split()
+            result["load1"], result["load5"] = float(load[0]), float(load[1])
+        except (OSError, ValueError, IndexError):
+            pass
+        try:
+            read_sectors = write_sectors = 0.0
+            for line in open("/proc/diskstats", encoding="utf-8"):
+                parts = line.split()
+                if len(parts) < 14 or parts[2].startswith(("loop", "ram", "dm-")):
+                    continue
+                read_sectors += float(parts[5]); write_sectors += float(parts[9])
+            result["disk_read_bytes"] = read_sectors * 512.0
+            result["disk_write_bytes"] = write_sectors * 512.0
         except (OSError, ValueError, IndexError):
             pass
         return result
@@ -119,6 +153,8 @@ def summarize(samples: list[dict[str, float]]) -> dict[str, Any]:
     if len(samples) < 2:
         return {"sample_count": len(samples), "rates_per_second": {}, "gauges": {}, "anomalies": ["insufficient_samples"]}
     elapsed = max(samples[-1]["timestamp"] - samples[0]["timestamp"], 1e-6)
+    reset_counters = [name for name in COUNTERS
+                      if samples[-1].get(name, 0.0) < samples[0].get(name, 0.0)]
     rates = {name: max(0.0, samples[-1].get(name, 0.0) - samples[0].get(name, 0.0)) / elapsed for name in COUNTERS}
     rates["buffer_hit_ratio"] = rates["blks_hit"] / max(1.0, rates["blks_hit"] + rates["blks_read"])
     rates["rollback_ratio"] = rates["xact_rollback"] / max(1.0, rates["xact_commit"] + rates["xact_rollback"])
@@ -139,16 +175,32 @@ def summarize(samples: list[dict[str, float]]) -> dict[str, Any]:
     wal_write_average_ms = rates["wal_write_time"] / rates["wal_write"] if rates["wal_write"] > 0 else None
     io_pressure = {"some_stall_fraction": rates["io_pressure_some_total_us"] / 1_000_000.0,
                    "full_stall_fraction": rates["io_pressure_full_total_us"] / 1_000_000.0}
+    cpu_total = rates.get("host_cpu_total_ticks", 0.0)
+    host = {
+        "cpu_busy_fraction": rates.get("host_cpu_busy_ticks", 0.0) / cpu_total if cpu_total > 0 else None,
+        "load1_median": gauges["load1"]["median"], "load5_median": gauges["load5"]["median"],
+        "memory_available_bytes_median": gauges["memory_available_bytes"]["median"],
+        "memory_total_bytes_median": gauges["memory_total_bytes"]["median"],
+        "disk_read_bytes_per_second": rates.get("disk_read_bytes"),
+        "disk_write_bytes_per_second": rates.get("disk_write_bytes"),
+    }
     if wal_sync_average_ms is not None and wal_sync_average_ms >= 10:
         anomalies.append("wal_sync_latency")
     if io_pressure["full_stall_fraction"] >= 0.05:
         anomalies.append("host_io_pressure")
     if gauges["wal_waiting_backends"]["max"] > 0:
         anomalies.append("wal_wait")
+    if reset_counters:
+        anomalies.append("counter_reset_detected")
     return {"sample_count": len(samples), "elapsed_seconds": elapsed, "rates_per_second": rates, "gauges": gauges,
+            "counter_window": {"method": "last_sample_minus_first_sample",
+                               "start_monotonic": samples[0]["timestamp"],
+                               "end_monotonic": samples[-1]["timestamp"],
+                               "aligned_to": "current BenchBase measurement only",
+                               "counter_resets": reset_counters},
             "wal_timing": {"sync_average_ms": wal_sync_average_ms, "write_average_ms": wal_write_average_ms,
                            "timing_enabled": bool(gauges["track_wal_io_timing_enabled"]["max"])},
-            "host_io": io_pressure, "anomalies": sorted(set(anomalies))}
+            "host_io": io_pressure, "host": host, "anomalies": sorted(set(anomalies))}
 
 
 def normalize_by_transactions(summary: dict[str, Any], throughput_rps: float) -> dict[str, Any]:

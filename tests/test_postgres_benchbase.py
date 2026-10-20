@@ -17,8 +17,8 @@ def test_postgres_templates_cover_required_workloads():
         assert int(root.findtext("terminals")) >= 1
 
 
-def test_formal_tpcc_and_twitter_profiles_are_unlimited_and_sized():
-    expected = {"tpcc": (20, 10), "twitter": (100, 8)}
+def test_current_tpcc_and_twitter_profiles_are_unlimited_and_sized():
+    expected = {"tpcc": (5, 5), "twitter": (100, 8)}
     for workload, (scale, terminals) in expected.items():
         root = ET.parse(ROOT / f"benchmarks/postgres/{workload}.xml").getroot()
         assert root.findtext("isolation") == "TRANSACTION_SERIALIZABLE"
@@ -99,3 +99,31 @@ GetUserTweets/04 [  10]
 def test_no_unexpected_sql_errors_is_accepted():
     result = classify_sql_errors("Unexpected SQL Errors:\n<EMPTY>\n\n")
     assert result["accepted"] and result["unexpected_sql_errors"] == 0
+
+
+def test_benchbase_internal_serialization_retries_are_counted_separately():
+    stdout = """
+Results(state=EXIT, nanoSeconds=1, measuredRequests=100) = 10 requests/sec
+Completed Transactions:
+NewOrder/01 [  20]
+
+Aborted Transactions:
+NewOrder/01 [   1]
+
+Rejected Transactions (Server Retry):
+NewOrder/01 [  70]
+Payment/02 [  10]
+
+Rejected Transactions (Retry Different):
+<EMPTY>
+
+Unexpected SQL Errors:
+<EMPTY>
+
+"""
+    result = classify_sql_errors(stdout)
+    assert result["accepted"]
+    assert result["server_retry_transactions"] == 80
+    assert result["completed_transactions"] == 20
+    assert result["server_retry_ratio"] == pytest.approx(80 / 101)
+    assert result["server_retries_per_completed"] == 4

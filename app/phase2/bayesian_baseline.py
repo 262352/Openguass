@@ -41,10 +41,14 @@ def append_jsonl(path: Path, value: Any) -> None:
 def load_source_config(path: Path, space: FullKnobSpace) -> dict[str, Any]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     config = raw.get("config", raw)
-    missing = sorted(set(space.names) - set(config))
-    if missing:
-        raise ValueError(f"source configuration is missing {len(missing)} knobs: {missing}")
-    return space.reconcile({name: space.clamp(name, config[name]) for name in space.names})
+    # Older source snapshots contain the original 60 dimensions.  New catalog
+    # entries are filled from the captured server value so an in-place Huawei
+    # deployment can migrate without silently dropping either SSI knob.
+    return space.reconcile({
+        name: space.clamp(name, config.get(name, next(
+            dimension.current for dimension in space.dimensions if dimension.name == name)))
+        for name in space.names
+    })
 
 
 def load_trials(path: Path) -> list[dict[str, Any]]:
@@ -192,7 +196,7 @@ class BayesianBaseline:
         status = {
             "experiment_id": self.experiment_id,
             "state": "stopping" if self.interrupted or self.stop_path.exists() else "running",
-            "workload": self.workload, "knob_count": 60, "objective": "maximize throughput_rps",
+            "workload": self.workload, "knob_count": len(FullKnobSpace()), "objective": "maximize throughput_rps",
             "budget": self.budget, "completed": completed, "remaining": self.budget - completed,
             "lhs_completed": lhs_done, "gp_completed": gp_done,
             "baseline_tps": baseline["throughput_rps"], "best_tps": best_tps,
@@ -213,7 +217,7 @@ class BayesianBaseline:
                 "bayesian_best_tps": bo_best,
             }
         atomic_json(self.dir / "comparison_live.json", comparison)
-        lines = [f"# {self.workload} 60旋钮贝叶斯优化", "",
+        lines = [f"# {self.workload} {len(FullKnobSpace())}旋钮贝叶斯优化", "",
                  f"- 状态：`{status['state']}`", f"- 已完成：`{completed}/{self.budget}`",
                  f"- 初始化/GP：`{lhs_done}/{gp_done}`", f"- 基线 TPS：`{baseline['throughput_rps']}`",
                  f"- 当前最好 TPS：`{best_tps}`", f"- 改善：`{status['improvement_percent']:.3f}%`",
@@ -239,11 +243,11 @@ class BayesianBaseline:
         captured = self.executor.capture()
         instrumentation = self.executor.enable_diagnostic_timing()
         space = FullKnobSpace(captured)
-        if len(space.names) != 60:
-            raise RuntimeError("Bayesian baseline requires exactly 60 knobs")
+        dimension_count = len(space)
         start_config = load_source_config(self.source_config_path, space)
         atomic_json(self.dir / "manifest.json", {
-            "experiment_id": self.experiment_id, "workload": self.workload, "knob_count": 60,
+            "experiment_id": self.experiment_id, "workload": self.workload,
+            "knob_count": dimension_count, "knob_names": space.names,
             "budget": self.budget, "initial_lhs": self.initial_points,
             "gp_ei_iterations": self.budget - self.initial_points,
             "duration": self.duration, "warmup_seconds": self.warmup_seconds,
@@ -276,7 +280,7 @@ class BayesianBaseline:
                 item["throughput_rps"] if item.get("valid") else item.get("surrogate_tps", 0.0)
                 for item in trials
             ]
-            design = latin_hypercube(self.initial_points, 60, self.seed)
+            design = latin_hypercube(self.initial_points, dimension_count, self.seed)
             self.write_progress(trials, baseline)
             for index in range(len(trials) + 1, self.budget + 1):
                 if self.interrupted or self.stop_path.exists():
@@ -396,7 +400,7 @@ class BayesianBaseline:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Resumable 60-knob workload-specific Bayesian optimization reference")
+    parser = argparse.ArgumentParser(description="Resumable catalog-driven workload-specific Bayesian optimization reference")
     parser.add_argument("--experiment-id", required=True)
     parser.add_argument("--budget", type=int, default=100)
     parser.add_argument("--initial-points", type=int, default=8)

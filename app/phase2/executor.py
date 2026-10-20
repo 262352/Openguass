@@ -31,12 +31,22 @@ class PostgreSQLKnobExecutor:
         self._captured = False
         self.diagnostic_instrumentation: dict[str, Any] = {}
 
-    def _psql(self, sql: str) -> str:
+    def _psql(self, sql: str, *, timeout: float | None = None) -> str:
         command = ["runuser", "-u", "postgres", "--", "psql", "-XAt", "-h", "/var/run/postgresql", "-p", os.getenv("PGPORT", "5432"), "-U", "postgres", "-d", self.database, "-v", "ON_ERROR_STOP=1", "-c", sql]
         local_env = dict(self.env)
         for name in ("PGHOST", "PGUSER", "PGPASSWORD", "PGDATABASE"):
             local_env.pop(name, None)
-        result = subprocess.run(command, env=local_env, text=True, capture_output=True, timeout=30)
+        effective_timeout = timeout if timeout is not None else float(os.getenv("PSQL_TIMEOUT_SECONDS", "30"))
+        if effective_timeout <= 0:
+            raise ValueError("psql timeout must be positive")
+        try:
+            result = subprocess.run(command, env=local_env, text=True, capture_output=True,
+                                    timeout=effective_timeout)
+        except subprocess.TimeoutExpired as error:
+            operation = " ".join(sql.strip().split())[:160]
+            raise TimeoutError(
+                f"psql command timed out after {effective_timeout:g}s: {operation}"
+            ) from error
         if result.returncode:
             raise RuntimeError(result.stderr.strip() or result.stdout.strip())
         return result.stdout.strip()
@@ -46,8 +56,9 @@ class PostgreSQLKnobExecutor:
         allowed = ",".join("'%s'" % name for name in catalog.names)
         rows = self._psql(f"select name,setting from pg_settings where name in ({allowed}) order by name")
         self.original = dict(line.split("|", 1) for line in rows.splitlines() if "|" in line)
-        if len(self.original) != 60:
-            raise RuntimeError(f"expected 60 settings from pg_settings, got {len(self.original)}")
+        if len(self.original) != len(catalog):
+            raise RuntimeError(
+                f"expected {len(catalog)} settings from pg_settings, got {len(self.original)}")
         data_dir = Path(self._psql("show data_directory"))
         self.auto_conf = data_dir / "postgresql.auto.conf"
         if self.auto_conf.exists():
@@ -58,6 +69,24 @@ class PostgreSQLKnobExecutor:
         self._captured = True
         self.applied = dict(self.original)
         return dict(self.original)
+
+    def capture_catalog(self) -> list[dict[str, Any]]:
+        """Capture provenance and boot/reset values for every tunable GUC."""
+        catalog = FullKnobSpace()
+        allowed = ",".join("'%s'" % name for name in catalog.names)
+        rows = self._psql(
+            "select coalesce(json_agg(row_to_json(x)),'[]'::json)::text from ("
+            "select name,setting,boot_val,reset_val,unit,context,source,"
+            "coalesce(sourcefile,'') sourcefile,coalesce(sourceline,0) sourceline,"
+            "pending_restart from pg_settings where name in (" + allowed + ") order by name) x"
+        )
+        value = json.loads(rows or "[]")
+        if len(value) != len(catalog):
+            raise RuntimeError(
+                f"expected {len(catalog)} pg_settings metadata rows, got {len(value)}")
+        (self.dir / "pg_settings_catalog.json").write_text(
+            json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+        return value
 
     def enable_diagnostic_timing(self) -> dict[str, Any]:
         """Enable measurement-only timing GUCs after the rollback snapshot is saved."""
@@ -155,12 +184,79 @@ class PostgreSQLKnobExecutor:
     def quiesce(self) -> dict[str, Any]:
         """Flush restore/warmup writeback before a timed run and use one protocol everywhere."""
         settle_seconds = max(0.0, float(os.getenv("SNAPSHOT_SETTLE_SECONDS", "5")))
+        checkpoint_timeout = float(os.getenv("CHECKPOINT_TIMEOUT_SECONDS", "300"))
+        if checkpoint_timeout <= 0:
+            raise ValueError("CHECKPOINT_TIMEOUT_SECONDS must be positive")
         started = time.monotonic()
-        self._psql("checkpoint")
+        bgwriter_before = self._bgwriter_snapshot()
+        self._psql("checkpoint", timeout=checkpoint_timeout)
         if settle_seconds:
             time.sleep(settle_seconds)
+        storage_quiet = self._wait_for_storage_quiet()
+        bgwriter_after = self._bgwriter_snapshot()
+        bgwriter_delta = {
+            key: bgwriter_after[key] - bgwriter_before.get(key, 0.0)
+            for key in bgwriter_after
+        }
         return {"checkpoint_completed": True, "settle_seconds": settle_seconds,
+                "checkpoint_timeout_seconds": checkpoint_timeout,
+                "storage_quiet": storage_quiet,
+                "pg_stat_bgwriter_before": bgwriter_before,
+                "pg_stat_bgwriter_after": bgwriter_after,
+                "pg_stat_bgwriter_delta": bgwriter_delta,
                 "elapsed_seconds": round(time.monotonic() - started, 3)}
+
+    def _bgwriter_snapshot(self) -> dict[str, float]:
+        names = ("checkpoint_write_time", "checkpoint_sync_time", "buffers_checkpoint",
+                 "buffers_clean", "buffers_backend", "buffers_backend_fsync")
+        row = self._psql(
+            "select checkpoint_write_time,checkpoint_sync_time,buffers_checkpoint,"
+            "buffers_clean,buffers_backend,buffers_backend_fsync from pg_stat_bgwriter"
+        )
+        parts = row.split("|")
+        if len(parts) != len(names):
+            raise RuntimeError(f"unexpected pg_stat_bgwriter row: {row!r}")
+        return {name: float(value) for name, value in zip(names, parts)}
+
+    @staticmethod
+    def _io_pressure_full_avg10() -> float | None:
+        try:
+            for line in Path("/proc/pressure/io").read_text(encoding="utf-8").splitlines():
+                parts = line.split()
+                if parts and parts[0] == "full":
+                    values = dict(item.split("=", 1) for item in parts[1:] if "=" in item)
+                    return float(values["avg10"])
+        except (OSError, KeyError, ValueError):
+            return None
+        return None
+
+    def _wait_for_storage_quiet(self) -> dict[str, Any]:
+        threshold = float(os.getenv("STORAGE_PSI_FULL_AVG10_THRESHOLD", "30"))
+        max_wait = max(0.0, float(os.getenv("STORAGE_QUIET_MAX_WAIT_SECONDS", "120")))
+        interval = max(0.1, float(os.getenv("STORAGE_QUIET_SAMPLE_SECONDS", "2")))
+        required = max(1, int(os.getenv("STORAGE_QUIET_CONSECUTIVE_SAMPLES", "2")))
+        started, consecutive, samples = time.monotonic(), 0, []
+        while True:
+            value = self._io_pressure_full_avg10()
+            samples.append({"elapsed_seconds": round(time.monotonic() - started, 3),
+                            "psi_io_full_avg10_percent": value})
+            # PSI is unavailable on some kernels. The completed checkpoint remains
+            # the portable quiescence barrier in that case.
+            if value is None:
+                return {"passed": True, "reason": "psi_io_unavailable_after_checkpoint",
+                        "threshold_percent": threshold, "samples": samples}
+            consecutive = consecutive + 1 if value <= threshold else 0
+            if consecutive >= required:
+                return {"passed": True, "reason": "psi_io_below_threshold",
+                        "threshold_percent": threshold, "required_consecutive_samples": required,
+                        "wait_seconds": round(time.monotonic() - started, 3), "samples": samples}
+            elapsed = time.monotonic() - started
+            if elapsed >= max_wait:
+                raise TimeoutError(
+                    f"storage did not become quiet within {max_wait:g}s: "
+                    f"PSI I/O full avg10={value:g}% threshold={threshold:g}%"
+                )
+            time.sleep(min(interval, max_wait - elapsed))
 
     def restore(self) -> dict[str, Any]:
         if not self._captured or self.auto_conf is None:

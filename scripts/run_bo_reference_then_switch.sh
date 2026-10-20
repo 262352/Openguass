@@ -33,14 +33,17 @@ fi
 : "${DEEPSEEK_API_KEY:?Set DEEPSEEK_API_KEY in .env or the environment}"
 PYTHON_BIN="${ROOT_DIR}/.venv/bin/python"
 [[ -x "$PYTHON_BIN" ]] || { echo "Missing ${PYTHON_BIN}; prepare the environment first." >&2; exit 1; }
-for workload in tpcc twitter; do
+required_workloads="tpcc twitter"
+if [[ "${STAGE:-all}" == "bo" ]]; then
+  required_workloads="${BO_WORKLOADS:-tpcc,twitter}"
+  required_workloads="${required_workloads//,/ }"
+fi
+for workload in $required_workloads; do
   [[ -s "artifacts/snapshots/${workload}.dump" ]] || { echo "Missing snapshot for ${workload}." >&2; exit 1; }
+  snapshot_workload_profile_matches "$workload" "artifacts/snapshots/workload_profile.sha256" || {
+    echo "Snapshot for ${workload} does not match its current workload XML." >&2; exit 1;
+  }
 done
-profile_file="artifacts/snapshots/workload_profile.sha256"
-snapshot_profile_matches "$profile_file" || {
-  echo "Snapshots do not match the current workload scale/configuration; rebuild them with scripts/bootstrap_test_environment.sh --force-reload." >&2
-  exit 1
-}
 [[ -s .benchbase/target/benchbase-postgres/benchbase.jar ]] || { echo "BenchBase is not prepared." >&2; exit 1; }
 
 exec "$PYTHON_BIN" -m app.experiment.cli "${STAGE:-all}" \
@@ -56,7 +59,7 @@ exec "$PYTHON_BIN" -m app.experiment.cli "${STAGE:-all}" \
   --diagnosis-measurements "${DIAGNOSIS_MEASUREMENTS:-60}" \
   --duration "${DURATION:-120}" \
   --warmup-seconds "${WARMUP_SECONDS:-30}" \
-  --tpcc-terminals "${TERMINALS:-${TPCC_TERMINALS:-10}}" \
+  --tpcc-terminals "${TERMINALS:-${TPCC_TERMINALS:-5}}" \
   --twitter-terminals "${TERMINALS:-${TWITTER_TERMINALS:-8}}" \
   --baseline-repeats "${BASELINE_REPEATS:-3}" \
   --source-profile-repeats "${SOURCE_PROFILE_REPEATS:-1}" \

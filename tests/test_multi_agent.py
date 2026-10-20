@@ -13,7 +13,7 @@ from app.multi_agent.reporting import ReportBuilder
 from app.multi_agent.runner import MultiAgentRunner
 from app.multi_agent.validator import EvidenceValidator, _metric
 from app.multi_agent.executor import stable_hash
-from app.multi_agent.experts import DeepSeekExpertBackend
+from app.multi_agent.experts import DeepSeekExpertBackend, ExpertPanel
 from app.phase2.space import FullKnobSpace
 
 
@@ -143,8 +143,90 @@ def test_nested_wal_and_host_metrics_are_resolved_for_predictions():
     assert _metric(value, "host_io.full_stall_fraction") == .25
 
 
+def test_nested_gauge_leaf_is_resolved_for_predictions():
+    value = measurement(100)
+    value["telemetry"]["gauges"]["wal_waiting_backends"] = {
+        "median": 4.0, "p95": 5.0, "max": 5.0,
+    }
+    assert _metric(value, "telemetry.gauges.wal_waiting_backends.median") == 4.0
+    assert _metric(value, "telemetry.gauges.wal_waiting_backends.p95") == 5.0
+
+
+def test_aggregate_metric_prediction_is_inconclusive_instead_of_crashing():
+    p = proposal(metric="telemetry.gauges.wal_waiting_backends", direction="decrease")
+    controls = [measurement(100), measurement(101)]
+    treatments = [measurement(110), measurement(111)]
+    for item, median in zip(controls + treatments, (5.0, 4.0, 4.0, 3.0)):
+        item["telemetry"]["gauges"]["wal_waiting_backends"] = {
+            "median": median, "p95": 5.0, "max": 5.0,
+        }
+    outcome = validate(p, controls, treatments)
+    observations = [observation for edge in outcome.edge_results.values()
+                    for observation in edge["observations"]
+                    if observation["prediction_id"].endswith("pred1")]
+    assert observations[0]["state"] == "inconclusive"
+    assert "not a finite scalar" in observations[0]["reason"]
+    assert outcome.mechanism_verdict == "inconclusive"
+
+
+def test_expert_proposal_rejects_known_aggregate_prediction_before_execution():
+    value = measurement(100)
+    value["telemetry"]["gauges"]["wal_waiting_backends"] = {
+        "median": 4.0, "p95": 5.0, "max": 5.0,
+    }
+    aggregate = proposal(metric="telemetry.gauges.wal_waiting_backends")
+    import pytest
+    with pytest.raises(ValueError, match="resolves to a container"):
+        DeepSeekExpertBackend._validate_prediction_metric_leaves(aggregate, value)
+
+    leaf = proposal(metric="telemetry.gauges.wal_waiting_backends.median")
+    DeepSeekExpertBackend._validate_prediction_metric_leaves(leaf, value)
+
+
+def test_expert_panel_isolates_one_failed_expert():
+    class Backend:
+        def propose(self, role, payload):
+            if role == "query_execution":
+                raise ValueError("invalid_knob default_statistics_target: malformed value")
+            return proposal(f"p-{role}", expert=role)
+
+    panel = ExpertPanel(Backend())
+    proposals = panel.propose_parallel({"round": 4})
+    assert {item.expert for item in proposals} == {"memory_storage", "concurrency_maintenance"}
+    assert panel.last_proposal_failures[0]["expert"] == "query_execution"
+    assert panel.last_proposal_failures[0]["failure_kind"] == "invalid_knob"
+
+
+def test_knob_prevalidation_rejects_unchanged_or_out_of_range_action():
+    space = FullKnobSpace()
+    current = space.current_config()
+    payload = {"allowed_knobs": space.describe(), "current_incumbent": {"config": current}}
+    unchanged = proposal(old=current["random_page_cost"], new=current["random_page_cost"])
+    import pytest
+    with pytest.raises(ValueError, match="new_value equals incumbent"):
+        DeepSeekExpertBackend._validate_knob_changes(unchanged, payload)
+    outside = proposal(old=current["random_page_cost"], new=99)
+    with pytest.raises(ValueError, match="outside safe range"):
+        DeepSeekExpertBackend._validate_knob_changes(outside, payload)
+
+
+def test_raw_graph_reference_error_is_actionable():
+    value = {
+        "nodes": [{"node_id": "n1"}],
+        "edges": [{"edge_id": "e1", "source": "default_statistics_target=300",
+                   "target": "n1", "prediction_ids": ["p1"]}],
+        "predictions": [{"prediction_id": "p1", "edge_id": "e1"}],
+    }
+    import pytest
+    with pytest.raises(ValueError, match="not a declared node_id"):
+        DeepSeekExpertBackend._validate_raw_graph_references(value)
+
+
 def test_client_terminal_saturation_becomes_high_signal_alert():
     value = measurement(500)
+    value["client"].update({"server_retry_ratio": .90,
+                            "server_retry_transactions": 900,
+                            "retryable_database_aborts": 900})
     value["client"]["bottleneck_summary"] = {
         "detected": True, "critical_transaction": "InsertTweet",
         "terminal_capacity_fraction": .92, "transaction_p50_us": 350_000,
@@ -157,10 +239,10 @@ def test_client_terminal_saturation_becomes_high_signal_alert():
     alerts = MultiAgentRunner._diagnostic_alerts(value, incumbent)
     kinds = {item["kind"] for item in alerts}
     assert {"client_terminal_saturation", "low_frequency_tail_masked_by_overall_percentile",
-            "same_config_throughput_collapse"} <= kinds
+            "same_config_throughput_collapse", "serialization_retry_storm"} <= kinds
 
 
-def test_transaction_tail_regression_blocks_tps_acceptance():
+def test_transaction_tail_regression_is_diagnostic_only_for_tps_objective():
     p = proposal()
     controls = [measurement(100), measurement(101)]
     treatments = [measurement(120, .5), measurement(121, .5)]
@@ -169,8 +251,30 @@ def test_transaction_tail_regression_blocks_tps_acceptance():
     for item in treatments:
         item["client"]["transaction_latency"] = {"InsertTweet": {"mean_us": 2000, "p50_us": 2000, "p99_us": 4000}}
     outcome = validate(p, controls, treatments)
-    assert outcome.performance_verdict == "no_improvement"
-    assert not outcome.accepted_as_incumbent
+    assert outcome.performance_verdict == "verified_improvement"
+    assert outcome.accepted_as_incumbent
+    diagnostic = outcome.verified_performance["latency_diagnostic_only"]
+    assert diagnostic["used_as_acceptance_gate"] is False
+    assert max(diagnostic["maximum_regression_percent_by_pair"]) > 10
+
+
+def test_tps_gain_with_retry_drop_is_flagged_for_semantic_review_not_rejected():
+    p = proposal()
+    controls = [measurement(100), measurement(101)]
+    treatments = [measurement(120), measurement(121)]
+    for item in controls:
+        item["client"].update({"server_retry_ratio": .85,
+            "successful_transactions": 12_000, "transaction_attempts": 80_000,
+            "server_retry_transactions": 68_000, "final_failures": 0})
+    for item in treatments:
+        item["client"].update({"server_retry_ratio": .05,
+            "successful_transactions": 14_400, "transaction_attempts": 15_200,
+            "server_retry_transactions": 800, "final_failures": 0})
+    outcome = validate(p, controls, treatments)
+    assert outcome.accepted_as_incumbent
+    semantics = outcome.verified_performance["transaction_semantics"]
+    assert all(item["classification"] == "semantic_improvement_review" for item in semantics)
+    assert all(item["acceptance_effect"] == "diagnostic_only" for item in semantics)
 
 
 def test_independent_roots_to_tps_do_not_create_interaction(tmp_path):
@@ -219,12 +323,13 @@ def test_raw_idx_scan_rate_following_tps_does_not_support_plan_edge():
     assert any("workload-volume coupled" in x["reason"] for edge in outcome.edge_results.values() for x in edge["observations"])
 
 
-def test_large_same_configuration_drift_blocks_incumbent():
+def test_arm_spread_is_a_tripwire_not_a_candidate_rejection_rule():
     verdict = EvidenceValidator().baseline_stability([measurement(400), measurement(1000), measurement(3000)])
     assert not verdict["stable"] and verdict["max_min_ratio"] > 2
     p = proposal()
     outcome = validate(p, [measurement(100), measurement(300)], [measurement(130), measurement(400)])
-    assert outcome.validity == "unstable" and not outcome.accepted_as_incumbent
+    assert outcome.validity == "valid" and outcome.accepted_as_incumbent
+    assert outcome.verified_performance["paired_decision"]["verdict"] == "accept"
 
 
 def test_wrong_applied_value_or_context_is_invalid():

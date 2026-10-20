@@ -83,11 +83,16 @@ RANGES: dict[str, tuple[float, float, bool]] = {
     "max_connections": (100, 300, False),
     # The formal workloads use SERIALIZABLE. Scale-100 Twitter can exhaust the
     # regular or predicate lock tables at PostgreSQL's default value of 64.
-    "max_locks_per_transaction": (256, 2048, True),
+    "max_locks_per_transaction": (64, 2048, True),
     "max_parallel_maintenance_workers": (0, 8, False),
     "max_parallel_workers": (0, 16, False),
     "max_parallel_workers_per_gather": (0, 8, False),
-    "max_pred_locks_per_transaction": (4096, 16384, True),
+    "max_pred_locks_per_transaction": (64, 16384, True),
+    # PostgreSQL promotes fine-grained SSI predicate locks when these limits
+    # are exhausted.  They therefore belong to the experiment space rather
+    # than being hidden platform constants for SERIALIZABLE workloads.
+    "max_pred_locks_per_relation": (-2, 4096, False),
+    "max_pred_locks_per_page": (0, 256, False),
     "max_replication_slots": (0, 16, False),
     "max_standby_streaming_delay": (-1, 60000, False),
     "max_wal_senders": (0, 16, False),
@@ -134,9 +139,15 @@ class FullKnobSpace:
                 low, high = max(low, physical_low), min(high, physical_high)
                 dim = Dimension(name, kind, item["execution_class"], item["unit"], value, low, high, log=use_log)
             dimensions.append(dim)
-        if len(dimensions) != 60 or len({x.name for x in dimensions}) != 60:
-            raise RuntimeError("the full experiment requires exactly 60 unique PostgreSQL knobs")
+        expected = int(json.loads(catalog_path.read_text(encoding="utf-8")).get(
+            "requested_count", len(catalog)))
+        if len(dimensions) != expected or len({x.name for x in dimensions}) != expected:
+            raise RuntimeError(
+                f"the experiment catalog requires exactly {expected} unique PostgreSQL knobs")
         self.dimensions = tuple(dimensions)
+
+    def __len__(self) -> int:
+        return len(self.dimensions)
 
     @property
     def names(self) -> list[str]:
@@ -144,7 +155,7 @@ class FullKnobSpace:
 
     def decode(self, point: list[float]) -> dict[str, Any]:
         if len(point) != len(self.dimensions):
-            raise ValueError(f"expected 60 dimensions, got {len(point)}")
+            raise ValueError(f"expected {len(self.dimensions)} dimensions, got {len(point)}")
         return self.reconcile({d.name: d.decode(x) for d, x in zip(self.dimensions, point)})
 
     def encode(self, config: dict[str, Any]) -> list[float]:

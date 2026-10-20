@@ -135,13 +135,7 @@ class MultiAgentRunner:
                 remaining = self.max_measurements - self.executor.measurement_count
                 if remaining < 4:
                     stop_reason = "measurement_budget_exhausted"; break
-                visible_incumbent = incumbent.model_dump(mode="json")
-                # Evidence is supplied once as current_measurement. Keeping another full copy
-                # inside the incumbent made each parallel model request unnecessarily large.
-                visible_incumbent["evidence"] = {
-                    "measurement_label": incumbent.evidence.get("label"),
-                    "run_id": incumbent.evidence.get("run_id"),
-                }
+                visible_incumbent = self._visible_incumbent(incumbent)
                 payload = {"round": round_number, "current_incumbent": visible_incumbent,
                     "current_measurement": self._visible_measurement(incumbent.evidence, include_diagnostics=True),
                     "diagnostic_alerts": self._diagnostic_alerts(incumbent.evidence, incumbent),
@@ -153,13 +147,19 @@ class MultiAgentRunner:
                         "target_initial_measurements": [self._visible_measurement(item, include_diagnostics=False)
                                                         for item in baselines]},
                     "allowed_knobs": self.executor.space.describe(),
-                    "graph_frontier": graph.snapshot("pending").model_dump(mode="json"),
-                    "tested_summary": graph.snapshot("tested").model_dump(mode="json"),
+                    "graph_frontier": self._compact_graph(graph.snapshot("pending")),
+                    "tested_action_summary": self._compact_graph(graph.snapshot("tested")),
                     "remaining_budget": {"rounds": self.max_rounds-round_number+1, "workload_measurements": remaining}}
                 assert_diagnosis_context_isolated(payload)
                 try:
                     proposals = self.panel.propose_parallel(payload)
+                    for failure in getattr(self.panel, "last_proposal_failures", []):
+                        _append(self.directory / "expert_failure_log.jsonl", failure)
+                        _append(self.ledger, failure)
                 except Exception as error:
+                    for failure in getattr(self.panel, "last_proposal_failures", []):
+                        _append(self.directory / "expert_failure_log.jsonl", failure)
+                        _append(self.ledger, failure)
                     stop_reason = "model_unavailable"
                     _append(self.ledger, {"event": "expert_panel_failed", "round": round_number,
                         "error_type": type(error).__name__, "error": str(error)[:2000]})
@@ -284,6 +284,7 @@ class MultiAgentRunner:
         result["client"] = measurement.get("client", {})
         if include_diagnostics:
             result["telemetry"] = measurement.get("telemetry", {})
+            result["query_evidence"] = measurement.get("query_evidence", {})
             result["plan_evidence"] = measurement.get("plan_evidence", {})
             result["database_state"] = measurement.get("database_state", {})
         context = measurement.get("experiment_context", {})
@@ -294,10 +295,60 @@ class MultiAgentRunner:
         return result
 
     @staticmethod
+    def _visible_incumbent(incumbent: IncumbentSnapshot) -> dict[str, Any]:
+        """Keep the action context without duplicating all measurement evidence."""
+        return {
+            "config": incumbent.config,
+            "config_hash": incumbent.config_hash,
+            "verified_performance": incumbent.verified_performance,
+            "guardrails": incumbent.guardrails,
+            "workload_fingerprint_hash": incumbent.workload_fingerprint_hash,
+            "accepted_experiment_id": incumbent.accepted_experiment_id,
+            "evidence_pointer": {"label": incumbent.evidence.get("label"),
+                                 "run_id": incumbent.evidence.get("run_id")},
+        }
+
+    @staticmethod
+    def _compact_graph(snapshot, *, maximum_edges: int = 80) -> dict[str, Any]:
+        """Expose graph decisions without recursively growing raw observations."""
+        node_labels = {node.node_id: {"kind": node.kind, "label": node.label}
+                       for node in snapshot.nodes}
+        edges = []
+        for edge in snapshot.edges[-maximum_edges:]:
+            edges.append({
+                "edge_id": edge.edge_id,
+                "source": node_labels.get(edge.source, {"kind": "unknown", "label": edge.source}),
+                "target": node_labels.get(edge.target, {"kind": "unknown", "label": edge.target}),
+                "relation": edge.relation,
+                "state": edge.state,
+                "proposal_ids": edge.proposal_ids,
+                "validation_experiment_ids": edge.validation_experiment_ids,
+                "predictions": [{"metric_id": item.metric_id,
+                                  "expected_direction": item.expected_direction,
+                                  "minimum_change": item.minimum_change,
+                                  "comparison_method": item.comparison_method}
+                                 for item in edge.frozen_predictions],
+            })
+        return {"graph_kind": snapshot.graph_kind, "version": snapshot.version,
+                "edge_count": len(snapshot.edges), "edges": edges,
+                "truncated": len(snapshot.edges) > maximum_edges}
+
+    @staticmethod
     def _diagnostic_alerts(measurement: dict[str, Any], incumbent: IncumbentSnapshot) -> list[dict[str, Any]]:
         """Derive high-signal facts deterministically before asking an expert to explain them."""
         alerts: list[dict[str, Any]] = []
         client = measurement.get("client", {})
+        retry_ratio = client.get("server_retry_ratio")
+        if isinstance(retry_ratio, (int, float)) and retry_ratio >= 0.05:
+            alerts.append({
+                "kind": "serialization_retry_storm",
+                "severity": "high",
+                "evidence": {"server_retry_ratio": retry_ratio,
+                             "server_retry_transactions": client.get("server_retry_transactions"),
+                             "retryable_database_aborts": client.get("retryable_database_aborts")},
+                "interpretation": ("BenchBase internally retried PostgreSQL serialization failures; "
+                                   "goodput excludes rejected attempts"),
+            })
         bottleneck = client.get("bottleneck_summary", {})
         if bottleneck.get("detected"):
             alerts.append({

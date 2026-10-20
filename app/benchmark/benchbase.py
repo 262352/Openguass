@@ -22,6 +22,14 @@ JDK23 = Path.home() / ".local/jdks/jdk-23.0.2+7"
 RETRYABLE_SQL_STATES = frozenset({"40P01", "40001"})
 
 
+def _histogram_count(stdout: str, heading: str) -> int:
+    """Return the total count from one BenchBase terminal histogram section."""
+    section = re.search(re.escape(heading) + r".*?\n(.*?)\n\n", stdout, re.DOTALL)
+    if not section or "<EMPTY>" in section.group(1):
+        return 0
+    return sum(int(value) for value in re.findall(r"\[\s*(\d+)\]", section.group(1)))
+
+
 def _percentile(values: list[float], percentile: float) -> float | None:
     if not values:
         return None
@@ -77,6 +85,13 @@ def classify_sql_errors(stdout: str, *, maximum_retryable_ratio: float = 0.001) 
     hints = list(dict.fromkeys(re.findall(r"HINT:\s*([^\r\n]+)", stdout)))
     measured = re.search(r"measuredRequests=(\d+)", stdout)
     measured_requests = int(measured.group(1)) if measured else 0
+    completed_transactions = _histogram_count(stdout, "Completed Transactions:")
+    aborted_transactions = _histogram_count(stdout, "Aborted Transactions:")
+    server_retry_transactions = _histogram_count(stdout, "Rejected Transactions (Server Retry):")
+    reconnect_retry_transactions = _histogram_count(stdout, "Rejected Transactions (Retry Different):")
+    transaction_attempts = (completed_transactions + aborted_transactions
+                            + server_retry_transactions + reconnect_retry_transactions)
+    server_retry_ratio = server_retry_transactions / max(1, transaction_attempts)
     ratio = unexpected / measured_requests if measured_requests else (1.0 if unexpected else 0.0)
     retryable = unexpected if unexpected and states and set(states) <= RETRYABLE_SQL_STATES else 0
     nonretryable = unexpected - retryable
@@ -90,10 +105,18 @@ def classify_sql_errors(stdout: str, *, maximum_retryable_ratio: float = 0.001) 
         "details": details[:20],
         "hints": hints[:20],
         "measured_requests": measured_requests,
+        "completed_transactions": completed_transactions,
+        "aborted_transactions": aborted_transactions,
+        "server_retry_transactions": server_retry_transactions,
+        "reconnect_retry_transactions": reconnect_retry_transactions,
+        "transaction_attempts": transaction_attempts,
+        "server_retry_ratio": server_retry_ratio,
+        "server_retries_per_completed": server_retry_transactions / max(1, completed_transactions),
         "unexpected_error_ratio": ratio,
         "maximum_retryable_error_ratio": maximum_retryable_ratio,
         "accepted": accepted,
-        "policy": "40P01/40001 are accepted only within the fixed retryable-error ratio",
+        "policy": ("unexpected 40P01/40001 errors are accepted only within the fixed error ratio; "
+                   "BenchBase internal server retries are reported separately and excluded from goodput"),
     }
 
 
@@ -257,7 +280,38 @@ class BenchBaseRunner:
             "transaction_latency": summarize_transaction_latencies(raw_files, duration, terminals),
             "summary_file": str(summaries[-1]),
             "raw_files": [str(path) for path in raw_files],
-            "status": "passed_with_retryable_aborts" if sql_errors["retryable_sql_errors"] else "passed",
+            "status": ("passed_with_server_retries" if sql_errors["server_retry_transactions"]
+                       else "passed_with_retryable_aborts" if sql_errors["retryable_sql_errors"] else "passed"),
         }
         (run_dir / "verified-result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+        return result
+
+    def load_only(self, workload: str, terminals: int = 1, random_seed: int | None = None) -> dict[str, Any]:
+        """Clear/create/load a dataset without executing a benchmark measurement."""
+        if workload not in SUPPORTED:
+            raise ValueError(f"unsupported workload: {workload}")
+        self.health()
+        load_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + f"-{workload}-load"
+        run_dir = ROOT / "artifacts" / "dataset_loads" / load_id
+        run_dir.mkdir(parents=True, exist_ok=False)
+        config = self._config(workload, 5, terminals, run_dir, random_seed=random_seed)
+        command = [str(java_binary()), "-jar", "benchbase.jar", "-b", workload,
+            "-c", str(config), "--clear=true", "--create=true", "--load=true",
+            "--execute=false", "-d", str(run_dir)]
+        started = time.monotonic()
+        with (run_dir / "stdout.log").open("w", encoding="utf-8") as log:
+            process = subprocess.run(command, cwd=self.root, stdout=log,
+                                     stderr=subprocess.STDOUT, text=True)
+        tree = ET.parse(config)
+        password = tree.getroot().find("password")
+        if password is not None:
+            password.text = "***REDACTED***"
+            tree.write(config, encoding="utf-8", xml_declaration=True)
+        result = {"load_id": load_id, "workload": workload, "execute": False,
+                  "return_code": process.returncode,
+                  "elapsed_seconds": round(time.monotonic() - started, 3),
+                  "stdout": str(run_dir / "stdout.log")}
+        (run_dir / "load-result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+        if process.returncode:
+            raise RuntimeError(f"{workload} load failed; inspect {run_dir / 'stdout.log'}")
         return result

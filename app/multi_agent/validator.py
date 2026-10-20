@@ -5,6 +5,7 @@ import statistics
 from typing import Any
 
 from .models import ExpertProposal, FrozenPrediction, ValidationOutcome
+from .paired_decision import decide_paired
 
 
 def _metric(measurement: dict[str, Any], metric_id: str) -> Any:
@@ -20,9 +21,10 @@ def _metric(measurement: dict[str, Any], metric_id: str) -> Any:
         if value is not None:
             return value
     telemetry_path = metric_id.split(".")
-    if telemetry_path[0] == "telemetry":
+    explicitly_telemetry = telemetry_path[0] == "telemetry"
+    if explicitly_telemetry:
         telemetry_path = telemetry_path[1:]
-    if telemetry_path and telemetry_path[0] in {"wal_timing", "host_io"}:
+    if telemetry_path and (explicitly_telemetry or telemetry_path[0] in {"wal_timing", "host_io"}):
         value: Any = telemetry
         for part in telemetry_path:
             if not isinstance(value, dict) or part not in value:
@@ -57,6 +59,17 @@ def _relative(after: float, before: float) -> float | None:
     if before == 0:
         return 0.0 if after == 0 else None
     return (after - before) / abs(before) * 100.0
+
+
+def _finite_number(value: Any) -> float | None:
+    """Return a comparable scalar, never coercing aggregate objects into numbers."""
+    if isinstance(value, bool) or isinstance(value, (dict, list, tuple, set)):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return number if math.isfinite(number) else None
 
 
 class EvidenceValidator:
@@ -100,9 +113,15 @@ class EvidenceValidator:
             reasons.append("workload client reported failures, timeouts or unexpected rollbacks")
         control_stability = self._spread(controls)
         treatment_stability = self._spread(treatments)
-        unstable = control_stability > self.repeat_spread_percent or treatment_stability > self.repeat_spread_percent
-        if unstable:
-            reasons.append(f"same-configuration repeat spread is excessive: control={control_stability:.2f}%, treatment={treatment_stability:.2f}%")
+        regime_pairs = [(c.get("client", {}).get("regime", "unknown"),
+                         t.get("client", {}).get("regime", "unknown"))
+                        for c, t in zip(controls, treatments)]
+        invalid_regime_blocks = [index + 1 for index, pair in enumerate(regime_pairs)
+                                 if pair[0] != pair[1]]
+        unstable = bool(invalid_regime_blocks)
+        if invalid_regime_blocks:
+            reasons.append(
+                f"control/treatment regime mismatch in blocks {invalid_regime_blocks}: {regime_pairs}")
         if reasons:
             validity = "unstable" if unstable and settings_match else "invalid"
         else:
@@ -124,21 +143,75 @@ class EvidenceValidator:
         accepted = False
         if validity == "valid":
             tps = [float(m["throughput_rps"]) for m in treatments]
+            paired = [_relative(float(t["throughput_rps"]), float(c["throughput_rps"]))
+                      for c, t in zip(controls, treatments)]
+            latency_regressions = [self._latency_regression(c, t)
+                                   for c, t in zip(controls, treatments)]
+            transaction_semantics = [self._transaction_semantics(c, t)
+                                     for c, t in zip(controls, treatments)]
             verified = {"throughput_rps": min(tps), "median_throughput_rps": statistics.median(tps),
-                        "replicate_throughput_rps": tps, "score_method": "minimum_of_comparable_repeats"}
-            paired = [_relative(float(t["throughput_rps"]), float(c["throughput_rps"])) for c, t in zip(controls, treatments)]
-            incumbent_gain = _relative(verified["throughput_rps"], incumbent_tps)
-            latency_ok = all(self._latency_regression(c, t) <= self.max_p95_regression_percent for c, t in zip(controls, treatments))
-            if all(x is not None and x > 0 for x in paired) and incumbent_gain is not None and incumbent_gain >= self.minimum_tps_gain_percent and latency_ok:
+                        "replicate_throughput_rps": tps,
+                        "score_method": "minimum_of_comparable_repeats",
+                        "paired_tps_gain_percent": paired,
+                        "incumbent_gain_percent": _relative(min(tps), incumbent_tps),
+                        "latency_diagnostic_only": {
+                            "maximum_regression_percent_by_pair": latency_regressions,
+                            "former_guardrail_percent": self.max_p95_regression_percent,
+                            "used_as_acceptance_gate": False,
+                        },
+                        "transaction_semantics": transaction_semantics}
+            decision = decide_paired(
+                [float(x) / 100.0 for x in paired if x is not None],
+                delta_min=max(0.0, self.minimum_tps_gain_percent) / 100.0)
+            verified["paired_decision"] = decision.as_dict()
+            verified["regime_pairs"] = regime_pairs
+            # TPS remains the sole optimization objective. Latency, retries,
+            # and mechanism metrics remain diagnostic rather than vetoes.
+            if decision.verdict == "accept":
                 performance, accepted = "verified_improvement", True
-            else:
+            elif decision.verdict.startswith("reject_"):
                 performance = "no_improvement"
+            else:
+                performance = "inconclusive"
         return ValidationOutcome(
             experiment_id=experiment_id, validity=validity, validity_reasons=reasons,
             performance_verdict=performance, mechanism_verdict=mechanism,
             accepted_as_incumbent=accepted, unexplained_performance=accepted and mechanism != "supported",
             edge_results=edge_results, verified_performance=verified, actual_settings_match=settings_match,
         )
+
+    @staticmethod
+    def _transaction_semantics(control: dict[str, Any], treatment: dict[str, Any]) -> dict[str, Any]:
+        """Keep success/retry/failure semantics beside latency diagnostics."""
+        before, after = control.get("client", {}), treatment.get("client", {})
+        before_retry = _finite_number(before.get("server_retry_ratio"))
+        after_retry = _finite_number(after.get("server_retry_ratio"))
+        retry_change = None
+        if before_retry is not None and after_retry is not None:
+            retry_change = after_retry - before_retry
+        tps_gain = _relative(float(treatment["throughput_rps"]), float(control["throughput_rps"]))
+        latency_regression = EvidenceValidator._latency_regression(control, treatment)
+        semantic_improvement = bool(
+            tps_gain is not None and tps_gain > 0
+            and retry_change is not None and retry_change < -0.05
+        )
+        return {
+            "control": {key: before.get(key) for key in (
+                "successful_transactions", "transaction_attempts", "server_retry_transactions",
+                "reconnect_retry_transactions", "aborted_transactions", "final_failures",
+                "successful_transaction_tps", "attempted_transaction_tps", "server_retry_ratio")},
+            "treatment": {key: after.get(key) for key in (
+                "successful_transactions", "transaction_attempts", "server_retry_transactions",
+                "reconnect_retry_transactions", "aborted_transactions", "final_failures",
+                "successful_transaction_tps", "attempted_transaction_tps", "server_retry_ratio")},
+            "tps_gain_percent": tps_gain,
+            "server_retry_ratio_change": retry_change,
+            "maximum_success_latency_regression_percent": latency_regression,
+            "classification": (
+                "semantic_improvement_review" if semantic_improvement
+                else "ordinary_success_latency_diagnostic"),
+            "acceptance_effect": "diagnostic_only",
+        }
 
     def _validate_edges(self, proposal: ExpertProposal, controls: list[dict[str, Any]], treatments: list[dict[str, Any]], validity: str,
                         factorial_measurements: dict[str, list[dict[str, Any]]] | None = None) -> dict[str, dict[str, Any]]:
@@ -175,13 +248,25 @@ class EvidenceValidator:
         for before, after in pairs:
             if prediction.comparison_method == "plan_changed":
                 changes.append(100.0 if before != after else 0.0)
-            elif prediction.comparison_method == "relative_percent":
-                value = _relative(float(after), float(before))
+                continue
+            before_number, after_number = _finite_number(before), _finite_number(after)
+            if before_number is None or after_number is None:
+                return {
+                    "prediction_id": prediction.prediction_id,
+                    "state": "inconclusive",
+                    "reason": (
+                        f"metric {prediction.metric_id} is not a finite scalar; "
+                        "use a leaf metric such as .median, .p95 or .max"
+                    ),
+                    "pairs": pairs,
+                }
+            if prediction.comparison_method == "relative_percent":
+                value = _relative(after_number, before_number)
                 if value is None:
                     return {"prediction_id": prediction.prediction_id, "state": "inconclusive", "reason": "zero baseline prevents relative comparison", "pairs": pairs}
                 changes.append(value)
             else:
-                changes.append(float(after) - float(before))
+                changes.append(after_number - before_number)
         threshold = prediction.minimum_change
         if prediction.expected_direction == "increase": passed = all(x >= threshold for x in changes)
         elif prediction.expected_direction == "decrease": passed = all(x <= -threshold for x in changes)

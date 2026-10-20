@@ -1,8 +1,8 @@
 {
   "postgres_version": "14.24",
   "source": "PostgreSQL 14.24 pg_settings plus PostgreSQL 14 official documentation",
-  "requested_count": 60,
-  "found_count": 60,
+  "requested_count": 62,
+  "found_count": 62,
   "knobs": [
     {
       "name": "autovacuum_analyze_scale_factor",
@@ -645,6 +645,38 @@
       "execution_class": "session"
     },
     {
+      "name": "max_pred_locks_per_page",
+      "setting": "2",
+      "unit": "",
+      "context": "sighup",
+      "vartype": "integer",
+      "min_val": "0",
+      "max_val": "2147483647",
+      "enumvals": "",
+      "boot_val": "2",
+      "reset_val": "2",
+      "pending_restart": "f",
+      "short_desc": "Sets the maximum number of predicate-locked tuples per page.",
+      "official_doc_url": "https://www.postgresql.org/docs/14/runtime-config-locks.html",
+      "execution_class": "reload"
+    },
+    {
+      "name": "max_pred_locks_per_relation",
+      "setting": "-2",
+      "unit": "",
+      "context": "sighup",
+      "vartype": "integer",
+      "min_val": "-2147483648",
+      "max_val": "2147483647",
+      "enumvals": "",
+      "boot_val": "-2",
+      "reset_val": "-2",
+      "pending_restart": "f",
+      "short_desc": "Sets the maximum number of predicate-locked pages and tuples per relation.",
+      "official_doc_url": "https://www.postgresql.org/docs/14/runtime-config-locks.html",
+      "execution_class": "reload"
+    },
+    {
       "name": "max_pred_locks_per_transaction",
       "setting": "64",
       "unit": "",
@@ -974,5 +1006,7 @@
     "https://www.postgresql.org/docs/14/runtime-config-resource.html",
     "https://www.postgresql.org/docs/14/runtime-config-wal.html",
     "https://www.postgresql.org/docs/14/runtime-config.html"
-  ]
+  ],
+  "catalog_version": "postgresql14-andromeda-v2",
+  "generation": "Runtime pg_settings metadata is captured for these names at experiment start; safe experiment ranges are versioned in app/phase2/space.py."
 }

@@ -94,6 +94,23 @@ class GraphStore:
         })
         self.write()
 
+    def reject_proposal(self, proposal: ExpertProposal, status: str, reason: str) -> None:
+        """Close an untestable frontier without pretending that it was measured."""
+        changed = []
+        for edge in proposal.edges:
+            stored = self.edges.get(edge.edge_id)
+            if stored is not None and stored.state == "proposed":
+                graph_state = "parked" if status in {"parked", "superseded_by_evidence"} else (
+                    "underpowered" if status == "underpowered" else "inconclusive")
+                stored.state = graph_state
+                stored.observations.append({"state": graph_state, "status": status,
+                                            "reason": reason, "observations": []})
+                changed.append(edge.edge_id)
+        self.version += 1
+        self._append("proposal_rejected", {"proposal_id": proposal.proposal_id,
+            "status": status, "reason": reason, "edges": changed})
+        self.write()
+
     def mark_stale(self, new_context_hash: str, reason: str) -> None:
         changed = []
         for edge in self.edges.values():
@@ -108,7 +125,7 @@ class GraphStore:
 
     def snapshot(self, kind: str) -> GraphSnapshot:
         if kind == "pending":
-            edges = [e for e in self.edges.values() if e.state == "proposed"]
+            edges = [e for e in self.edges.values() if e.state in {"proposed", "parked", "underpowered"}]
         elif kind == "tested":
             edges = [e for e in self.edges.values() if e.state != "proposed"]
         elif kind == "effective":

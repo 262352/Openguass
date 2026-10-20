@@ -237,6 +237,48 @@ SQL
   fi
 }
 
+# pg_stat_statements is fixed observation infrastructure. It is enabled once
+# here and never offered to the optimizer, so candidates cannot improve TPS by
+# disabling query evidence.
+configure_query_evidence() {
+  local current normalized db
+  current=$(run_as_postgres psql -d postgres -tAc "show shared_preload_libraries")
+  normalized=",${current// /},"
+  if [[ "$normalized" != *",pg_stat_statements,"* ]]; then
+    if [[ -n "$current" ]]; then
+      run_as_postgres psql -d postgres -v ON_ERROR_STOP=1 -c \
+        "ALTER SYSTEM SET shared_preload_libraries = '${current},pg_stat_statements';" >/dev/null
+    else
+      run_as_postgres psql -d postgres -v ON_ERROR_STOP=1 -c \
+        "ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';" >/dev/null
+    fi
+    pg_ctlcluster "${PG_CLUSTER_VERSION:-14}" "${PG_CLUSTER_NAME:-main}" restart
+  fi
+  for db in $WORKLOAD_DATABASES; do
+    run_as_postgres psql -d "$db" -v ON_ERROR_STOP=1 -c \
+      "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;" >/dev/null
+  done
+  for db in $WORKLOAD_DATABASES; do
+    run_as_postgres psql -d "$db" -v ON_ERROR_STOP=1 -tAc \
+      "select count(*) >= 0 from pg_stat_statements" >/dev/null
+  done
+}
+
+verify_query_evidence() {
+  local libraries db
+  libraries=$(run_as_postgres psql -d postgres -tAc "show shared_preload_libraries")
+  [[ ",${libraries// /}," == *",pg_stat_statements,"* ]] || {
+    echo "pg_stat_statements is not preloaded; rerun bootstrap without --check-only." >&2; return 1;
+  }
+  for db in $WORKLOAD_DATABASES; do
+    run_as_postgres psql -d "$db" -v ON_ERROR_STOP=1 -tAc \
+      "select count(*) >= 0 from pg_stat_statements" >/dev/null || {
+        echo "pg_stat_statements is unavailable in ${db}; rerun bootstrap without --check-only." >&2
+        return 1
+      }
+  done
+}
+
 # ---------------------------------------------------------------------------
 # curl / wget wrappers
 # ---------------------------------------------------------------------------
@@ -523,15 +565,20 @@ set -a
 source "$project_dir/.env"
 set +a
 
-step "verify PostgreSQL, BenchBase and 60-knob catalog"
+step "verify PostgreSQL, BenchBase and catalog-driven knob space"
 pg_isready -h "${PGHOST:-127.0.0.1}" -p "${PGPORT:-5432}"
+if ((check_only)); then
+  verify_query_evidence
+fi
 "$python_bin" - <<'PY'
 from app.lab.workloads import PostgresBenchBaseAdapter
 from app.phase2.space import FullKnobSpace
-assert len(FullKnobSpace().names) == 60
+space = FullKnobSpace()
+assert len(space.names) == 62
+assert {"max_pred_locks_per_transaction", "max_pred_locks_per_relation", "max_pred_locks_per_page"} <= set(space.names)
 for workload in ("tpcc", "twitter", "ycsb"):
     PostgresBenchBaseAdapter(workload).health_check()
-print("PostgreSQL, BenchBase and 60-knob catalog are ready")
+print(f"PostgreSQL, BenchBase and {len(space.names)}-knob catalog are ready")
 PY
 
 if ((check_only)); then
@@ -573,6 +620,13 @@ else
     step "execute smoke workloads from prepared data"
     "$python_bin" -m app.benchmark.cli all --duration "$duration" --terminals "$terminals" --reuse-data
   fi
+fi
+
+if ((check_only == 0)); then
+  step "configure fixed pg_stat_statements query evidence after snapshot creation"
+  # Keep the extension out of pg_dump: restore runs as the benchmark role,
+  # while extension creation is an administrator-only bootstrap operation.
+  configure_query_evidence
 fi
 
 step "capture reproducibility metadata"

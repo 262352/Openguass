@@ -8,7 +8,7 @@ from app.phase2.runner import TransitionComparison
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Andromeda vs GP: TPS-only full 60-knob comparison")
+    parser = argparse.ArgumentParser(description="Andromeda vs GP: TPS-only full catalog comparison")
     parser.add_argument("--experiment-id", required=True)
     parser.add_argument("--directions", default="tpcc:twitter,twitter:tpcc")
     parser.add_argument("--budget", type=int, default=20)

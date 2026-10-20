@@ -34,7 +34,7 @@ class WorkflowOptions:
     diagnosis_measurements: int = 60
     duration: int = 120
     warmup_seconds: int = 30
-    tpcc_terminals: int = 10
+    tpcc_terminals: int = 5
     twitter_terminals: int = 8
     baseline_repeats: int = 3
     source_profile_repeats: int = 1
@@ -63,7 +63,7 @@ class WorkloadSwitchWorkflow:
         self.directory.mkdir(parents=True, exist_ok=True)
         atomic_json(self.directory / "suite_manifest.json", {
             "schema_version": "andromeda.workload-switch-suite/v1", "suite_id": options.suite_id,
-            "created_at": now(), "workloads": ["tpcc", "twitter"],
+            "created_at": now(), "workloads": list(options.bo_workloads),
             "directions": [f"{a}_to_{b}" for a, b in options.directions],
             "budgets": {"bo": {"tpcc": options.tpcc_bo_budget, "twitter": options.twitter_bo_budget},
                         "diagnosis_rounds": options.diagnosis_rounds,
@@ -111,13 +111,39 @@ class WorkloadSwitchWorkflow:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
         atomic_json(summary_path, results)
-        missing = [workload for workload in ("tpcc", "twitter") if not self.store.path(workload).is_file()]
+        missing = [workload for workload in self.options.bo_workloads if not self.store.path(workload).is_file()]
         if missing:
             raise FileNotFoundError(
                 f"BO stage completed requested workloads but references are still missing: {missing}; "
                 "run the missing workload before diagnosis")
-        self._write_reference_standard()
+        if all(self.store.path(workload).is_file() for workload in ("tpcc", "twitter")):
+            self._write_reference_standard()
+        else:
+            self._write_partial_reference_standard()
         return results
+
+    def _write_partial_reference_standard(self) -> None:
+        references = {}
+        for workload in self.options.bo_workloads:
+            value = self.store.load(workload)
+            references[workload] = {
+                "verified_tps_min": value["metrics"]["throughput_rps_min"],
+                "verified_tps_median": value["metrics"]["throughput_rps_median"],
+                "selected_config": value["config"], "selection": value["selection"],
+                "search_budget": value["search_budget"],
+                "reference_file": str(self.store.path(workload)),
+            }
+        atomic_json(self.directory / "REFERENCE_STANDARD.json", {
+            "schema_version": "andromeda.bo-reference-standard/v1", "suite_id": self.options.suite_id,
+            "created_at": now(), "objective": "maximize throughput_rps", "references": references,
+            "usage": "workload-specific offline comparison; never loaded by the continuous diagnosis runner",
+        })
+        lines = ["# Workload-specific Bayesian optimization reference", "", f"- Suite: `{self.options.suite_id}`"]
+        for workload, value in references.items():
+            lines.append(f"- {workload} verified TPS (minimum/median): `{value['verified_tps_min']}` / `{value['verified_tps_median']}`")
+            lines.append(f"- {workload} selected point: `{value['selection']}`")
+            lines.append(f"- {workload} search budget: `{value['search_budget']['total']}`")
+        (self.directory / "REFERENCE_STANDARD.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     def run_diagnosis(self) -> dict[str, Any]:
         for workload in ("tpcc", "twitter"):
