@@ -120,8 +120,9 @@ class TwitterContinuousRunner:
                 "unstable_fallback": "median throughput of the final attempt",
             },
             "acceptance_rule": (
-                "randomized paired blocks; regime-matched block-bootstrap 90% CI; accept only when its lower "
-                "bound exceeds the minimum worthwhile TPS gain; latency is diagnostic only"),
+                "randomized paired blocks; accept when every one of at least two valid treatment blocks beats "
+                "its paired control; bootstrap confidence classifies harmful/equivalent/unresolved results; "
+                "latency is diagnostic only"),
             "evidence_refresh": (
                 "after every intervention, all untested sibling hypotheses are superseded and all experts "
                 "must observe the result before proposing the next graph frontier"),

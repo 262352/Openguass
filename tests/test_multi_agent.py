@@ -288,6 +288,17 @@ def test_equivalent_tps_is_inconclusive_not_mechanism_refutation():
                if not EvidenceValidator._objective_edge(p, edge_id))
 
 
+def test_two_stable_positive_pairs_are_accepted_even_below_old_gain_threshold():
+    p = proposal()
+    outcome = validate(p, [measurement(100), measurement(100)],
+                       [measurement(101), measurement(102)])
+    decision = outcome.verified_performance["paired_decision"]
+    assert decision["statistical_verdict"] == "reject_equivalent"
+    assert decision["verdict"] == "accept"
+    assert decision["both_stable_pairs_positive"] is True
+    assert outcome.accepted_as_incumbent
+
+
 def test_only_material_tps_decline_refutes_tested_direction():
     p = proposal()
     outcome = validate(p, [measurement(100), measurement(100)],

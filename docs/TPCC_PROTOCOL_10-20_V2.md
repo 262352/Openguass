@@ -44,7 +44,8 @@ WAL 提交、checkpoint/writeback、临时文件和 autovacuum 也各有对应�
 - 每个候选默认采用 3 个随机顺序的 control/treatment 区组。
 - 按 BenchBase `server_retry_ratio` 把运行标记为 clean、transition 或 storm；一个区组内
   control 与 treatment 不同 regime 时，结果为 underpowered，不视为反驳。
-- 对有效区组的相对 TPS 差做 90% block-bootstrap CI。CI 下界高于最小有价值增益才接受。
+- 至少需要两个有效 control/treatment 区组；每个 treatment TPS 都高于对应 control TPS 时
+  接受为有效改善。另对相对 TPS 差做 90% block-bootstrap CI，用于区分下列未接受结果。
   `reject_equivalent` 只说明本次幅度不足，机制状态保持 `tested_inconclusive`，下一轮要求
   同一旋钮组沿原方向加大安全幅度；只有 `reject_harmful` 才标记 `tested_refuted`、回滚并
   要求反方向采用不小于原动作的幅度。`unresolved` 继续收集证据，不擅自反向。

@@ -163,19 +163,31 @@ class EvidenceValidator:
             decision = decide_paired(
                 [float(x) / 100.0 for x in paired if x is not None],
                 delta_min=max(0.0, self.minimum_tps_gain_percent) / 100.0)
-            verified["paired_decision"] = decision.as_dict()
+            both_positive = len(paired) >= 2 and all(
+                value is not None and float(value) > 0 for value in paired)
+            decision_record = decision.as_dict()
+            decision_record["statistical_verdict"] = decision.verdict
+            decision_record["both_stable_pairs_positive"] = both_positive
+            decision_record["acceptance_rule"] = (
+                "accept when every one of at least two valid paired blocks has treatment TPS above control TPS")
+            if both_positive:
+                decision_record.update(
+                    verdict="accept",
+                    reason="every valid paired treatment TPS is above its paired control TPS")
+            verified["paired_decision"] = decision_record
             verified["regime_pairs"] = regime_pairs
             # TPS remains the sole optimization objective. Latency, retries,
             # and mechanism metrics remain diagnostic rather than vetoes.
-            if decision.verdict == "accept":
+            effective_verdict = decision_record["verdict"]
+            if effective_verdict == "accept":
                 performance, accepted = "verified_improvement", True
-            elif decision.verdict == "reject_harmful":
+            elif effective_verdict == "reject_harmful":
                 performance = "no_improvement"
                 mechanism = "refuted"
                 edge_results = self._override_nonobjective_edges(
                     proposal, edge_results, "tested_refuted",
                     "paired TPS confidence interval shows a materially harmful direction")
-            elif decision.verdict == "reject_equivalent":
+            elif effective_verdict == "reject_equivalent":
                 performance = "inconclusive"
                 mechanism = "inconclusive"
                 edge_results = self._override_nonobjective_edges(
