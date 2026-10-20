@@ -1,0 +1,109 @@
+{
+  "schema_version": "andromeda.postgres-diagnostic-knob-relations/v1",
+  "postgresql_major": 14,
+  "bundles": [
+    {
+      "bundle_id": "buffer_cache_capacity",
+      "phenomenon": "low_buffer_hit_ratio",
+      "roles": ["memory_storage"],
+      "mechanism": "The working set is not retained or the planner undervalues cached/random I/O, increasing physical reads and terminal occupancy.",
+      "related_knobs": [
+        {"knob": "shared_buffers", "direction": "increase", "role": "database cache capacity"},
+        {"knob": "effective_cache_size", "direction": "increase", "role": "planner estimate of available cache"},
+        {"knob": "effective_io_concurrency", "direction": "increase", "role": "concurrent prefetch capacity"},
+        {"knob": "random_page_cost", "direction": "decrease", "role": "planner cost of cached/random reads"},
+        {"knob": "seq_page_cost", "direction": "decrease", "role": "I/O cost scale paired with random_page_cost"}
+      ],
+      "sources": [
+        {"title": "PostgreSQL 14 Resource Consumption", "url": "https://www.postgresql.org/docs/14/runtime-config-resource.html"},
+        {"title": "PostgreSQL 14 Query Planning", "url": "https://www.postgresql.org/docs/14/runtime-config-query.html"},
+        {"title": "OtterTune: Automatic DBMS Tuning", "url": "https://dl.acm.org/doi/10.1145/3035918.3064029"}
+      ]
+    },
+    {
+      "bundle_id": "serializable_predicate_lock_capacity",
+      "phenomenon": "serializable_retry_storm",
+      "roles": ["concurrency_maintenance"],
+      "mechanism": "SSI predicate-lock promotion and lock-table pressure can create false serialization conflicts and a self-sustaining retry regime.",
+      "related_knobs": [
+        {"knob": "max_pred_locks_per_transaction", "direction": "increase", "role": "global predicate-lock capacity"},
+        {"knob": "max_pred_locks_per_relation", "direction": "increase", "role": "delay relation-level predicate-lock promotion"},
+        {"knob": "max_pred_locks_per_page", "direction": "increase", "role": "delay page-level predicate-lock promotion"},
+        {"knob": "max_locks_per_transaction", "direction": "increase", "role": "regular lock-table capacity for multi-table TPC-C transactions"}
+      ],
+      "sources": [
+        {"title": "PostgreSQL 14 Lock Management", "url": "https://www.postgresql.org/docs/14/runtime-config-locks.html"},
+        {"title": "PostgreSQL Serializable Isolation", "url": "https://www.postgresql.org/docs/14/transaction-iso.html"},
+        {"title": "Serializable Snapshot Isolation in PostgreSQL", "url": "https://www.vldb.org/pvldb/vol5/p1850_danrkports_vldb2012.pdf"}
+      ]
+    },
+    {
+      "bundle_id": "wal_commit_path",
+      "phenomenon": "wal_sync_latency",
+      "roles": ["memory_storage"],
+      "mechanism": "WAL buffer capacity, writer cadence, flush batch size and group commit jointly determine commit-path sync frequency and queueing.",
+      "related_knobs": [
+        {"knob": "wal_buffers", "direction": "increase", "role": "WAL buffering capacity"},
+        {"knob": "wal_writer_delay", "direction": "decrease", "role": "writer wake-up cadence"},
+        {"knob": "wal_writer_flush_after", "direction": "tune", "role": "flush batch size"},
+        {"knob": "commit_delay", "direction": "increase", "role": "group-commit collection window"},
+        {"knob": "commit_siblings", "direction": "decrease", "role": "group-commit activation threshold"},
+        {"knob": "wal_compression", "direction": "enable", "role": "reduce full-page-image WAL volume"}
+      ],
+      "sources": [
+        {"title": "PostgreSQL 14 WAL Configuration", "url": "https://www.postgresql.org/docs/14/runtime-config-wal.html"},
+        {"title": "PostgreSQL 14 Asynchronous Commit", "url": "https://www.postgresql.org/docs/14/wal-async-commit.html"}
+      ]
+    },
+    {
+      "bundle_id": "checkpoint_writeback",
+      "phenomenon": "checkpoint_write_pressure",
+      "roles": ["memory_storage", "concurrency_maintenance"],
+      "mechanism": "Checkpoint spacing, completion pacing and background cleaning jointly control write bursts and backend fsync work.",
+      "related_knobs": [
+        {"knob": "max_wal_size", "direction": "increase", "role": "checkpoint spacing"},
+        {"knob": "checkpoint_timeout", "direction": "increase", "role": "time-based checkpoint spacing"},
+        {"knob": "checkpoint_completion_target", "direction": "increase", "role": "checkpoint write pacing"},
+        {"knob": "bgwriter_lru_maxpages", "direction": "increase", "role": "background cleaning capacity"},
+        {"knob": "bgwriter_lru_multiplier", "direction": "increase", "role": "predicted buffer demand multiplier"},
+        {"knob": "backend_flush_after", "direction": "increase", "role": "bound dirty-page accumulation per backend"}
+      ],
+      "sources": [
+        {"title": "PostgreSQL 14 WAL Checkpoints", "url": "https://www.postgresql.org/docs/14/wal-configuration.html"},
+        {"title": "PostgreSQL 14 Background Writer", "url": "https://www.postgresql.org/docs/14/runtime-config-resource.html"}
+      ]
+    },
+    {
+      "bundle_id": "temporary_memory_spill",
+      "phenomenon": "temp_spill",
+      "roles": ["query_execution", "memory_storage"],
+      "mechanism": "Sort and hash operators spill when per-operation memory is insufficient or estimates are inaccurate.",
+      "related_knobs": [
+        {"knob": "work_mem", "direction": "increase", "role": "sort/hash operator memory"},
+        {"knob": "temp_buffers", "direction": "increase", "role": "session temporary-buffer capacity"},
+        {"knob": "default_statistics_target", "direction": "increase", "role": "cardinality estimate resolution"}
+      ],
+      "sources": [
+        {"title": "PostgreSQL 14 Resource Consumption", "url": "https://www.postgresql.org/docs/14/runtime-config-resource.html"},
+        {"title": "PostgreSQL 14 Planner Statistics", "url": "https://www.postgresql.org/docs/14/planner-stats.html"}
+      ]
+    },
+    {
+      "bundle_id": "autovacuum_dead_tuple_pressure",
+      "phenomenon": "dead_tuple_pressure",
+      "roles": ["concurrency_maintenance"],
+      "mechanism": "Vacuum trigger thresholds, worker capacity and cost throttling jointly determine dead-tuple residence time.",
+      "related_knobs": [
+        {"knob": "autovacuum_vacuum_scale_factor", "direction": "decrease", "role": "vacuum trigger threshold"},
+        {"knob": "autovacuum_analyze_scale_factor", "direction": "decrease", "role": "statistics refresh threshold"},
+        {"knob": "autovacuum_max_workers", "direction": "increase", "role": "cleanup parallelism"},
+        {"knob": "autovacuum_naptime", "direction": "decrease", "role": "launcher cadence"},
+        {"knob": "autovacuum_vacuum_cost_limit", "direction": "increase", "role": "vacuum work allowance"},
+        {"knob": "autovacuum_vacuum_cost_delay", "direction": "decrease", "role": "vacuum throttling delay"}
+      ],
+      "sources": [
+        {"title": "PostgreSQL 14 Automatic Vacuuming", "url": "https://www.postgresql.org/docs/14/runtime-config-autovacuum.html"}
+      ]
+    }
+  ]
+}

@@ -277,6 +277,26 @@ def test_tps_gain_with_retry_drop_is_flagged_for_semantic_review_not_rejected():
     assert all(item["acceptance_effect"] == "diagnostic_only" for item in semantics)
 
 
+def test_equivalent_tps_is_inconclusive_not_mechanism_refutation():
+    p = proposal()
+    outcome = validate(p, [measurement(100), measurement(100)],
+                       [measurement(101), measurement(99)])
+    assert outcome.verified_performance["paired_decision"]["verdict"] == "reject_equivalent"
+    assert outcome.performance_verdict == "inconclusive"
+    assert outcome.mechanism_verdict == "inconclusive"
+    assert all(value["state"] == "inconclusive" for edge_id, value in outcome.edge_results.items()
+               if not EvidenceValidator._objective_edge(p, edge_id))
+
+
+def test_only_material_tps_decline_refutes_tested_direction():
+    p = proposal()
+    outcome = validate(p, [measurement(100), measurement(100)],
+                       [measurement(80), measurement(80)])
+    assert outcome.verified_performance["paired_decision"]["verdict"] == "reject_harmful"
+    assert outcome.performance_verdict == "no_improvement"
+    assert outcome.mechanism_verdict == "refuted"
+
+
 def test_independent_roots_to_tps_do_not_create_interaction(tmp_path):
     store = GraphStore(tmp_path, "cfg")
     store.add_proposals([proposal("p1"), proposal("p2", expert="memory_storage", mechanism="WAL pressure",

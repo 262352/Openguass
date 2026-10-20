@@ -86,7 +86,10 @@ class DeepSeekExpertBackend:
             "Prioritize diagnostic_alerts plus per-transaction terminal_capacity_fraction. Overall p95 may hide a "
             "rare transaction whose latency consumes nearly all terminal time. Low WAL bytes or WAL counts do not rule "
             "out slow fsync; use wal_timing, wait events, and host_io together. When one diagnosed mechanism spans "
-            "several knobs, propose the smallest coherent knob group rather than an isolated knob. Transaction metrics "
+            "several knobs, use diagnostic_knowledge as the literature-backed mechanism-to-knob database. For your "
+            "mandatory_bundle_by_role entry, an executable proposal MUST contain every knob in required_knobs as one "
+            "coherent joint action. Do not reduce the bundle to one representative knob. Choose exact values from the "
+            "live ranges and explain each knob's mechanism role. Transaction metrics "
             "use IDs such as client.transaction_latency.InsertTweet.p50_us. Use query_evidence window deltas, "
             "template leaderboards and query wait samples when present. Treat client.server_retry_ratio and PostgreSQL "
             "rollback_ratio as separate evidence: BenchBase server retries are confirmed serialization failures. "
@@ -100,6 +103,10 @@ class DeepSeekExpertBackend:
             "missing scalar evidence. Mentioning shared_buffers only inside alternatives is not sufficient. "
             "Likewise, concurrency_maintenance must address uncovered max_pred_locks_* dimensions when the "
             "SERIALIZABLE retry regime is active. "
+            "Interpret the latest paired decision causally: reject_equivalent means the direction remains unresolved, "
+            "so retry the same mechanism group with a larger safe amplitude; it is not refutation. reject_harmful is "
+            "the only performance result that falsifies the tested direction, so reverse the group direction with an "
+            "equal or larger safe amplitude. unresolved requires more evidence rather than a direction change. "
             "The sole objective is successful completed transaction Goodput. Latency, retry ratio, and mechanism "
             "metrics explain the result but are not hidden acceptance objectives. When Goodput rises while retry ratio "
             "falls, discuss changed completion semantics instead of treating latency alone as a failed action. "
@@ -130,6 +137,8 @@ class DeepSeekExpertBackend:
                 self._namespace_proposal(value, f"r{payload['round']:03d}_{role}")
                 proposal = ExpertProposal.model_validate(value)
                 self._validate_knob_changes(proposal, payload)
+                self._validate_knowledge_bundle(proposal, payload)
+                self._validate_adaptation_policy(proposal, payload)
                 self._validate_prediction_metric_leaves(proposal, payload.get("current_measurement", {}))
                 return proposal
             except (json.JSONDecodeError, ValidationError, KeyError, TypeError, ValueError) as error:
@@ -222,6 +231,63 @@ class DeepSeekExpertBackend:
                     f"prediction metric_id {prediction.metric_id!r} resolves to a container, not a scalar"
                     f"{suffix}; select one explicit leaf metric"
                 )
+
+    @staticmethod
+    def _validate_knowledge_bundle(proposal: ExpertProposal,
+                                   payload: dict[str, Any]) -> None:
+        """Prevent an expert from silently shrinking a diagnosed mechanism to one knob."""
+        if not proposal.knob_changes:
+            return
+        mandatory = payload.get("diagnostic_knowledge", {}).get(
+            "mandatory_bundle_by_role", {}).get(proposal.expert)
+        if not mandatory:
+            return
+        required = set(mandatory.get("required_knobs", []))
+        proposed = {item.knob for item in proposal.knob_changes}
+        missing = sorted(required - proposed)
+        if missing:
+            raise ValueError(
+                f"invalid_knob_group {mandatory.get('bundle_id')}: executable proposal must include "
+                f"all literature-linked actionable knobs; missing={missing}")
+
+    @staticmethod
+    def _validate_adaptation_policy(proposal: ExpertProposal,
+                                    payload: dict[str, Any]) -> None:
+        """Enforce larger same-direction steps after equivalence and reversal after harm."""
+        latest = payload.get("latest_experiment_result") or {}
+        if not proposal.knob_changes or latest.get("tested_expert") != proposal.expert:
+            return
+        policy = latest.get("adaptation_policy")
+        if policy not in {"increase_amplitude_in_same_direction",
+                          "reverse_direction_with_equal_or_larger_amplitude"}:
+            return
+        previous = latest.get("tested_changes", {})
+        current = payload.get("current_incumbent", {}).get("config", {})
+        proposed = {item.knob: item for item in proposal.knob_changes}
+        comparable = 0
+        violations = []
+        for name, old_new in previous.items():
+            if name not in proposed or name not in current:
+                continue
+            try:
+                old = float(old_new["old_value"])
+                prior_new = float(old_new["new_value"])
+                new = float(proposed[name].new_value)
+                base = float(current[name])
+            except (TypeError, ValueError, KeyError):
+                continue
+            prior_delta, next_delta = prior_new - old, new - base
+            if prior_delta == 0:
+                continue
+            comparable += 1
+            if policy == "increase_amplitude_in_same_direction":
+                valid = prior_delta * next_delta > 0 and abs(next_delta) > abs(prior_delta)
+            else:
+                valid = prior_delta * next_delta < 0 and abs(next_delta) >= abs(prior_delta)
+            if not valid:
+                violations.append(name)
+        if comparable and violations:
+            raise ValueError(f"invalid_adaptation {policy}: violating knobs={sorted(violations)}")
 
     def review(self, role: ExpertRole, payload: dict[str, Any]) -> list[CrossReview]:
         schema = CrossReview.model_json_schema()

@@ -107,12 +107,21 @@ class HypothesisStateTable:
         return values
 
     def finish_test(self, proposal: ExpertProposal, outcome: ValidationOutcome) -> None:
-        status: HypothesisStatus = "underpowered" if outcome.validity == "unstable" else {
-            "supported": "tested_supported", "refuted": "tested_refuted",
-            "inconclusive": "tested_inconclusive",
-        }[outcome.mechanism_verdict]
+        paired_verdict = (outcome.verified_performance or {}).get(
+            "paired_decision", {}).get("verdict")
+        if outcome.validity == "unstable":
+            status: HypothesisStatus = "underpowered"
+        elif outcome.validity == "invalid":
+            status = "tested_inconclusive"
+        elif paired_verdict == "reject_harmful":
+            status = "tested_refuted"
+        elif paired_verdict == "accept" and outcome.mechanism_verdict == "supported":
+            status = "tested_supported"
+        else:
+            status = "tested_inconclusive"
         self.transition(proposal.proposal_id, status,
-                        f"mechanism verdict={outcome.mechanism_verdict}; performance={outcome.performance_verdict}",
+                        f"paired verdict={paired_verdict}; mechanism={outcome.mechanism_verdict}; "
+                        f"performance={outcome.performance_verdict}",
                         experiment_id=outcome.experiment_id,
                         performance_verdict=outcome.performance_verdict,
                         mechanism_verdict=outcome.mechanism_verdict)

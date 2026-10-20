@@ -26,20 +26,28 @@ plan 均记录完整旋钮名称和数量。旧的 60 维 source config 会用�
 作为 alternative 出现，从未进入 `knob_changes`，所以协调器没有可以执行的
 `shared_buffers` 动作。
 
-本版把每个旋钮的已实验次数和高优先级未覆盖旋钮传给所有专家。当
-`low_buffer_hit_ratio` 活跃且 `shared_buffers` 尚未测试时，memory expert 必须提出一个
-有界、可执行的 `shared_buffers` 机制实验，或者明确说明缺少哪一个标量证据；仅写入
-alternative 不再满足覆盖要求。SERIALIZABLE retry 活跃时，对三个 `max_pred_locks_*`
-旋钮采用同样规则。协调器仍然只能执行专家的原始动作，但会给未覆盖维度加信息增益分，
-不会自行生成或替换旋钮值。
+本版新增版本化关系库 `knowledge/postgres_diagnostic_knob_relations.json`。它把遥测现象、
+文献中的机制以及 PostgreSQL 旋钮关系联结起来，再与本机 `pg_settings` 导出的 62 维目录、
+当前值和安全范围取交集。每轮完整检索结果写入
+`diagnostic_knowledge_round_NNN.json`，可以追溯使用了哪个现象、哪些文献来源、哪些旋钮
+因已到边界而不可执行。
+
+当 `low_buffer_hit_ratio` 活跃时，缓存机制的联合动作包含所有仍可执行的相关旋钮：
+`shared_buffers`、`effective_cache_size`、`effective_io_concurrency`、`random_page_cost` 和
+`seq_page_cost`。memory expert 不能只提交其中一个旋钮；结构化输出校验会以
+`invalid_knob_group` 拒绝不完整提案，并把缺失旋钮反馈给模型重试。SERIALIZABLE retry、
+WAL 提交、checkpoint/writeback、临时文件和 autovacuum 也各有对应旋钮组。协调器仍然只
+选择专家提案，不生成、缩小或替换动作。
 
 ## 测量与状态语义
 
 - 每个候选默认采用 3 个随机顺序的 control/treatment 区组。
 - 按 BenchBase `server_retry_ratio` 把运行标记为 clean、transition 或 storm；一个区组内
   control 与 treatment 不同 regime 时，结果为 underpowered，不视为反驳。
-- 对有效区组的相对 TPS 差做 90% block-bootstrap CI。CI 下界高于最小有价值增益才接受；
-  明显有害、等价和证据不足分别记录，不再用臂内 spread 代替效应不确定性。
+- 对有效区组的相对 TPS 差做 90% block-bootstrap CI。CI 下界高于最小有价值增益才接受。
+  `reject_equivalent` 只说明本次幅度不足，机制状态保持 `tested_inconclusive`，下一轮要求
+  同一旋钮组沿原方向加大安全幅度；只有 `reject_harmful` 才标记 `tested_refuted`、回滚并
+  要求反方向采用不小于原动作的幅度。`unresolved` 继续收集证据，不擅自反向。
 - 旧的 `superseded_by_evidence` 改为 `parked`。欠采样或 parked 的动作可在新 evidence
   epoch 被专家修订重提；只有同 context 中已有充分 supported/refuted 结论才硬去重。
 

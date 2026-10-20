@@ -22,6 +22,7 @@ from app.phase2.bayesian_baseline import load_source_config
 
 from .baseline import build_default_baseline
 from .diagnosis_control import ActionConsistencyAuditor, HypothesisStateTable
+from .knowledge_retrieval import retrieve_diagnostic_bundles
 from .search_space import BoundedSearchPlanner, SearchSpaceCompiler
 
 
@@ -124,6 +125,12 @@ class TwitterContinuousRunner:
             "evidence_refresh": (
                 "after every intervention, all untested sibling hypotheses are superseded and all experts "
                 "must observe the result before proposing the next graph frontier"),
+            "mechanism_action_policy": (
+                "diagnosed phenomena are joined with the versioned literature relation database and the live "
+                "PostgreSQL knob catalog; every actionable knob in the selected mechanism is tested jointly"),
+            "non_improvement_policy": (
+                "equivalent TPS is inconclusive and triggers a larger same-direction step; only a materially "
+                "harmful paired confidence interval refutes the direction and triggers reversal"),
         }
         self._write("manifest.json", manifest)
         self._write("pre_experiment_config.json", {
@@ -240,18 +247,18 @@ class TwitterContinuousRunner:
                     if record["status"] in {"testing", "tested_supported", "tested_refuted",
                                             "tested_inconclusive", "underpowered"}
                     for change in record.get("knob_changes", []))
-                priority_uncovered = []
-                if "low_buffer_hit_ratio" in anomalies:
-                    priority_uncovered.extend(
-                        knob for knob in ("shared_buffers", "effective_cache_size",
-                                         "effective_io_concurrency", "random_page_cost")
-                        if knob_experiment_counts[knob] == 0)
-                retry_ratio = float(measurement.get("client", {}).get("server_retry_ratio", 0) or 0)
-                if retry_ratio > 0.10:
-                    priority_uncovered.extend(
-                        knob for knob in ("max_pred_locks_per_transaction",
-                                         "max_pred_locks_per_relation", "max_pred_locks_per_page")
-                        if knob_experiment_counts[knob] == 0)
+                diagnostic_knowledge = retrieve_diagnostic_bundles(
+                    anomalies, measurement, self.executor.space,
+                    dict(knob_experiment_counts), incumbent.config)
+                self._write(
+                    f"diagnostic_knowledge_round_{round_number:03d}.json",
+                    diagnostic_knowledge)
+                priority_uncovered = [
+                    knob
+                    for bundle in diagnostic_knowledge["bundles"]
+                    for knob in bundle["required_knobs"]
+                    if knob_experiment_counts[knob] == 0
+                ]
                 proposals = []
                 # A graph frontier is valid for one intervention only. After a
                 # test, sibling proposals are superseded below and every expert
@@ -272,6 +279,7 @@ class TwitterContinuousRunner:
                         "tested_action_summary": MultiAgentRunner._compact_graph(graph.snapshot("tested")),
                         "rejected_hypothesis_feedback": hypotheses.feedback(),
                         "latest_experiment_result": latest_experiment_result,
+                        "diagnostic_knowledge": diagnostic_knowledge,
                         "coverage_state": {
                             "catalog_knob_count": len(self.executor.space),
                             "experiment_count_by_knob": dict(knob_experiment_counts),
@@ -374,6 +382,7 @@ class TwitterContinuousRunner:
                 stage = "mechanism_diagnosis"
                 decision = {"event": "candidate_frozen", "round": round_number, "stage": stage,
                     "anomalies": anomalies, "analysis_priority": self._analysis_priority(anomalies),
+                    "diagnostic_knowledge": diagnostic_knowledge,
                     "scheduler_reason": reason, "group": group,
                     "expert_proposals": [p.model_dump(mode="json") for p in proposals],
                     "selected": chosen.model_dump(mode="json"),
@@ -638,11 +647,26 @@ class TwitterContinuousRunner:
                 "telemetry": item.get("telemetry", {}),
                 "query_evidence": item.get("query_evidence", {}),
             }
+        paired_decision = (outcome.verified_performance or {}).get("paired_decision", {})
+        verdict = paired_decision.get("verdict")
+        if outcome.validity != "valid":
+            adaptation = "repeat_after_environment_recovers"
+        elif verdict == "accept":
+            adaptation = "accepted_update_incumbent"
+        elif verdict == "reject_harmful":
+            adaptation = "reverse_direction_with_equal_or_larger_amplitude"
+        elif verdict == "reject_equivalent":
+            adaptation = "increase_amplitude_in_same_direction"
+        else:
+            adaptation = "collect_more_evidence_before_changing_direction"
+        old_values = {item.knob: item.old_value for item in proposal.knob_changes}
         return {
             "experiment_id": outcome.experiment_id,
             "tested_proposal_id": proposal.proposal_id,
             "tested_expert": proposal.expert,
             "tested_action": requested,
+            "tested_changes": {name: {"old_value": old_values.get(name), "new_value": value}
+                               for name, value in requested.items()},
             "controls": [view(item) for item in paired["controls"]],
             "treatments": [view(item) for item in paired["treatments"]],
             "validity": outcome.validity,
@@ -652,6 +676,7 @@ class TwitterContinuousRunner:
             "accepted_as_incumbent": outcome.accepted_as_incumbent,
             "verified_performance": outcome.verified_performance,
             "edge_results": outcome.edge_results,
+            "adaptation_policy": adaptation,
             "required_expert_response": (
                 "reassess overlap, interactions, thresholds and knob values before submitting a revised action"),
         }

@@ -169,8 +169,18 @@ class EvidenceValidator:
             # and mechanism metrics remain diagnostic rather than vetoes.
             if decision.verdict == "accept":
                 performance, accepted = "verified_improvement", True
-            elif decision.verdict.startswith("reject_"):
+            elif decision.verdict == "reject_harmful":
                 performance = "no_improvement"
+                mechanism = "refuted"
+                edge_results = self._override_nonobjective_edges(
+                    proposal, edge_results, "tested_refuted",
+                    "paired TPS confidence interval shows a materially harmful direction")
+            elif decision.verdict == "reject_equivalent":
+                performance = "inconclusive"
+                mechanism = "inconclusive"
+                edge_results = self._override_nonobjective_edges(
+                    proposal, edge_results, "inconclusive",
+                    "equivalent TPS does not refute the mechanism; increase action amplitude")
             else:
                 performance = "inconclusive"
         return ValidationOutcome(
@@ -179,6 +189,17 @@ class EvidenceValidator:
             accepted_as_incumbent=accepted, unexplained_performance=accepted and mechanism != "supported",
             edge_results=edge_results, verified_performance=verified, actual_settings_match=settings_match,
         )
+
+    @staticmethod
+    def _override_nonobjective_edges(proposal: ExpertProposal,
+                                     edge_results: dict[str, dict[str, Any]],
+                                     state: str, reason: str) -> dict[str, dict[str, Any]]:
+        result = {name: dict(value) for name, value in edge_results.items()}
+        for edge_id in result:
+            if not EvidenceValidator._objective_edge(proposal, edge_id):
+                result[edge_id]["state"] = state
+                result[edge_id]["reason"] = reason
+        return result
 
     @staticmethod
     def _transaction_semantics(control: dict[str, Any], treatment: dict[str, Any]) -> dict[str, Any]:
