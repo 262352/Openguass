@@ -281,22 +281,21 @@ def test_equivalent_tps_is_inconclusive_not_mechanism_refutation():
     p = proposal()
     outcome = validate(p, [measurement(100), measurement(100)],
                        [measurement(101), measurement(99)])
-    assert outcome.verified_performance["paired_decision"]["verdict"] == "reject_equivalent"
+    assert outcome.verified_performance["paired_decision"]["verdict"] == "inconclusive"
     assert outcome.performance_verdict == "inconclusive"
     assert outcome.mechanism_verdict == "inconclusive"
     assert all(value["state"] == "inconclusive" for edge_id, value in outcome.edge_results.items()
                if not EvidenceValidator._objective_edge(p, edge_id))
 
 
-def test_two_stable_positive_pairs_are_accepted_even_below_old_gain_threshold():
+def test_two_small_positive_pairs_do_not_bypass_minimum_effect_threshold():
     p = proposal()
     outcome = validate(p, [measurement(100), measurement(100)],
                        [measurement(101), measurement(102)])
     decision = outcome.verified_performance["paired_decision"]
-    assert decision["statistical_verdict"] == "reject_equivalent"
-    assert decision["verdict"] == "accept"
-    assert decision["both_stable_pairs_positive"] is True
-    assert outcome.accepted_as_incumbent
+    assert decision["statistical_verdict"] == "inconclusive"
+    assert decision["verdict"] == "inconclusive"
+    assert not outcome.accepted_as_incumbent
 
 
 def test_retry_regime_mismatch_is_diagnostic_only():

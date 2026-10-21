@@ -242,6 +242,15 @@ SQL
 # disabling query evidence.
 configure_query_evidence() {
   local current normalized db
+  local evidence_dir="$project_dir/artifacts/environment"
+  mkdir -p "$evidence_dir"
+  if [[ "$(run_as_postgres psql -d postgres -tAc "select count(*) from pg_available_extensions where name='pg_stat_statements'")" != "1" ]]; then
+    cat > "$evidence_dir/query_evidence_mode.json" <<'JSON'
+{"status":"fallback","mode":"auto_explain_plus_pg_stat_activity","reason":"pg_stat_statements is not available on this PostgreSQL installation","limitations":"query wait sampling remains available; aggregate statement deltas may be absent"}
+JSON
+    echo "pg_stat_statements is unavailable; using auto_explain/pg_stat_activity fallback evidence."
+    return 0
+  fi
   current=$(run_as_postgres psql -d postgres -tAc "show shared_preload_libraries")
   normalized=",${current// /},"
   if [[ "$normalized" != *",pg_stat_statements,"* ]]; then
@@ -262,10 +271,18 @@ configure_query_evidence() {
     run_as_postgres psql -d "$db" -v ON_ERROR_STOP=1 -tAc \
       "select count(*) >= 0 from pg_stat_statements" >/dev/null
   done
+  cat > "$evidence_dir/query_evidence_mode.json" <<'JSON'
+{"status":"available","mode":"pg_stat_statements_plus_pg_stat_activity","reason":null}
+JSON
 }
 
 verify_query_evidence() {
   local libraries db
+  local mode_file="$project_dir/artifacts/environment/query_evidence_mode.json"
+  if [[ -s "$mode_file" ]] && grep -q '"status":"fallback"' "$mode_file"; then
+    echo "Query evidence preflight: configured fallback ($(cat "$mode_file"))"
+    return 0
+  fi
   libraries=$(run_as_postgres psql -d postgres -tAc "show shared_preload_libraries")
   [[ ",${libraries// /}," == *",pg_stat_statements,"* ]] || {
     echo "pg_stat_statements is not preloaded; rerun bootstrap without --check-only." >&2; return 1;

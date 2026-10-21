@@ -35,7 +35,7 @@ exec "$PYTHON_BIN" -m app.continuous.cli \
   --max-model-calls "${MAX_MODEL_CALLS:-36}" \
   --duration "${DURATION:-120}" \
   --warmup-seconds "${WARMUP_SECONDS:-30}" \
-  --terminals "${TWITTER_TERMINALS:-8}" \
+  --terminals "${TWITTER_TERMINALS:-5}" \
   --seed "${BENCHMARK_SEED:-20261015}" \
   --baseline-repeats "${BASELINE_REPEATS:-3}" \
   --drift-percent "${DRIFT_PERCENT:-25}" \

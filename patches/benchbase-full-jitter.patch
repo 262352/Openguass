@@ -1,0 +1,31 @@
+diff --git a/src/main/java/com/oltpbenchmark/api/Worker.java b/src/main/java/com/oltpbenchmark/api/Worker.java
+index e50cbce..a2eedcc 100644
+--- a/src/main/java/com/oltpbenchmark/api/Worker.java
++++ b/src/main/java/com/oltpbenchmark/api/Worker.java
+@@ -38,6 +38,7 @@ import java.util.HashMap;
+ import java.util.Map;
+ import java.util.Map.Entry;
+ import java.util.Random;
++import java.util.concurrent.ThreadLocalRandom;
+ import java.util.concurrent.atomic.AtomicInteger;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+@@ -406,6 +407,18 @@ public abstract class Worker<T extends BenchmarkModule> implements Runnable {
+
+       while (retryCount < maxRetryCount && this.workloadState.getGlobalState() != State.DONE) {
+
++        // Full-jitter exponential backoff prevents synchronized SERIALIZABLE retry storms.
++        if (retryCount > 0) {
++          long capMs = Math.min(5000L, 50L << Math.min(retryCount - 1, 6));
++          long delayMs = ThreadLocalRandom.current().nextLong(capMs + 1);
++          try {
++            Thread.sleep(delayMs);
++          } catch (InterruptedException ex) {
++            Thread.currentThread().interrupt();
++            break;
++          }
++        }
++
+         TransactionStatus status = TransactionStatus.UNKNOWN;
+
+         if (this.conn == null) {

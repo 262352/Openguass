@@ -59,8 +59,8 @@ exec "$PYTHON_BIN" -m app.experiment.cli "${STAGE:-all}" \
   --diagnosis-measurements "${DIAGNOSIS_MEASUREMENTS:-60}" \
   --duration "${DURATION:-120}" \
   --warmup-seconds "${WARMUP_SECONDS:-30}" \
-  --tpcc-terminals "${TERMINALS:-${TPCC_TERMINALS:-5}}" \
-  --twitter-terminals "${TERMINALS:-${TWITTER_TERMINALS:-8}}" \
+  --tpcc-terminals "${TERMINALS:-${TPCC_TERMINALS:-3}}" \
+  --twitter-terminals "${TERMINALS:-${TWITTER_TERMINALS:-5}}" \
   --baseline-repeats "${BASELINE_REPEATS:-3}" \
   --source-profile-repeats "${SOURCE_PROFILE_REPEATS:-1}" \
   --max-observation-rounds "${MAX_OBSERVATION_ROUNDS:-2}" \

@@ -5,7 +5,7 @@ import statistics
 from typing import Any
 
 from .models import ExpertProposal, FrozenPrediction, ValidationOutcome
-from .paired_decision import decide_paired
+from .paired_decision import SequentialPairedPolicy, log_gain
 
 
 def _metric(measurement: dict[str, Any], metric_id: str) -> Any:
@@ -97,7 +97,9 @@ class EvidenceValidator:
                  controls: list[dict[str, Any]], treatments: list[dict[str, Any]],
                  requested_settings: dict[str, Any], observed_settings: dict[str, Any],
                  expected_context: dict[str, Any], actual_contexts: list[dict[str, Any]],
-                 factorial_measurements: dict[str, list[dict[str, Any]]] | None = None) -> ValidationOutcome:
+                 factorial_measurements: dict[str, list[dict[str, Any]]] | None = None,
+                 sequential_decision: dict[str, Any] | None = None,
+                 block_records: list[dict[str, Any]] | None = None) -> ValidationOutcome:
         reasons: list[str] = []
         settings_match = self._settings_match(requested_settings, observed_settings)
         if not settings_match:
@@ -121,7 +123,16 @@ class EvidenceValidator:
         else:
             validity = "valid"
 
-        edge_results = self._validate_edges(proposal, controls, treatments, validity, factorial_measurements)
+        valid_indices = [index for index, item in enumerate(block_records or []) if not item.get("outlier")]
+        evidence_controls = ([controls[index] for index in valid_indices]
+                             if block_records is not None else controls)
+        evidence_treatments = ([treatments[index] for index in valid_indices]
+                               if block_records is not None else treatments)
+        if block_records is not None and not evidence_controls:
+            validity = "inconclusive"
+            reasons.append("all paired blocks were excluded as outliers")
+        edge_results = self._validate_edges(proposal, evidence_controls, evidence_treatments,
+                                            validity, factorial_measurements)
         mechanism_states = [v["state"] for k, v in edge_results.items() if not self._objective_edge(proposal, k)]
         if validity != "valid" or not mechanism_states or "inconclusive" in mechanism_states:
             mechanism = "inconclusive"
@@ -136,13 +147,13 @@ class EvidenceValidator:
         performance = "invalid" if validity == "invalid" else "inconclusive"
         accepted = False
         if validity == "valid":
-            tps = [float(m["throughput_rps"]) for m in treatments]
+            tps = [float(m["throughput_rps"]) for m in evidence_treatments]
             paired = [_relative(float(t["throughput_rps"]), float(c["throughput_rps"]))
-                      for c, t in zip(controls, treatments)]
+                      for c, t in zip(evidence_controls, evidence_treatments)]
             latency_regressions = [self._latency_regression(c, t)
-                                   for c, t in zip(controls, treatments)]
+                                   for c, t in zip(evidence_controls, evidence_treatments)]
             transaction_semantics = [self._transaction_semantics(c, t)
-                                     for c, t in zip(controls, treatments)]
+                                     for c, t in zip(evidence_controls, evidence_treatments)]
             verified = {"throughput_rps": min(tps), "median_throughput_rps": statistics.median(tps),
                         "replicate_throughput_rps": tps,
                         "score_method": "minimum_of_comparable_repeats",
@@ -154,20 +165,18 @@ class EvidenceValidator:
                             "used_as_acceptance_gate": False,
                         },
                         "transaction_semantics": transaction_semantics}
-            decision = decide_paired(
-                [float(x) / 100.0 for x in paired if x is not None],
-                delta_min=max(0.0, self.minimum_tps_gain_percent) / 100.0)
-            both_positive = len(paired) >= 2 and all(
-                value is not None and float(value) > 0 for value in paired)
-            decision_record = decision.as_dict()
-            decision_record["statistical_verdict"] = decision.verdict
-            decision_record["both_stable_pairs_positive"] = both_positive
+            if sequential_decision is None:
+                gains = [log_gain(float(c["throughput_rps"]), float(t["throughput_rps"]))
+                         for c, t in zip(evidence_controls, evidence_treatments)]
+                sequential_decision = SequentialPairedPolicy(
+                    delta_min=max(.000001, self.minimum_tps_gain_percent / 100.0),
+                    max_blocks=max(2, min(3, len(gains)))).decide(gains).as_dict()
+            decision_record = dict(sequential_decision)
+            decision_record["statistical_verdict"] = decision_record.get("verdict")
             decision_record["acceptance_rule"] = (
-                "accept when every one of at least two valid paired blocks has treatment TPS above control TPS")
-            if both_positive:
-                decision_record.update(
-                    verdict="accept",
-                    reason="every valid paired treatment TPS is above its paired control TPS")
+                "sequential paired log gain versus the current champion; consistent mean must exceed delta_min")
+            decision_record["historical_high_policy"] = "warning_only_not_used_for_promotion"
+            decision_record["blocks"] = block_records or []
             verified["paired_decision"] = decision_record
             verified["regime_pairs"] = regime_pairs
             verified["retry_regime_policy"] = (
@@ -177,7 +186,7 @@ class EvidenceValidator:
             effective_verdict = decision_record["verdict"]
             if effective_verdict == "accept":
                 performance, accepted = "verified_improvement", True
-            elif effective_verdict == "reject_harmful":
+            elif effective_verdict in {"reject_harmful", "early_stopped_worse"}:
                 performance = "no_improvement"
                 mechanism = "refuted"
                 edge_results = self._override_nonobjective_edges(
@@ -191,6 +200,10 @@ class EvidenceValidator:
                     "equivalent TPS does not refute the mechanism; increase action amplitude")
             else:
                 performance = "inconclusive"
+                mechanism = "inconclusive"
+                edge_results = self._override_nonobjective_edges(
+                    proposal, edge_results, "inconclusive",
+                    "sequential paired evidence is inconclusive")
         return ValidationOutcome(
             experiment_id=experiment_id, validity=validity, validity_reasons=reasons,
             performance_verdict=performance, mechanism_verdict=mechanism,

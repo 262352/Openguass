@@ -107,8 +107,17 @@ class PgStatStatementsWindow:
             version = self.psql("show server_version_num")
             relation = self.psql("select coalesce(to_regclass('pg_stat_statements')::text,'')")
             if not relation:
-                self.status = {"status": "missing", "reason": "pg_stat_statements view is unavailable",
-                               "postgresql_version_num": version}
+                monitor = self.psql("select coalesce(to_regclass('pg_stat_monitor')::text,'')")
+                auto_explain = self.psql(
+                    "select position('auto_explain' in current_setting('shared_preload_libraries')) > 0")
+                fallback = ("pg_stat_monitor_plus_pg_stat_activity" if monitor else
+                            "auto_explain_plus_pg_stat_activity" if auto_explain == "t" else
+                            "pg_stat_activity_sampling_only")
+                self.status = {"status": "fallback", "reason": (
+                    "pg_stat_statements view is unavailable; aggregate query deltas are disabled"),
+                    "fallback_mode": fallback,
+                    "fallback_limit": "wait sampling remains available; statement aggregates may be absent",
+                    "postgresql_version_num": version}
                 return dict(self.status)
             raw = self.psql(
                 "select coalesce(json_agg(column_name order by ordinal_position),'[]'::json)::text "
@@ -166,6 +175,7 @@ class PgStatStatementsWindow:
         waits = window.wait_sampler.finish()
         if window.status.get("status") != "available":
             return {"status": window.status.get("status"), "reason": window.status.get("reason"),
+                    "fallback_mode": window.status.get("fallback_mode"),
                     "statistics": window.status, "wait_samples": waits, "leaderboards": {},
                     "window_seconds": time.monotonic() - window.started_at}
         try:

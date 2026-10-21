@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import math
+import statistics
 from collections import Counter
 from pathlib import Path
 from typing import Any, Literal
@@ -13,12 +15,14 @@ HypothesisStatus = Literal[
     "proposed", "testing", "parked", "underpowered", "tested_supported", "tested_refuted",
     "tested_inconclusive", "rejected_unsafe", "rejected_duplicate",
     "rejected_infeasible", "superseded_by_evidence",
+    "paused_low_yield", "action_space_boundary",
 ]
 TERMINAL_STATUSES = {
     "tested_supported", "tested_refuted", "tested_inconclusive",
     "rejected_unsafe", "rejected_duplicate", "rejected_infeasible",
     "superseded_by_evidence",
     "parked", "underpowered",
+    "paused_low_yield", "action_space_boundary",
 }
 
 
@@ -40,6 +44,7 @@ class HypothesisStateTable:
         self.recommendation_counts: Counter[str] = Counter()
         self.new_counts: list[int] = []
         self.evidence_epoch = 0
+        self.effect_history: dict[str, list[float]] = {}
 
     def register_round(self, round_number: int, proposals: list[ExpertProposal],
                        current_config_hash: str) -> int:
@@ -126,6 +131,42 @@ class HypothesisStateTable:
                         performance_verdict=outcome.performance_verdict,
                         mechanism_verdict=outcome.mechanism_verdict)
 
+    def record_effect(self, proposal: ExpertProposal, log_effect: float,
+                      *, delta_min: float = .03) -> bool:
+        """Pause a mechanism only after three valid effects have a low confidence upper bound."""
+        def family(name: str) -> str:
+            if name.startswith(("wal", "checkpoint", "commit")): return "wal"
+            if name.startswith("bgwriter") or name == "backend_flush_after": return "writeback"
+            if "mem" in name or name in {"shared_buffers", "effective_cache_size"}: return "memory"
+            if "lock" in name or "worker" in name: return "concurrency"
+            if name.startswith(("autovacuum", "vacuum")): return "maintenance"
+            return "query"
+        key = f"{proposal.expert}:" + ",".join(sorted({family(item.knob) for item in proposal.knob_changes}))
+        values = self.effect_history.setdefault(key, [])
+        values.append(float(log_effect))
+        if len(values) < 3:
+            self.write()
+            return False
+        deviation = statistics.stdev(values) if len(values) > 1 else 0.0
+        upper = statistics.mean(values) + 1.96 * deviation / math.sqrt(len(values))
+        if upper < delta_min:
+            self.transition(proposal.proposal_id, "paused_low_yield",
+                            "three or more valid effects have a confidence upper bound below delta_min",
+                            effect_count=len(values), effect_mean=statistics.mean(values),
+                            effect_ci_upper=upper,
+                            reactivation_conditions=["new anomaly", "interaction evidence", "periodic exploration"])
+            return True
+        self.write()
+        return False
+
+    def reactivate_paused(self, *, experts: set[str], reason: str) -> list[str]:
+        changed = []
+        for proposal_id, record in self.records.items():
+            if record["status"] == "paused_low_yield" and record["expert"] in experts:
+                self.transition(proposal_id, "tested_inconclusive", f"reactivated: {reason}")
+                changed.append(proposal_id)
+        return changed
+
     def supersede_pending(self, *, tested_proposal_id: str,
                           experiment_result: dict[str, Any]) -> list[str]:
         """Park sibling proposals so every expert can revise them after new evidence.
@@ -192,6 +233,7 @@ class HypothesisStateTable:
     def write(self) -> None:
         payload = {"schema_version": "andromeda.hypothesis-status/v2",
                    "updated_at": utc_now(), "evidence_epoch": self.evidence_epoch,
+                   "effect_history": self.effect_history,
                    "hypotheses": list(self.records.values())}
         self.current_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 

@@ -18,7 +18,7 @@ def test_postgres_templates_cover_required_workloads():
 
 
 def test_current_tpcc_and_twitter_profiles_are_unlimited_and_sized():
-    expected = {"tpcc": (5, 5), "twitter": (100, 8)}
+    expected = {"tpcc": (5, 3), "twitter": (100, 5)}
     for workload, (scale, terminals) in expected.items():
         root = ET.parse(ROOT / f"benchmarks/postgres/{workload}.xml").getroot()
         assert root.findtext("isolation") == "TRANSACTION_SERIALIZABLE"

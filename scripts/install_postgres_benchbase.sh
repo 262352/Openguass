@@ -158,6 +158,15 @@ fi
 [[ $(git -C "${project_dir}/.benchbase" rev-parse HEAD) == "$benchbase_commit" ]] || {
   echo "BenchBase checkout differs from pinned commit ${benchbase_commit}." >&2; exit 1;
 }
+retry_patch="${project_dir}/patches/benchbase-full-jitter.patch"
+if git -C "${project_dir}/.benchbase" apply --reverse --check "$retry_patch" >/dev/null 2>&1; then
+  echo "BenchBase full-jitter retry patch is already applied."
+elif git -C "${project_dir}/.benchbase" apply --check "$retry_patch" >/dev/null 2>&1; then
+  git -C "${project_dir}/.benchbase" apply "$retry_patch"
+else
+  echo "Pinned BenchBase source is incompatible with ${retry_patch}." >&2
+  exit 1
+fi
 JAVA_HOME="$jdk_dir" PATH="$jdk_dir/bin:$PATH" \
   "${project_dir}/.benchbase/mvnw" "${maven_options[@]}" -q clean package -P postgres -DskipTests
 rm -rf "${project_dir}/.benchbase/target/benchbase-postgres"

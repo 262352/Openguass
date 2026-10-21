@@ -183,8 +183,8 @@ def test_two_direction_workflow_passes_only_source_reference_to_runner(tmp_path,
     assert len(result["episodes"]) == 2
     assert calls[0]["source_config"] == workflow.store.path("tpcc")
     assert calls[1]["source_config"] == workflow.store.path("twitter")
-    assert calls[0]["terminals"] == 8 and calls[0]["source_profile_terminals"] == 5
-    assert calls[1]["terminals"] == 5 and calls[1]["source_profile_terminals"] == 8
+    assert calls[0]["terminals"] == 5 and calls[0]["source_profile_terminals"] == 3
+    assert calls[1]["terminals"] == 3 and calls[1]["source_profile_terminals"] == 5
     first_visible = (workflow.directory / "episodes/repeat_01/tpcc_to_twitter/diagnosis_visible_context.json").read_text()
     assert "999" not in first_visible
     evaluations = sorted((workflow.directory / "oracle/evaluations").glob("*.json"))

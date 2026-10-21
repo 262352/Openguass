@@ -11,8 +11,9 @@ from statistics import median
 from typing import Any
 
 from app.multi_agent.executor import ExperimentExecutor, stable_hash
-from app.multi_agent.coordinator import Coordinator
+from app.multi_agent.coordinator import Coordinator, ExpertCreditScheduler
 from app.multi_agent.experts import DeepSeekExpertBackend, ExpertPanel
+from app.multi_agent.experiment_state import CandidateArchive
 from app.multi_agent.graph import GraphStore
 from app.multi_agent.models import IncumbentSnapshot, ValidationOutcome, utc_now
 from app.multi_agent.reporting import ReportBuilder
@@ -23,6 +24,7 @@ from app.phase2.bayesian_baseline import load_source_config
 from .baseline import build_default_baseline
 from .diagnosis_control import ActionConsistencyAuditor, HypothesisStateTable
 from .knowledge_retrieval import retrieve_diagnostic_bundles
+from .health_scan import HealthCoveragePlanner
 from .search_space import BoundedSearchPlanner, SearchSpaceCompiler
 
 
@@ -37,6 +39,7 @@ class TwitterContinuousRunner:
                  baseline_stability_retries: int = 1,
                  drift_percent: float = 25.0, minimum_tps_gain_percent: float = 5.0,
                  workload: str = "twitter", search_rounds: int = 12,
+                 health_rounds: int = 0,
                  baseline_config: Path | None = None):
         if workload not in {"tpcc", "twitter"}:
             raise ValueError(f"unsupported continuous workload: {workload}")
@@ -46,6 +49,7 @@ class TwitterContinuousRunner:
         self.directory.mkdir(parents=True, exist_ok=False)
         self.max_rounds, self.max_measurements = max_rounds, max_measurements
         self.search_rounds = search_rounds
+        self.health_rounds = max(0, health_rounds)
         self.max_wall_seconds, self.max_model_calls = max_wall_seconds, max_model_calls
         self.baseline_repeats = baseline_repeats
         self.baseline_config = baseline_config
@@ -109,6 +113,7 @@ class TwitterContinuousRunner:
                           "graph-frontier expert diagnosis followed by diagnosis-bounded parameter search"),
             "action_mode": {"parameters": True, "ddl": False, "sql_rewrite": False, "index_build": False},
             "budgets": {"diagnosis_rounds": self.max_rounds, "search_rounds": self.search_rounds,
+                        "health_coverage_rounds": self.health_rounds,
                         "workload_measurements": self.max_measurements,
                         "wall_seconds": self.max_wall_seconds, "model_calls": self.max_model_calls,
                         "measurements_per_candidate": 2 * getattr(self.executor, "paired_blocks", 2),
@@ -120,9 +125,15 @@ class TwitterContinuousRunner:
                 "unstable_fallback": "median throughput of the final attempt",
             },
             "acceptance_rule": (
-                "randomized paired blocks; accept when every one of at least two valid treatment blocks beats "
-                "its paired control; retry regime and latency are diagnostic only; bootstrap confidence "
-                "classifies harmful/equivalent/unresolved results"),
+                "sequential synchronous champion/candidate blocks; log-gain delta_min=PAIRED_DELTA_MIN (default 0.03); "
+                "early stop harmful first blocks, require consistent positive direction for promotion, maximum 3 blocks"),
+            "immutable_workload_protocol": {
+                "terminals": getattr(self.executor, "terminals", None),
+                "scale_factor": 5 if self.workload == "tpcc" else 100,
+                "isolation": "TRANSACTION_SERIALIZABLE",
+                "client_retry": {"maxRetries": 10, "baseDelayMs": 50, "jitter": "full"},
+                "mutation_policy": "immutable during tuning; change only in a separate capacity scan",
+            },
             "evidence_refresh": (
                 "after every intervention, all untested sibling hypotheses are superseded and all experts "
                 "must observe the result before proposing the next graph frontier"),
@@ -143,6 +154,10 @@ class TwitterContinuousRunner:
         coordinator = Coordinator(
             self.executor.space,
             required_measurements=2 * getattr(self.executor, "paired_blocks", 2))
+        scheduler = ExpertCreditScheduler(
+            ("query_execution", "memory_storage", "concurrency_maintenance"),
+            seed=self.executor.seed)
+        archive = CandidateArchive(self.directory)
         hypotheses = HypothesisStateTable(self.directory)
         action_auditor = ActionConsistencyAuditor(self.directory, self.executor.space)
         diagnosis_history: list[dict[str, Any]] = []
@@ -225,6 +240,7 @@ class TwitterContinuousRunner:
                 use_median_score=fallback_used)
             self.initial_tps = float(incumbent.verified_performance["throughput_rps"])
             self._write("incumbent.json", incumbent.model_dump(mode="json"))
+            archive.set_champion(incumbent, reason="default baseline")
             try:
                 self.panel = ExpertPanel(DeepSeekExpertBackend(self.directory / "llm"))
             except Exception as error:
@@ -341,9 +357,22 @@ class TwitterContinuousRunner:
                         hypotheses.transition(proposal.proposal_id, status, reason)
                         graph.reject_proposal(proposal, status, reason)
                 candidates = executable
-                selection = coordinator.select(candidates, [], current_config=incumbent.config,
+                available_roles = {item.expert for item in candidates}
+                anomaly_roles = self._anomaly_experts(anomalies)
+                for role in anomaly_roles:
+                    if scheduler.credit[role].state == "paused_low_yield":
+                        scheduler.reactivate(role, "new anomaly points to the paused mechanism")
+                hypotheses.reactivate_paused(
+                    experts=set(anomaly_roles), reason="new anomaly points to this expert domain")
+                scheduled_role, probabilities, scheduling_reason = scheduler.choose(
+                    available_roles, round_number, anomaly_roles)
+                self._write("expert_scheduler.json", scheduler.snapshot(round_number))
+                scheduled_candidates = [item for item in candidates if item.expert == scheduled_role]
+                selection = coordinator.select(scheduled_candidates, [], current_config=incumbent.config,
                     remaining_measurements=remaining,
                     knob_experiment_counts=knob_experiment_counts)
+                selection.reason = (f"{scheduling_reason}; probabilities={probabilities}; "
+                                    f"{selection.reason}")
                 coordinator_summary = selection.reason
                 chosen = next((item for item in candidates
                                if item.proposal_id == selection.selected_proposal_id), None)
@@ -433,9 +462,19 @@ class TwitterContinuousRunner:
                     requested_settings=requested, observed_settings=paired["observed_candidate_settings"],
                     expected_context=context,
                     actual_contexts=[m.get("experiment_context", context)
-                                     for m in paired["controls"] + paired["treatments"]])
+                                     for m in paired["controls"] + paired["treatments"]],
+                    sequential_decision=paired.get("sequential_decision"),
+                    block_records=paired.get("block_records"))
+                scheduler_gain = float((paired.get("sequential_decision") or {}).get("effect_mean", 0.0))
+                if (paired.get("sequential_decision") or {}).get("verdict") == "early_stopped_worse":
+                    scheduler_gain = -getattr(self.executor, "delta_min", .03)
+                scheduler.update(chosen.expert, scheduler_gain)
+                self._write("expert_scheduler.json", scheduler.snapshot(round_number))
                 graph.apply_validation(chosen, outcome)
                 hypotheses.finish_test(chosen, outcome)
+                if outcome.validity == "valid":
+                    hypotheses.record_effect(chosen, scheduler_gain,
+                                             delta_min=getattr(self.executor, "delta_min", .03))
                 diagnosis_history.append({"proposal": chosen, "outcome": outcome})
                 self.reporter.append_round(round_number, chosen.proposal_id,
                                            paired["controls"], paired["treatments"], outcome)
@@ -449,6 +488,10 @@ class TwitterContinuousRunner:
                     "outcome": outcome.model_dump(mode="json")})
                 latest_experiment_result = self._shared_experiment_result(
                     chosen, requested, paired, outcome)
+                archive.append(candidate_config=candidate, candidate_hash=stable_hash(candidate),
+                               experiment_parent=incumbent, experiment_id=experiment_id,
+                               proposal_id=chosen.proposal_id, paired=paired,
+                               outcome=outcome.model_dump(mode="json"))
                 evidence_epoch = hypotheses.advance_epoch(experiment_id)
                 superseded = hypotheses.supersede_pending(
                     tested_proposal_id=chosen.proposal_id,
@@ -473,6 +516,7 @@ class TwitterContinuousRunner:
                         database_state=context, evidence=paired["treatments"][-1],
                         accepted_experiment_id=experiment_id)
                     self._write("incumbent.json", incumbent.model_dump(mode="json"))
+                    archive.set_champion(incumbent, reason=f"accepted {experiment_id}")
                     graph.mark_stale(incumbent.config_hash, f"incumbent changed from {old_hash}")
                 else:
                     self.executor.executor.apply(incumbent.config, self.executor.space)
@@ -482,6 +526,16 @@ class TwitterContinuousRunner:
                         "proposal_id": chosen.proposal_id,
                         "action_consistency": applied_consistency})
                     break
+
+            health_blocked = stop_reason in {
+                "action_fidelity_violation", "database_recovery_failed", "signal_requested"}
+            health_results = ({"champion": incumbent, "results": [],
+                               "blocked_by": stop_reason}
+                              if health_blocked else self._run_health_coverage(
+                                  incumbent, context, hardware, archive, started,
+                                  coverage_baseline=baseline_plan.config))
+            if health_results.get("champion") is not None:
+                incumbent = health_results["champion"]
 
             # Resolve proposals tied to an older incumbent before compiling the
             # bounded search space; they must never silently survive as active.
@@ -536,7 +590,9 @@ class TwitterContinuousRunner:
                     requested_settings=requested, observed_settings=paired["observed_candidate_settings"],
                     expected_context=context,
                     actual_contexts=[m.get("experiment_context", context)
-                                     for m in paired["controls"] + paired["treatments"]])
+                                     for m in paired["controls"] + paired["treatments"]],
+                    sequential_decision=paired.get("sequential_decision"),
+                    block_records=paired.get("block_records"))
                 graph.apply_validation(proposal, outcome)
                 self.reporter.append_round(self.max_rounds + search_index, proposal.proposal_id,
                                            paired["controls"], paired["treatments"], outcome)
@@ -554,6 +610,7 @@ class TwitterContinuousRunner:
                         database_state=context, evidence=paired["treatments"][-1],
                         accepted_experiment_id=experiment_id)
                     self._write("incumbent.json", incumbent.model_dump(mode="json"))
+                    archive.set_champion(incumbent, reason=f"accepted {experiment_id}")
                     graph.mark_stale(incumbent.config_hash, f"search incumbent changed from {old_hash}")
                 else:
                     self.executor.executor.apply(incumbent.config, self.executor.space)
@@ -562,6 +619,7 @@ class TwitterContinuousRunner:
                 "stop_reason": stop_reason, "completed_rounds": completed_rounds,
                 "completed_diagnosis_rounds": completed_rounds,
                 "completed_search_rounds": completed_search_rounds,
+                "completed_health_coverage_rounds": len(health_results.get("results", [])),
                 "workload_measurements": self.executor.measurement_count,
                 "episode_initial_tps": self.initial_tps,
                 "model_calls_scheduled": self.model_calls,
@@ -586,10 +644,95 @@ class TwitterContinuousRunner:
                 "postgresql_restarts": self.executor.restart_count,
                 "configuration_applications": self.executor.apply_count,
                 "model_calls": self.model_calls, "model_tokens": self._model_tokens(),
+                "prompt_cache": self._prompt_cache_metrics(),
                 "elapsed_seconds": round(time.monotonic() - started, 3), "final_rollback": rollback,
             })
             for signum, handler in previous_handlers.items():
                 signal.signal(signum, handler)
+
+    @staticmethod
+    def _anomaly_experts(anomalies: list[str]) -> list[str]:
+        roles: list[str] = []
+        for anomaly in anomalies:
+            lowered = anomaly.lower()
+            if any(word in lowered for word in ("buffer", "wal", "io", "checkpoint", "memory", "temp")):
+                roles.append("memory_storage")
+            if any(word in lowered for word in ("query", "plan", "scan", "statistic")):
+                roles.append("query_execution")
+            if any(word in lowered for word in ("lock", "serial", "retry", "vacuum", "conflict")):
+                roles.append("concurrency_maintenance")
+        return list(dict.fromkeys(roles))
+
+    def _run_health_coverage(self, champion: IncumbentSnapshot,
+                             context: dict[str, Any], hardware: dict[str, Any],
+                             archive: CandidateArchive, started: float, *,
+                             coverage_baseline: dict[str, Any]) -> dict[str, Any]:
+        planner = HealthCoveragePlanner(self.executor.space,
+                                        memory_bytes=hardware.get("memory_bytes"))
+        plan = planner.compile(coverage_baseline)
+        self._write("health_coverage_plan.json", {
+            "schema_version": "andromeda.health-coverage/v1",
+            "mandatory_union": plan,
+            "expert_protocol": [
+                "name the top hidden bottleneck despite normal metrics",
+                "provide perturbation range and step",
+                "name likely parameter interactions",
+            ],
+            "selection": "union of mandatory coverage and each expert's first nomination",
+        })
+        results: list[dict[str, Any]] = []
+        for index, action in enumerate(plan[:self.health_rounds], 1):
+            if self.stop_requested or time.monotonic() - started >= self.max_wall_seconds:
+                break
+            if self.max_measurements - self.executor.measurement_count < 4:
+                break
+            parent = champion
+            candidate = dict(parent.config)
+            candidate[action["knob"]] = action["new_value"]
+            candidate = self.executor.space.reconcile(candidate)
+            experiment_id = f"health:{index:03d}:{uuid.uuid4().hex[:8]}"
+            try:
+                paired = self.executor.run_paired(parent.config, candidate,
+                                                  self.max_rounds + index,
+                                                  duration_override=30,
+                                                  minimum_blocks=2)
+                decision = paired["sequential_decision"]
+                record = {"experiment_id": experiment_id, "action": action,
+                          "candidate_config_hash": stable_hash(candidate),
+                          "experiment_parent": parent.config_hash,
+                          "decision": decision, "blocks": paired["block_records"]}
+                archive.append(candidate_config=candidate, candidate_hash=stable_hash(candidate),
+                               experiment_parent=parent, experiment_id=experiment_id,
+                               proposal_id=f"health_{action['knob']}_{index}", paired=paired,
+                               outcome=record)
+                if decision["verdict"] == "accept":
+                    valid_treatments = [item for item, block in zip(paired["treatments"], paired["block_records"])
+                                        if not block.get("outlier")]
+                    scores = [float(item["throughput_rps"]) for item in valid_treatments]
+                    champion = IncumbentSnapshot(
+                        config=candidate, config_hash=stable_hash(candidate),
+                        verified_performance={"throughput_rps": min(scores),
+                                              "median_throughput_rps": median(scores),
+                                              "replicate_throughput_rps": scores,
+                                              "score_method": "sequential_paired_health_scan"},
+                        guardrails={"validity": "valid"},
+                        workload_fingerprint=context["workload_fingerprint"],
+                        workload_fingerprint_hash=stable_hash(context["workload_fingerprint"]),
+                        database_state=context, evidence=valid_treatments[-1],
+                        accepted_experiment_id=experiment_id)
+                    self._write("incumbent.json", champion.model_dump(mode="json"))
+                    archive.set_champion(champion, reason=f"health coverage accepted {experiment_id}")
+                    record["promoted_to_champion"] = True
+                else:
+                    self.executor.executor.apply(champion.config, self.executor.space)
+                    record["promoted_to_champion"] = False
+                results.append(record)
+            except Exception as error:
+                self.executor.executor.apply(champion.config, self.executor.space)
+                results.append({"experiment_id": experiment_id, "action": action,
+                                "error_type": type(error).__name__, "error": str(error)[:1000]})
+        self._write("health_coverage_results.json", {"completed": len(results), "results": results})
+        return {"champion": champion, "results": results}
 
     @staticmethod
     def _anomalies(measurement: dict[str, Any], low_gain: int) -> list[str]:
@@ -636,6 +779,8 @@ class TwitterContinuousRunner:
         """Compact result broadcast to every expert before the next proposal."""
         def view(item: dict[str, Any]) -> dict[str, Any]:
             client = item.get("client", {})
+            telemetry = item.get("telemetry", {})
+            query = item.get("query_evidence", {})
             return {
                 "throughput_rps": item.get("throughput_rps"),
                 "p95_us": item.get("p95_us"), "p99_us": item.get("p99_us"),
@@ -645,8 +790,17 @@ class TwitterContinuousRunner:
                 "server_retry_transactions": client.get("server_retry_transactions"),
                 "server_retry_ratio": client.get("server_retry_ratio"),
                 "final_failures": client.get("final_failures"),
-                "telemetry": item.get("telemetry", {}),
-                "query_evidence": item.get("query_evidence", {}),
+                "telemetry_summary": {
+                    "anomalies": telemetry.get("anomalies", []),
+                    "gauges": telemetry.get("gauges", {}),
+                    "wal_timing": telemetry.get("wal_timing", {}),
+                    "host_io": telemetry.get("host_io", {}),
+                },
+                "query_evidence_pointer": {
+                    "status": query.get("status"), "template_count": query.get("template_count"),
+                    "top_template_ids": [item.get("template_id") for item in
+                        (query.get("leaderboards", {}).get("total_exec_time", [])[:3])],
+                },
             }
         paired_decision = (outcome.verified_performance or {}).get("paired_decision", {})
         verdict = paired_decision.get("verdict")
@@ -713,6 +867,22 @@ class TwitterContinuousRunner:
             try: total += int(json.loads(path.read_text()).get("usage", {}).get("total_tokens", 0) or 0)
             except (OSError, ValueError, TypeError): pass
         return total
+
+    def _prompt_cache_metrics(self) -> dict[str, Any]:
+        hit = miss = prompt = calls = 0
+        for path in (self.directory / "llm").glob("*_metadata.json"):
+            try:
+                value = json.loads(path.read_text())
+                hit += int(value.get("prompt_cache_hit_tokens", 0) or 0)
+                miss += int(value.get("prompt_cache_miss_tokens", 0) or 0)
+                prompt += int(value.get("usage", {}).get("prompt_tokens", 0) or 0)
+                calls += 1
+            except (OSError, ValueError, TypeError):
+                continue
+        return {"calls": calls, "hit_tokens": hit, "miss_tokens": miss,
+                "hit_rate": hit / max(1, hit + miss),
+                "mean_prompt_tokens": prompt / max(1, calls),
+                "targets": {"hit_rate": .90, "prompt_tokens_per_call": [20_000, 30_000]}}
 
     def _workload_data_preflight(self) -> None:
         xml_path = self.root / "benchmarks" / "postgres" / f"{self.workload}.xml"

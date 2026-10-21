@@ -43,9 +43,9 @@ if [[ -n "${SOURCE_CONFIG:-}" ]]; then
 fi
 
 case "$TARGET_WORKLOAD" in
-  tpcc) default_terminals=5 ;;
-  twitter) default_terminals=8 ;;
-  *) default_terminals=2 ;;
+  tpcc) default_terminals=3 ;;
+  twitter) default_terminals=5 ;;
+  *) default_terminals=5 ;;
 esac
 case "$SOURCE_WORKLOAD" in
   tpcc) default_source_terminals=5 ;;

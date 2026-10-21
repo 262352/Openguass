@@ -1,11 +1,108 @@
 from __future__ import annotations
 
+import math
+import random
 from collections import Counter, defaultdict
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from app.phase2.space import FullKnobSpace
 
 from .models import CrossReview, ExpertProposal, ExperimentSelection
+
+
+@dataclass
+class ExpertCredit:
+    ewma_log_gain: float = 0.0
+    samples: int = 0
+    consecutive_negative: int = 0
+    last_selected_round: int = 0
+    state: str = "active"
+    gains: list[float] = field(default_factory=list)
+
+
+class ExpertCreditScheduler:
+    """Fair softmax scheduling driven by measured paired log gains."""
+
+    def __init__(self, roles: tuple[str, ...], *, alpha: float = .3, beta: float = 5.0,
+                 seed: int = 20261021):
+        self.roles = tuple(roles)
+        self.alpha, self.beta = float(alpha), float(beta)
+        self.rng = random.Random(seed)
+        self.credit = {role: ExpertCredit() for role in self.roles}
+
+    def update(self, role: str, log_effect: float) -> None:
+        item = self.credit[role]
+        item.ewma_log_gain = (float(log_effect) if item.samples == 0 else
+                              self.alpha * float(log_effect) + (1 - self.alpha) * item.ewma_log_gain)
+        item.samples += 1
+        item.gains.append(float(log_effect))
+        item.consecutive_negative = item.consecutive_negative + 1 if log_effect < 0 else 0
+        if item.samples >= 3 and item.consecutive_negative >= 3:
+            item.state = "paused_low_yield"
+
+    def probabilities(self, round_number: int) -> dict[str, float]:
+        # A paused route gets an explicit periodic 0.05 wake-up opportunity.
+        waking = {role for role, item in self.credit.items()
+                  if item.state == "paused_low_yield" and round_number % 5 == 0}
+        active = [role for role, item in self.credit.items()
+                  if item.state != "paused_low_yield"]
+        if not active and not waking:
+            active = list(self.roles)
+        weights: dict[str, float] = {}
+        for role in active:
+            item = self.credit[role]
+            if item.samples < 3 and item.ewma_log_gain <= 0:
+                weights[role] = 1.0
+            else:
+                weights[role] = math.exp(self.beta * item.ewma_log_gain)
+        result = {role: 0.0 for role in self.roles}
+        wake_mass = min(.05 * len(waking), 1.0)
+        for role in waking:
+            result[role] = .05
+        total = sum(weights.values())
+        if active:
+            for role, value in weights.items():
+                result[role] = (1.0 - wake_mass) * (value / total if total else 1 / len(active))
+        return result
+
+    def choose(self, available_roles: set[str], round_number: int,
+               anomaly_priority: list[str] | None = None) -> tuple[str | None, dict[str, float], str]:
+        if not available_roles:
+            return None, self.probabilities(round_number), "no expert has an executable proposal"
+        never = [role for role in self.roles if role in available_roles and self.credit[role].samples == 0]
+        if never:
+            chosen = never[0]
+            reason = "mandatory first sample for every expert"
+        else:
+            overdue = [role for role in self.roles if role in available_roles
+                       and round_number - self.credit[role].last_selected_round >= 4]
+            if overdue:
+                chosen = max(overdue, key=lambda role: round_number - self.credit[role].last_selected_round)
+                reason = "fairness rule: expert was not selected for three consecutive rounds"
+            else:
+                probabilities = self.probabilities(round_number)
+                candidates = list(available_roles)
+                weights = [probabilities[role] for role in candidates]
+                if anomaly_priority:
+                    for index, role in enumerate(candidates):
+                        if role in anomaly_priority and self.credit[role].state != "paused_low_yield":
+                            weights[index] *= 1.5
+                chosen = self.rng.choices(candidates, weights=weights, k=1)[0]
+                reason = "softmax EWMA gain sample with bounded anomaly priority"
+        self.credit[chosen].last_selected_round = round_number
+        return chosen, self.probabilities(round_number), reason
+
+    def reactivate(self, role: str, reason: str) -> None:
+        item = self.credit[role]
+        item.state = "active"
+        item.consecutive_negative = 0
+
+    def snapshot(self, round_number: int) -> dict[str, Any]:
+        return {"round": round_number, "alpha": self.alpha, "beta": self.beta,
+                "probabilities": self.probabilities(round_number),
+                "experts": {role: asdict(item) for role, item in self.credit.items()},
+                "reactivation": "new anomaly, interaction evidence, or every fifth-round wake-up"}
 
 
 class Coordinator:
@@ -86,10 +183,27 @@ class Coordinator:
             if str(current.get(change.knob)).lower() != str(change.old_value).lower():
                 return f"proposal old value for {change.knob} does not match incumbent"
             families.add(self._family(change.knob))
+        semantic_error = self.semantic_consistency_error(proposal)
+        if semantic_error:
+            return semantic_error
         # A diagnosis may require a coherent multi-knob action spanning catalog
         # families (for example shared_buffers plus bgwriter controls). It is
         # still one mechanism test; factorial registration is required only
         # when the proposal claims an interaction effect.
+        return None
+
+    @classmethod
+    def semantic_consistency_error(cls, proposal: ExpertProposal) -> str | None:
+        """Catch obvious title/mechanism/action substitutions before any measurement."""
+        actions = {change.knob for change in proposal.knob_changes}
+        if not actions:
+            return None
+        text = " ".join((proposal.title, proposal.configuration_cause, proposal.mechanism,
+                         proposal.expected_tps_effect, proposal.expected_latency_effect)).lower()
+        mentioned_catalog = {name for name in FullKnobSpace().names if name.lower() in text}
+        if mentioned_catalog and mentioned_catalog.isdisjoint(actions):
+            return ("semantic_mismatch: narrative names " + ",".join(sorted(mentioned_catalog))
+                    + " but knob_changes contains " + ",".join(sorted(actions)))
         return None
 
     @staticmethod

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Protocol
@@ -45,12 +46,26 @@ class DeepSeekExpertBackend:
                    "temperature": 0, "max_tokens": 8192,
                    "extra_body": {"thinking": {"type": "disabled"}}}
         (self.directory / f"{name}_request.json").write_text(json.dumps(request, ensure_ascii=False, indent=2), encoding="utf-8")
-        response = self.client.chat.completions.create(**request)
+        try:
+            response = self.client.chat.completions.create(**request)
+        except Exception as error:
+            if "thinking" not in str(error).lower():
+                raise
+            request.pop("extra_body", None)
+            response = self.client.chat.completions.create(**request)
         raw = response.choices[0].message.content or ""
         (self.directory / f"{name}_response.json").write_text(raw, encoding="utf-8")
+        usage = getattr(getattr(response, "usage", None), "model_dump", lambda: {})()
+        details = usage.get("prompt_tokens_details") or {}
+        cache_hit = int(usage.get("prompt_cache_hit_tokens", details.get("cached_tokens", 0)) or 0)
+        cache_miss = int(usage.get("prompt_cache_miss_tokens",
+                                  max(0, int(usage.get("prompt_tokens", 0) or 0) - cache_hit)) or 0)
         metadata = {"at": utc_now(), "model": self.model, "response_id": getattr(response, "id", None),
                     "finish_reason": getattr(response.choices[0], "finish_reason", None),
-                    "usage": getattr(getattr(response, "usage", None), "model_dump", lambda: {})()}
+                    "usage": usage, "prompt_cache_hit_tokens": cache_hit,
+                    "prompt_cache_miss_tokens": cache_miss,
+                    "prompt_cache_hit_rate": cache_hit / max(1, cache_hit + cache_miss),
+                    "stable_prefix_sha256": hashlib.sha256(system.encode()).hexdigest()}
         (self.directory / f"{name}_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
         return json.loads(raw)
 
@@ -89,7 +104,11 @@ class DeepSeekExpertBackend:
             "several knobs, use diagnostic_knowledge as the literature-backed mechanism-to-knob database. For your "
             "mandatory_bundle_by_role entry, an executable proposal MUST contain every knob in required_knobs as one "
             "coherent joint action. Do not reduce the bundle to one representative knob. Choose exact values from the "
-            "live ranges and explain each knob's mechanism role. Transaction metrics "
+            "live ranges and explain each knob's mechanism role. Every executable WAL-group proposal MUST include an "
+            "explicit wal_compression knob_changes entry whenever wal_compression is actionable in the supplied bundle. "
+            "The title, mechanism, predicted metrics, and knob_changes must describe the same knob family; a title naming "
+            "default_statistics_target with an action on seq_page_cost is invalid and must not be returned. "
+            "Transaction metrics "
             "use IDs such as client.transaction_latency.InsertTweet.p50_us. Use query_evidence window deltas, "
             "template leaderboards and query wait samples when present. Treat client.server_retry_ratio and PostgreSQL "
             "rollback_ratio as separate evidence: BenchBase server retries are confirmed serialization failures. "
@@ -111,6 +130,10 @@ class DeepSeekExpertBackend:
             "metrics explain the result but are not hidden acceptance objectives. When Goodput rises while retry ratio "
             "falls, discuss changed completion semantics instead of treating latency alone as a failed action. "
             "Healthy metrics mean no diagnosed anomaly, not proof of a global optimum. SQL/index opportunities "
+            "Treat health exploration as a protocol, not a global ranking: explicitly state (1) the top hidden "
+            "throughput bottleneck in your subsystem even when aggregate metrics look normal, (2) its recommended "
+            "perturbation range and step, and (3) likely interactions with other knobs. The coordinator takes the "
+            "union of specialists' first nominations and mandatory coverage; never require consensus. "
             "must remain non-executed requirements. Include an alternative with a different measurable prediction. "
             "If no new action is justified, return an observation-only proposal with knob_changes=[]; never repeat an "
             "action already present in tested_action_summary. Keep title/reason fields under 80 words and mechanism "
@@ -118,8 +141,9 @@ class DeepSeekExpertBackend:
             + "\nALLOWED_KNOBS=" + json.dumps(allowed_knobs, sort_keys=True, separators=(",", ":"))
             + f"\nSPECIALIST_ROLE={role}; SCOPE={ROLE_SCOPES[role]}"
         )
-        dynamic_payload = {key: value for key, value in payload.items()
-                           if key not in {"allowed_knobs", "policy"}}
+        dynamic_payload = self._compact_dynamic_payload(
+            role, {key: value for key, value in payload.items()
+                   if key not in {"allowed_knobs", "policy"}})
         last_error: Exception | None = None
         for attempt in range(1, 4):
             try:
@@ -144,6 +168,43 @@ class DeepSeekExpertBackend:
             except (json.JSONDecodeError, ValidationError, KeyError, TypeError, ValueError) as error:
                 last_error = error
         raise RuntimeError(f"{role} failed strict ExpertProposal validation after three attempts: {last_error}")
+
+    @staticmethod
+    def _compact_dynamic_payload(role: ExpertRole, payload: dict[str, Any]) -> dict[str, Any]:
+        """Keep a small role-relevant suffix while the schema/catalog prefix stays byte stable."""
+        result = dict(payload)
+        measurement = dict(result.get("current_measurement") or {})
+        telemetry = measurement.get("telemetry") or {}
+        common = {key: measurement.get(key) for key in (
+            "label", "run_id", "throughput_rps", "p95_us", "average_us", "p99_us",
+            "healthy", "elapsed_seconds") if key in measurement}
+        client = measurement.get("client") or {}
+        common["client"] = {key: client.get(key) for key in (
+            "successful_transaction_tps", "transaction_attempts", "server_retry_ratio",
+            "final_failures", "transaction_latency", "bottleneck_summary") if key in client}
+        common["telemetry"] = {
+            "anomalies": telemetry.get("anomalies", []),
+            "gauges": telemetry.get("gauges", {}),
+        }
+        if role == "query_execution":
+            common["query_evidence"] = measurement.get("query_evidence", {})
+            common["plan_evidence"] = measurement.get("plan_evidence", {})
+        elif role == "memory_storage":
+            common["telemetry"].update({key: telemetry.get(key, {}) for key in
+                ("wal_timing", "host_io", "per_transaction")})
+        else:
+            common["telemetry"].update({key: telemetry.get(key, {}) for key in
+                ("rates_per_second", "per_transaction")})
+        common["measurement_protocol"] = measurement.get("measurement_protocol", {})
+        result["current_measurement"] = common
+        # Graph compaction is also enforced here for callers other than the continuous runner.
+        for graph_key in ("graph_frontier", "tested_action_summary"):
+            graph = result.get(graph_key)
+            if isinstance(graph, dict) and isinstance(graph.get("edges"), list):
+                graph = dict(graph)
+                graph["edges"] = graph["edges"][-80:]
+                result[graph_key] = graph
+        return result
 
     @staticmethod
     def _validate_raw_graph_references(value: dict[str, Any]) -> None:

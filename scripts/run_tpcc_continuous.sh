@@ -41,12 +41,13 @@ exec "$PYTHON_BIN" -m app.continuous.cli \
   --workload tpcc \
   --max-rounds "${MAX_ROUNDS:-15}" \
   --search-rounds "${SEARCH_ROUNDS:-15}" \
+  --health-rounds "${HEALTH_ROUNDS:-0}" \
   --max-measurements "${MAX_MEASUREMENTS:-123}" \
   --max-wall-seconds "${MAX_WALL_SECONDS:-43200}" \
   --max-model-calls "${MAX_MODEL_CALLS:-45}" \
   --duration "${DURATION:-120}" \
   --warmup-seconds "${WARMUP_SECONDS:-30}" \
-  --terminals "${TPCC_TERMINALS:-5}" \
+  --terminals "${TPCC_TERMINALS:-3}" \
   --seed "${BENCHMARK_SEED:-20261015}" \
   --baseline-repeats "${BASELINE_REPEATS:-3}" \
   --baseline-stability-retries "${BASELINE_STABILITY_RETRIES:-1}" \
