@@ -63,3 +63,22 @@ def test_huawei_comparison_runs_bo_then_only_tpcc_to_twitter_diagnosis():
     assert "snapshot_profile_matches" in script
     runner = read_script("run_bo_reference_then_switch.sh")
     assert '--bo-workloads "${BO_WORKLOADS:-tpcc,twitter}"' in runner
+
+
+def test_twitter_single_workload_entrypoint_runs_bo_then_diagnosis_and_health():
+    script = read_script("run_twitter_bo_then_diagnosis.sh")
+    assert "BO_WORKLOADS=twitter" in script
+    assert 'TWITTER_BO_BUDGET="${TWITTER_BO_BUDGET:-100}"' in script
+    assert 'MAX_ROUNDS="${DIAGNOSIS_ROUNDS:-15}"' in script
+    assert 'HEALTH_ROUNDS="${HEALTH_ROUNDS:-15}"' in script
+    assert 'BASELINE_CONFIG="$COMMON_BASELINE"' in script
+    assert "run_twitter_continuous.sh" in script
+    assert "TWITTER_BO_VS_DIAGNOSIS.json" in script
+
+
+def test_tpcc_single_workload_entrypoint_runs_fifteen_diagnosis_and_health_rounds():
+    script = read_script("run_tpcc_bo_then_diagnosis.sh")
+    assert 'MAX_ROUNDS="${DIAGNOSIS_ROUNDS:-15}"' in script
+    assert 'HEALTH_ROUNDS="${HEALTH_ROUNDS:-15}"' in script
+    assert 'MAX_MEASUREMENTS="${DIAGNOSIS_MEASUREMENTS:-186}"' in script
+    assert 'BASELINE_CONFIG="$COMMON_BASELINE"' in script

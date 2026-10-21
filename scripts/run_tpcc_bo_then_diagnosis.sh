@@ -66,22 +66,25 @@ env \
 BO_REFERENCE="artifacts/workload_switch/$SUITE_ID/oracle/bo_references/tpcc/reference.json"
 [[ -s "$BO_REFERENCE" ]] || { echo "Missing completed TPC-C BO reference: $BO_REFERENCE" >&2; exit 1; }
 
-echo "[tpcc-only] stage 2/3: expert diagnosis from the exact BO baseline (search disabled by default)"
+echo "[tpcc-only] stage 2/3: diagnosis and health coverage from the exact common baseline"
 COMMON_BASELINE="artifacts/workload_switch/$SUITE_ID/bo_initial_config.json"
 [[ -s "$COMMON_BASELINE" ]] || { echo "Missing common BO/diagnosis baseline: $COMMON_BASELINE" >&2; exit 1; }
 env \
   EXPERIMENT_ID="$METHOD_EXPERIMENT_ID" \
   MAX_ROUNDS="${DIAGNOSIS_ROUNDS:-15}" \
   SEARCH_ROUNDS="${SEARCH_ROUNDS:-0}" \
-  HEALTH_ROUNDS="${HEALTH_ROUNDS:-0}" \
-  MAX_MEASUREMENTS="${DIAGNOSIS_MEASUREMENTS:-123}" \
+  HEALTH_ROUNDS="${HEALTH_ROUNDS:-15}" \
+  MAX_MEASUREMENTS="${DIAGNOSIS_MEASUREMENTS:-186}" \
   MAX_WALL_SECONDS="${MAX_WALL_SECONDS:-43200}" \
   MAX_MODEL_CALLS="${MAX_MODEL_CALLS:-45}" \
   DURATION="${DURATION:-120}" \
   WARMUP_SECONDS="${WARMUP_SECONDS:-30}" \
   TPCC_TERMINALS="${TPCC_TERMINALS:-3}" \
   BASELINE_REPEATS="${BASELINE_REPEATS:-3}" \
+  BASELINE_STABILITY_RETRIES="${BASELINE_STABILITY_RETRIES:-1}" \
   BASELINE_CONFIG="$COMMON_BASELINE" \
+  PAIRED_BLOCKS="${PAIRED_BLOCKS:-3}" \
+  PAIRED_DELTA_MIN="${PAIRED_DELTA_MIN:-0.03}" \
   DRIFT_PERCENT="${DRIFT_PERCENT:-25}" \
   MIN_TPS_GAIN_PERCENT="${MIN_TPS_GAIN_PERCENT:-5}" \
   BENCHMARK_SEED="${BENCHMARK_SEED:-20261015}" \
@@ -91,6 +94,7 @@ METHOD_DIR="artifacts/tpcc_continuous/$METHOD_EXPERIMENT_ID"
 echo "[tpcc-only] stage 3/3: offline comparison"
 BO_REFERENCE="$BO_REFERENCE" METHOD_DIR="$METHOD_DIR" SUITE_ID="$SUITE_ID" \
 DIAGNOSIS_ROUNDS="${DIAGNOSIS_ROUNDS:-15}" SEARCH_ROUNDS="${SEARCH_ROUNDS:-0}" \
+HEALTH_ROUNDS="${HEALTH_ROUNDS:-15}" \
   "$ROOT_DIR/.venv/bin/python" - <<'PY'
 import json, os
 from pathlib import Path
@@ -99,7 +103,9 @@ bo_path = Path(os.environ["BO_REFERENCE"])
 method_dir = Path(os.environ["METHOD_DIR"])
 bo = json.loads(bo_path.read_text(encoding="utf-8"))
 report = json.loads((method_dir / "report.json").read_text(encoding="utf-8"))
-incumbent = json.loads((method_dir / "incumbent.json").read_text(encoding="utf-8"))
+champion_path = method_dir / "champion.json"
+incumbent = json.loads(champion_path.read_text(encoding="utf-8")) if champion_path.exists() else json.loads(
+    (method_dir / "incumbent.json").read_text(encoding="utf-8"))
 initial = report.get("episode_initial_tps")
 method_median = incumbent["verified_performance"].get(
     "median_throughput_rps", incumbent["verified_performance"].get("throughput_rps"))
@@ -118,6 +124,7 @@ payload = {
     "diagnosis": {
         "configured_diagnosis_rounds": int(os.environ.get("DIAGNOSIS_ROUNDS", "15")),
         "configured_search_rounds": int(os.environ.get("SEARCH_ROUNDS", "15")),
+        "configured_health_rounds": int(os.environ.get("HEALTH_ROUNDS", "15")),
         "completed_rounds": report.get("completed_rounds"),
         "completed_search_rounds": report.get("completed_search_rounds"),
         "initial_tps": initial,
