@@ -29,6 +29,16 @@ class HealthCoveragePlanner:
         CoverageAction("wal_durability", "wal_writer_delay", .5, "expert-protocol reserve: writer cadence"),
         CoverageAction("concurrency_maintenance", "max_pred_locks_per_transaction", 2.0,
                        "expert-protocol reserve: predicate-lock capacity"),
+        CoverageAction("query_planning", "seq_page_cost", .5,
+                       "coverage reserve: cheaper sequential access"),
+        CoverageAction("query_planning", "seq_page_cost", 2.0,
+                       "coverage reserve: more expensive sequential access"),
+        CoverageAction("memory_cache", "temp_buffers", 2.0,
+                       "coverage reserve: session-local temporary buffers"),
+        CoverageAction("wal_durability", "checkpoint_completion_target", 1.25,
+                       "coverage reserve: spread checkpoint writes"),
+        CoverageAction("wal_durability", "bgwriter_lru_maxpages", 2.0,
+                       "coverage reserve: background writer capacity"),
     )
 
     def __init__(self, space: FullKnobSpace, *, memory_bytes: int | None = None):

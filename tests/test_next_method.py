@@ -69,6 +69,7 @@ def test_semantic_knob_substitution_is_rejected_before_measurement():
 def test_health_coverage_always_contains_shared_buffers_and_two_sided_planner_scan():
     space = FullKnobSpace()
     plan = HealthCoveragePlanner(space, memory_bytes=8 * 1024**3).compile(space.current_config())
+    assert len(plan) >= 15
     assert len(plan) >= 10
     actions = [(item["knob"], item["new_value"]) for item in plan]
     assert any(name == "shared_buffers" for name, _ in actions)
