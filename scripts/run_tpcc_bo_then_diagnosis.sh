@@ -67,8 +67,11 @@ BO_REFERENCE="artifacts/workload_switch/$SUITE_ID/oracle/bo_references/tpcc/refe
 [[ -s "$BO_REFERENCE" ]] || { echo "Missing completed TPC-C BO reference: $BO_REFERENCE" >&2; exit 1; }
 
 echo "[tpcc-only] stage 2/3: diagnosis and health coverage from the exact common baseline"
-COMMON_BASELINE="artifacts/workload_switch/$SUITE_ID/bo_initial_config.json"
-[[ -s "$COMMON_BASELINE" ]] || { echo "Missing common BO/diagnosis baseline: $COMMON_BASELINE" >&2; exit 1; }
+COMMON_BASELINE="artifacts/workload_switch/$SUITE_ID/oracle/runs/${SUITE_ID}-tpcc/tpcc/baseline.json"
+[[ -s "$COMMON_BASELINE" ]] || {
+  echo "Missing effective BO baseline used by TPC-C: $COMMON_BASELINE" >&2
+  exit 1
+}
 env \
   EXPERIMENT_ID="$METHOD_EXPERIMENT_ID" \
   MAX_ROUNDS="${DIAGNOSIS_ROUNDS:-15}" \

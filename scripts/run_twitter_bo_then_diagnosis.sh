@@ -67,8 +67,11 @@ env \
 
 BO_REFERENCE="artifacts/workload_switch/$SUITE_ID/oracle/bo_references/twitter/reference.json"
 [[ -s "$BO_REFERENCE" ]] || { echo "Missing completed Twitter BO reference: $BO_REFERENCE" >&2; exit 1; }
-COMMON_BASELINE="artifacts/workload_switch/$SUITE_ID/bo_initial_config.json"
-[[ -s "$COMMON_BASELINE" ]] || { echo "Missing common BO/diagnosis baseline: $COMMON_BASELINE" >&2; exit 1; }
+COMMON_BASELINE="artifacts/workload_switch/$SUITE_ID/oracle/runs/${SUITE_ID}-twitter/twitter/baseline.json"
+[[ -s "$COMMON_BASELINE" ]] || {
+  echo "Missing effective BO baseline used by Twitter: $COMMON_BASELINE" >&2
+  exit 1
+}
 
 echo "[twitter-only] stage 2/3: diagnosis from the exact common baseline"
 env \

@@ -72,6 +72,7 @@ def test_twitter_single_workload_entrypoint_runs_bo_then_diagnosis_and_health():
     assert 'MAX_ROUNDS="${DIAGNOSIS_ROUNDS:-15}"' in script
     assert 'HEALTH_ROUNDS="${HEALTH_ROUNDS:-15}"' in script
     assert 'BASELINE_CONFIG="$COMMON_BASELINE"' in script
+    assert 'oracle/runs/${SUITE_ID}-twitter/twitter/baseline.json' in script
     assert "run_twitter_continuous.sh" in script
     assert "TWITTER_BO_VS_DIAGNOSIS.json" in script
 
@@ -82,3 +83,4 @@ def test_tpcc_single_workload_entrypoint_runs_fifteen_diagnosis_and_health_round
     assert 'HEALTH_ROUNDS="${HEALTH_ROUNDS:-15}"' in script
     assert 'MAX_MEASUREMENTS="${DIAGNOSIS_MEASUREMENTS:-186}"' in script
     assert 'BASELINE_CONFIG="$COMMON_BASELINE"' in script
+    assert 'oracle/runs/${SUITE_ID}-tpcc/tpcc/baseline.json' in script

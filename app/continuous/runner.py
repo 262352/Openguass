@@ -73,13 +73,24 @@ class TwitterContinuousRunner:
         baseline_plan = build_default_baseline(catalog, self.executor.space, original, self.workload)
         if self.baseline_config is not None:
             common_config = load_source_config(self.baseline_config, self.executor.space)
+            safety_adjustments = {}
+            if self.workload == "twitter":
+                from .baseline import SAFETY_OVERRIDES
+                for name, floor in SAFETY_OVERRIDES.items():
+                    if common_config[name] < floor:
+                        safety_adjustments[name] = {
+                            "requested": common_config[name], "effective": floor,
+                            "reason": "scale-100 SERIALIZABLE lock-table safety floor",
+                        }
+                        common_config[name] = self.executor.space.clamp(name, floor)
+                common_config = self.executor.space.reconcile(common_config)
             baseline_plan = type(baseline_plan)(
                 config=common_config,
                 classifications={name: "common_bo_diagnosis_baseline" for name in self.executor.space.names},
                 exceptions={"source": {
                     "path": str(self.baseline_config),
                     "reason": "the BO and diagnosis tracks must start from the identical canonical config",
-                }},
+                }, "twitter_lock_table_safety_floor": safety_adjustments},
                 tunable_knobs=tuple(self.executor.space.names),
             )
         plan_record = {
