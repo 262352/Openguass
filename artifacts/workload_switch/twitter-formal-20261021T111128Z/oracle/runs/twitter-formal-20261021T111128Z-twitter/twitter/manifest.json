@@ -1,0 +1,842 @@
+{
+  "experiment_id": "twitter-formal-20261021T111128Z-twitter",
+  "workload": "twitter",
+  "knob_count": 62,
+  "knob_names": [
+    "autovacuum_analyze_scale_factor",
+    "autovacuum_freeze_max_age",
+    "autovacuum_max_workers",
+    "autovacuum_naptime",
+    "autovacuum_vacuum_cost_delay",
+    "autovacuum_vacuum_cost_limit",
+    "autovacuum_vacuum_scale_factor",
+    "backend_flush_after",
+    "bgwriter_delay",
+    "bgwriter_flush_after",
+    "bgwriter_lru_maxpages",
+    "bgwriter_lru_multiplier",
+    "checkpoint_completion_target",
+    "checkpoint_flush_after",
+    "checkpoint_timeout",
+    "checkpoint_warning",
+    "commit_delay",
+    "commit_siblings",
+    "deadlock_timeout",
+    "default_statistics_target",
+    "effective_cache_size",
+    "effective_io_concurrency",
+    "from_collapse_limit",
+    "hot_standby_feedback",
+    "huge_pages",
+    "jit",
+    "join_collapse_limit",
+    "log_checkpoints",
+    "log_connections",
+    "log_disconnections",
+    "log_min_duration_statement",
+    "log_rotation_size",
+    "log_temp_files",
+    "logging_collector",
+    "maintenance_work_mem",
+    "max_connections",
+    "max_locks_per_transaction",
+    "max_parallel_maintenance_workers",
+    "max_parallel_workers",
+    "max_parallel_workers_per_gather",
+    "max_pred_locks_per_page",
+    "max_pred_locks_per_relation",
+    "max_pred_locks_per_transaction",
+    "max_replication_slots",
+    "max_standby_streaming_delay",
+    "max_wal_senders",
+    "max_wal_size",
+    "max_worker_processes",
+    "min_wal_size",
+    "random_page_cost",
+    "seq_page_cost",
+    "shared_buffers",
+    "temp_buffers",
+    "track_activity_query_size",
+    "vacuum_cost_delay",
+    "vacuum_cost_limit",
+    "wal_buffers",
+    "wal_compression",
+    "wal_sync_method",
+    "wal_writer_delay",
+    "wal_writer_flush_after",
+    "work_mem"
+  ],
+  "budget": 100,
+  "initial_lhs": 10,
+  "gp_ei_iterations": 90,
+  "duration": 120,
+  "warmup_seconds": 30,
+  "snapshot_settle_seconds": 5.0,
+  "terminals": 5,
+  "seed": 20261022,
+  "source_config": "/root/Openguass/artifacts/workload_switch/twitter-formal-20261021T111128Z/bo_initial_config.json",
+  "comparison_dir": "",
+  "objective": {
+    "metric": "throughput_rps",
+    "direction": "maximize",
+    "definition": "successful completed transactions per second (BenchBase Goodput)"
+  },
+  "started_at": "2026-10-21T11:12:12.109868+00:00",
+  "knobs": [
+    {
+      "name": "autovacuum_analyze_scale_factor",
+      "vartype": "real",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "0.1",
+      "low": 0.02,
+      "high": 0.3,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "autovacuum_freeze_max_age",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "",
+      "current": "200000000",
+      "low": 100000000,
+      "high": 400000000,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "autovacuum_max_workers",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "",
+      "current": "3",
+      "low": 2,
+      "high": 8,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "autovacuum_naptime",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "s",
+      "current": "60",
+      "low": 10,
+      "high": 120,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "autovacuum_vacuum_cost_delay",
+      "vartype": "real",
+      "execution_class": "reload",
+      "unit": "ms",
+      "current": "2",
+      "low": -1,
+      "high": 10,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "autovacuum_vacuum_cost_limit",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "-1",
+      "low": -1,
+      "high": 2000,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "autovacuum_vacuum_scale_factor",
+      "vartype": "real",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "0.2",
+      "low": 0.02,
+      "high": 0.4,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "backend_flush_after",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "8kB",
+      "current": "0",
+      "low": 0,
+      "high": 256,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "bgwriter_delay",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "ms",
+      "current": "200",
+      "low": 10,
+      "high": 500,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "bgwriter_flush_after",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "8kB",
+      "current": "64",
+      "low": 0,
+      "high": 256,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "bgwriter_lru_maxpages",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "100",
+      "low": 0,
+      "high": 1000,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "bgwriter_lru_multiplier",
+      "vartype": "real",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "2",
+      "low": 0.5,
+      "high": 6,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "checkpoint_completion_target",
+      "vartype": "real",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "0.9",
+      "low": 0.5,
+      "high": 0.95,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "checkpoint_flush_after",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "8kB",
+      "current": "32",
+      "low": 0,
+      "high": 256,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "checkpoint_timeout",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "s",
+      "current": "300",
+      "low": 60,
+      "high": 900,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "checkpoint_warning",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "s",
+      "current": "30",
+      "low": 0,
+      "high": 120,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "commit_delay",
+      "vartype": "integer",
+      "execution_class": "superuser",
+      "unit": "",
+      "current": "0",
+      "low": 0,
+      "high": 1000,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "commit_siblings",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "",
+      "current": "5",
+      "low": 0,
+      "high": 20,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "deadlock_timeout",
+      "vartype": "integer",
+      "execution_class": "superuser",
+      "unit": "ms",
+      "current": "1000",
+      "low": 100,
+      "high": 3000,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "default_statistics_target",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "",
+      "current": "100",
+      "low": 50,
+      "high": 500,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "effective_cache_size",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "8kB",
+      "current": "524288",
+      "low": 131072,
+      "high": 1048576,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "effective_io_concurrency",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "",
+      "current": "1",
+      "low": 0,
+      "high": 256,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "from_collapse_limit",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "",
+      "current": "8",
+      "low": 2,
+      "high": 16,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "hot_standby_feedback",
+      "vartype": "bool",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "off",
+      "low": null,
+      "high": null,
+      "choices": [
+        "off",
+        "on"
+      ],
+      "log": false
+    },
+    {
+      "name": "huge_pages",
+      "vartype": "enum",
+      "execution_class": "restart",
+      "unit": "",
+      "current": "try",
+      "low": null,
+      "high": null,
+      "choices": [
+        "off",
+        "try"
+      ],
+      "log": false
+    },
+    {
+      "name": "jit",
+      "vartype": "bool",
+      "execution_class": "session",
+      "unit": "",
+      "current": "on",
+      "low": null,
+      "high": null,
+      "choices": [
+        "off",
+        "on"
+      ],
+      "log": false
+    },
+    {
+      "name": "join_collapse_limit",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "",
+      "current": "8",
+      "low": 2,
+      "high": 16,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "log_checkpoints",
+      "vartype": "bool",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "off",
+      "low": null,
+      "high": null,
+      "choices": [
+        "off",
+        "on"
+      ],
+      "log": false
+    },
+    {
+      "name": "log_connections",
+      "vartype": "bool",
+      "execution_class": "new_backend_superuser",
+      "unit": "",
+      "current": "off",
+      "low": null,
+      "high": null,
+      "choices": [
+        "off",
+        "on"
+      ],
+      "log": false
+    },
+    {
+      "name": "log_disconnections",
+      "vartype": "bool",
+      "execution_class": "new_backend_superuser",
+      "unit": "",
+      "current": "off",
+      "low": null,
+      "high": null,
+      "choices": [
+        "off",
+        "on"
+      ],
+      "log": false
+    },
+    {
+      "name": "log_min_duration_statement",
+      "vartype": "integer",
+      "execution_class": "superuser",
+      "unit": "ms",
+      "current": "-1",
+      "low": -1,
+      "high": 1000,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "log_rotation_size",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "kB",
+      "current": "10240",
+      "low": 1024,
+      "high": 102400,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "log_temp_files",
+      "vartype": "integer",
+      "execution_class": "superuser",
+      "unit": "kB",
+      "current": "-1",
+      "low": -1,
+      "high": 10240,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "logging_collector",
+      "vartype": "bool",
+      "execution_class": "restart",
+      "unit": "",
+      "current": "off",
+      "low": null,
+      "high": null,
+      "choices": [
+        "off",
+        "on"
+      ],
+      "log": false
+    },
+    {
+      "name": "maintenance_work_mem",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "kB",
+      "current": "65536",
+      "low": 16384,
+      "high": 524288,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "max_connections",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "",
+      "current": "100",
+      "low": 100,
+      "high": 300,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "max_locks_per_transaction",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "",
+      "current": "64",
+      "low": 64,
+      "high": 2048,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "max_parallel_maintenance_workers",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "",
+      "current": "2",
+      "low": 0,
+      "high": 8,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "max_parallel_workers",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "",
+      "current": "8",
+      "low": 0,
+      "high": 16,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "max_parallel_workers_per_gather",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "",
+      "current": "2",
+      "low": 0,
+      "high": 8,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "max_pred_locks_per_page",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "2",
+      "low": 0,
+      "high": 256,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "max_pred_locks_per_relation",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "-2",
+      "low": -2,
+      "high": 4096,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "max_pred_locks_per_transaction",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "",
+      "current": "64",
+      "low": 64,
+      "high": 16384,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "max_replication_slots",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "",
+      "current": "10",
+      "low": 0,
+      "high": 16,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "max_standby_streaming_delay",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "ms",
+      "current": "30000",
+      "low": -1,
+      "high": 60000,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "max_wal_senders",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "",
+      "current": "10",
+      "low": 0,
+      "high": 16,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "max_wal_size",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "MB",
+      "current": "1024",
+      "low": 512,
+      "high": 4096,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "max_worker_processes",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "",
+      "current": "8",
+      "low": 8,
+      "high": 32,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "min_wal_size",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "MB",
+      "current": "80",
+      "low": 80,
+      "high": 512,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "random_page_cost",
+      "vartype": "real",
+      "execution_class": "session",
+      "unit": "",
+      "current": "4",
+      "low": 1.0,
+      "high": 6.0,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "seq_page_cost",
+      "vartype": "real",
+      "execution_class": "session",
+      "unit": "",
+      "current": "1",
+      "low": 0.5,
+      "high": 2.0,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "shared_buffers",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "8kB",
+      "current": "16384",
+      "low": 8192,
+      "high": 65536,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "temp_buffers",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "8kB",
+      "current": "1024",
+      "low": 512,
+      "high": 16384,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "track_activity_query_size",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "B",
+      "current": "1024",
+      "low": 1024,
+      "high": 16384,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "vacuum_cost_delay",
+      "vartype": "real",
+      "execution_class": "session",
+      "unit": "ms",
+      "current": "0",
+      "low": 0,
+      "high": 10,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "vacuum_cost_limit",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "",
+      "current": "200",
+      "low": 100,
+      "high": 2000,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "wal_buffers",
+      "vartype": "integer",
+      "execution_class": "restart",
+      "unit": "8kB",
+      "current": "512",
+      "low": -1,
+      "high": 2048,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "wal_compression",
+      "vartype": "bool",
+      "execution_class": "superuser",
+      "unit": "",
+      "current": "off",
+      "low": null,
+      "high": null,
+      "choices": [
+        "off",
+        "on"
+      ],
+      "log": false
+    },
+    {
+      "name": "wal_sync_method",
+      "vartype": "enum",
+      "execution_class": "reload",
+      "unit": "",
+      "current": "fdatasync",
+      "low": null,
+      "high": null,
+      "choices": [
+        "fsync",
+        "fdatasync",
+        "open_sync",
+        "open_datasync"
+      ],
+      "log": false
+    },
+    {
+      "name": "wal_writer_delay",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "ms",
+      "current": "200",
+      "low": 20,
+      "high": 500,
+      "choices": [],
+      "log": true
+    },
+    {
+      "name": "wal_writer_flush_after",
+      "vartype": "integer",
+      "execution_class": "reload",
+      "unit": "8kB",
+      "current": "128",
+      "low": 0,
+      "high": 1024,
+      "choices": [],
+      "log": false
+    },
+    {
+      "name": "work_mem",
+      "vartype": "integer",
+      "execution_class": "session",
+      "unit": "kB",
+      "current": "4096",
+      "low": 1024,
+      "high": 65536,
+      "choices": [],
+      "log": true
+    }
+  ],
+  "algorithm": {
+    "initial_design": "latin_hypercube",
+    "surrogate": "gaussian_process",
+    "acquisition": "expected_improvement"
+  },
+  "environment": {
+    "hostname": "dev-261021-185608-1792580211-worker-0",
+    "machine": "aarch64",
+    "kernel": "5.10.0-287.0.0.190.oe2203sp4.aarch64",
+    "postgresql_version": "14.24 (Ubuntu 14.24-0ubuntu0.22.04.1)",
+    "workload_profile": {
+      "workload": "twitter",
+      "sha256": "2a8189f7998a8fb56f3d465f59b7f73325fb3f8d12bcfa732c2726487eebd637",
+      "config": "benchmarks/postgres/twitter.xml",
+      "scale_factor": "100",
+      "isolation": "TRANSACTION_SERIALIZABLE",
+      "batch_size": "128",
+      "rate": "unlimited",
+      "weights": "1,1,7,90,1",
+      "transaction_types": [
+        "GetTweet",
+        "GetTweetsFromFollowing",
+        "GetFollowers",
+        "GetUserTweets",
+        "InsertTweet"
+      ]
+    },
+    "snapshot": "twitter.dump",
+    "diagnostic_instrumentation": {
+      "before": {
+        "track_io_timing": "off",
+        "track_wal_io_timing": "off"
+      },
+      "after": {
+        "track_io_timing": "on",
+        "track_wal_io_timing": "on"
+      },
+      "changed": [
+        "track_io_timing",
+        "track_wal_io_timing"
+      ],
+      "restored_with_postgresql_auto_conf": true
+    }
+  }
+}

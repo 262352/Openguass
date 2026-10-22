@@ -1,0 +1,1 @@
+{"attempt": 1, "max_pred_locks_per_transaction": 64, "max_locks_per_transaction": 64, "error": "twitter failed SQL error policy: unexpected=326 ratio=0.000486 states=['53200']; diagnostic=out of shared memory; inspect /root/Openguass/artifacts/runs/20261021T111222042791Z-twitter/stdout.log", "at": "2026-10-21T11:12:59.403762+00:00"}

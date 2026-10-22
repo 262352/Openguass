@@ -1,0 +1,301 @@
+{
+  "requested": {
+    "autovacuum_analyze_scale_factor": 0.1,
+    "autovacuum_freeze_max_age": 200000000,
+    "autovacuum_max_workers": 3,
+    "autovacuum_naptime": 60,
+    "autovacuum_vacuum_cost_delay": 2.0,
+    "autovacuum_vacuum_cost_limit": -1,
+    "autovacuum_vacuum_scale_factor": 0.2,
+    "backend_flush_after": 0,
+    "bgwriter_delay": 200,
+    "bgwriter_flush_after": 64,
+    "bgwriter_lru_maxpages": 100,
+    "bgwriter_lru_multiplier": 2.0,
+    "checkpoint_completion_target": 0.9,
+    "checkpoint_flush_after": 32,
+    "checkpoint_timeout": 300,
+    "checkpoint_warning": 30,
+    "commit_delay": 0,
+    "commit_siblings": 5,
+    "deadlock_timeout": 1000,
+    "default_statistics_target": 100,
+    "effective_cache_size": 524288,
+    "effective_io_concurrency": 1,
+    "from_collapse_limit": 8,
+    "hot_standby_feedback": "off",
+    "huge_pages": "try",
+    "jit": "on",
+    "join_collapse_limit": 8,
+    "log_checkpoints": "off",
+    "log_connections": "off",
+    "log_disconnections": "off",
+    "log_min_duration_statement": -1,
+    "log_rotation_size": 10240,
+    "log_temp_files": -1,
+    "logging_collector": "off",
+    "maintenance_work_mem": 65536,
+    "max_connections": 100,
+    "max_locks_per_transaction": 512,
+    "max_parallel_maintenance_workers": 2,
+    "max_parallel_workers": 8,
+    "max_parallel_workers_per_gather": 2,
+    "max_pred_locks_per_page": 2,
+    "max_pred_locks_per_relation": -2,
+    "max_pred_locks_per_transaction": 8192,
+    "max_replication_slots": 10,
+    "max_standby_streaming_delay": 30000,
+    "max_wal_senders": 10,
+    "max_wal_size": 1024,
+    "max_worker_processes": 8,
+    "min_wal_size": 80,
+    "random_page_cost": 4.0,
+    "seq_page_cost": 1.0,
+    "shared_buffers": 16384,
+    "temp_buffers": 1024,
+    "track_activity_query_size": 1024,
+    "vacuum_cost_delay": 0,
+    "vacuum_cost_limit": 200,
+    "wal_buffers": 512,
+    "wal_compression": "off",
+    "wal_sync_method": "fdatasync",
+    "wal_writer_delay": 200,
+    "wal_writer_flush_after": 128,
+    "work_mem": 4096
+  },
+  "observed_global_settings": {
+    "autovacuum_analyze_scale_factor": {
+      "setting": "0.1",
+      "pending_restart": "f"
+    },
+    "autovacuum_freeze_max_age": {
+      "setting": "200000000",
+      "pending_restart": "f"
+    },
+    "autovacuum_max_workers": {
+      "setting": "3",
+      "pending_restart": "f"
+    },
+    "autovacuum_naptime": {
+      "setting": "60",
+      "pending_restart": "f"
+    },
+    "autovacuum_vacuum_cost_delay": {
+      "setting": "2",
+      "pending_restart": "f"
+    },
+    "autovacuum_vacuum_cost_limit": {
+      "setting": "-1",
+      "pending_restart": "f"
+    },
+    "autovacuum_vacuum_scale_factor": {
+      "setting": "0.2",
+      "pending_restart": "f"
+    },
+    "bgwriter_delay": {
+      "setting": "200",
+      "pending_restart": "f"
+    },
+    "bgwriter_flush_after": {
+      "setting": "64",
+      "pending_restart": "f"
+    },
+    "bgwriter_lru_maxpages": {
+      "setting": "100",
+      "pending_restart": "f"
+    },
+    "bgwriter_lru_multiplier": {
+      "setting": "2",
+      "pending_restart": "f"
+    },
+    "checkpoint_completion_target": {
+      "setting": "0.9",
+      "pending_restart": "f"
+    },
+    "checkpoint_flush_after": {
+      "setting": "32",
+      "pending_restart": "f"
+    },
+    "checkpoint_timeout": {
+      "setting": "300",
+      "pending_restart": "f"
+    },
+    "checkpoint_warning": {
+      "setting": "30",
+      "pending_restart": "f"
+    },
+    "commit_delay": {
+      "setting": "0",
+      "pending_restart": "f"
+    },
+    "deadlock_timeout": {
+      "setting": "1000",
+      "pending_restart": "f"
+    },
+    "hot_standby_feedback": {
+      "setting": "off",
+      "pending_restart": "f"
+    },
+    "huge_pages": {
+      "setting": "try",
+      "pending_restart": "f"
+    },
+    "log_checkpoints": {
+      "setting": "off",
+      "pending_restart": "f"
+    },
+    "log_connections": {
+      "setting": "off",
+      "pending_restart": "f"
+    },
+    "log_disconnections": {
+      "setting": "off",
+      "pending_restart": "f"
+    },
+    "log_min_duration_statement": {
+      "setting": "-1",
+      "pending_restart": "f"
+    },
+    "log_rotation_size": {
+      "setting": "10240",
+      "pending_restart": "f"
+    },
+    "log_temp_files": {
+      "setting": "-1",
+      "pending_restart": "f"
+    },
+    "logging_collector": {
+      "setting": "off",
+      "pending_restart": "f"
+    },
+    "max_connections": {
+      "setting": "100",
+      "pending_restart": "f"
+    },
+    "max_locks_per_transaction": {
+      "setting": "512",
+      "pending_restart": "f"
+    },
+    "max_pred_locks_per_page": {
+      "setting": "2",
+      "pending_restart": "f"
+    },
+    "max_pred_locks_per_relation": {
+      "setting": "-2",
+      "pending_restart": "f"
+    },
+    "max_pred_locks_per_transaction": {
+      "setting": "8192",
+      "pending_restart": "f"
+    },
+    "max_replication_slots": {
+      "setting": "10",
+      "pending_restart": "f"
+    },
+    "max_standby_streaming_delay": {
+      "setting": "30000",
+      "pending_restart": "f"
+    },
+    "max_wal_senders": {
+      "setting": "10",
+      "pending_restart": "f"
+    },
+    "max_wal_size": {
+      "setting": "1024",
+      "pending_restart": "f"
+    },
+    "max_worker_processes": {
+      "setting": "8",
+      "pending_restart": "f"
+    },
+    "min_wal_size": {
+      "setting": "80",
+      "pending_restart": "f"
+    },
+    "shared_buffers": {
+      "setting": "16384",
+      "pending_restart": "f"
+    },
+    "track_activity_query_size": {
+      "setting": "1024",
+      "pending_restart": "f"
+    },
+    "wal_buffers": {
+      "setting": "512",
+      "pending_restart": "f"
+    },
+    "wal_compression": {
+      "setting": "off",
+      "pending_restart": "f"
+    },
+    "wal_sync_method": {
+      "setting": "fdatasync",
+      "pending_restart": "f"
+    },
+    "wal_writer_delay": {
+      "setting": "200",
+      "pending_restart": "f"
+    },
+    "wal_writer_flush_after": {
+      "setting": "128",
+      "pending_restart": "f"
+    }
+  },
+  "session_settings": {
+    "backend_flush_after": "0",
+    "commit_siblings": "5",
+    "default_statistics_target": "100",
+    "effective_cache_size": "524288",
+    "effective_io_concurrency": "1",
+    "from_collapse_limit": "8",
+    "jit": "on",
+    "join_collapse_limit": "8",
+    "maintenance_work_mem": "65536",
+    "max_parallel_maintenance_workers": "2",
+    "max_parallel_workers": "8",
+    "max_parallel_workers_per_gather": "2",
+    "random_page_cost": "4.0",
+    "seq_page_cost": "1.0",
+    "temp_buffers": "1024",
+    "vacuum_cost_delay": "0",
+    "vacuum_cost_limit": "200",
+    "work_mem": "4096"
+  },
+  "pending_restart": [],
+  "stability": {
+    "stable": true,
+    "values": [
+      20893.421984579814,
+      22781.848400945248,
+      20596.238097430927
+    ],
+    "median": 20893.421984579814,
+    "spread_percent": 10.460757960698773,
+    "max_min_ratio": 1.1061169662719592,
+    "reason": "stable",
+    "attempt": 1,
+    "maximum_retries": 1,
+    "maximum_attempts": 2,
+    "attempts": [
+      {
+        "attempt": 1,
+        "stable": true,
+        "values": [
+          20893.421984579814,
+          22781.848400945248,
+          20596.238097430927
+        ],
+        "median": 20893.421984579814,
+        "spread_percent": 10.460757960698773,
+        "max_min_ratio": 1.1061169662719592,
+        "reason": "stable",
+        "action": "accepted"
+      }
+    ],
+    "fallback_used": false,
+    "initialization_allowed": true,
+    "initialization_score_method": "minimum_of_stable_repeats",
+    "initialization_tps": 20596.238097430927,
+    "fallback_reason": null
+  }
+}

@@ -1,0 +1,593 @@
+{
+  "schema_version": "andromeda.frozen-diagnostic-search-space/v1",
+  "compiled_at": "2026-10-22T08:10:58.210242+00:00",
+  "frozen": true,
+  "parameters": [
+    {
+      "knob": "commit_delay",
+      "type": "numeric",
+      "low": 0,
+      "high": 50,
+      "initial_step": 50.0,
+      "source_target": 0,
+      "expert_target": 0,
+      "log_scale": false,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r003_memory_storage",
+        "r003_concurrency_maintenance",
+        "r004_memory_storage",
+        "r005_memory_storage",
+        "r006_memory_storage",
+        "r007_memory_storage",
+        "r008_memory_storage",
+        "r009_memory_storage",
+        "r010_memory_storage",
+        "r011_memory_storage",
+        "r012_memory_storage",
+        "r013_memory_storage",
+        "r014_memory_storage"
+      ],
+      "recommendation_count": 13,
+      "source_expert": "memory_storage",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "commit_siblings",
+      "type": "numeric",
+      "low": 19,
+      "high": 20,
+      "initial_step": 1.0,
+      "source_target": 20,
+      "expert_target": 20,
+      "log_scale": false,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r003_memory_storage",
+        "r003_concurrency_maintenance",
+        "r004_memory_storage",
+        "r005_memory_storage",
+        "r006_memory_storage",
+        "r007_memory_storage",
+        "r008_memory_storage",
+        "r009_memory_storage",
+        "r010_memory_storage",
+        "r011_memory_storage",
+        "r012_memory_storage",
+        "r013_memory_storage",
+        "r014_memory_storage"
+      ],
+      "recommendation_count": 13,
+      "source_expert": "memory_storage",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "default_statistics_target",
+      "type": "numeric",
+      "low": 200,
+      "high": 400,
+      "initial_step": 100.0,
+      "source_target": 300,
+      "expert_target": 300,
+      "log_scale": true,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r003_query_execution",
+        "r004_query_execution",
+        "r005_query_execution",
+        "r006_query_execution",
+        "r009_query_execution",
+        "r010_query_execution",
+        "r013_query_execution",
+        "r014_query_execution",
+        "r015_query_execution"
+      ],
+      "recommendation_count": 9,
+      "source_expert": "query_execution",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "effective_cache_size",
+      "type": "numeric",
+      "low": 786432,
+      "high": 1048576,
+      "initial_step": 262144.0,
+      "source_target": 1048576,
+      "expert_target": 1048576,
+      "log_scale": true,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r002_query_execution",
+        "r002_memory_storage"
+      ],
+      "recommendation_count": 2,
+      "source_expert": "query_execution",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "effective_io_concurrency",
+      "type": "numeric",
+      "low": 24,
+      "high": 40,
+      "initial_step": 8.0,
+      "source_target": 32,
+      "expert_target": 32,
+      "log_scale": false,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r002_query_execution",
+        "r002_memory_storage"
+      ],
+      "recommendation_count": 2,
+      "source_expert": "query_execution",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "max_pred_locks_per_page",
+      "type": "numeric",
+      "low": 0,
+      "high": 1,
+      "initial_step": 1.0,
+      "source_target": 0,
+      "expert_target": 0,
+      "log_scale": false,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r001_concurrency_maintenance",
+        "r002_concurrency_maintenance",
+        "r004_concurrency_maintenance",
+        "r005_concurrency_maintenance",
+        "r006_concurrency_maintenance",
+        "r007_concurrency_maintenance",
+        "r008_concurrency_maintenance",
+        "r009_concurrency_maintenance",
+        "r011_concurrency_maintenance",
+        "r012_concurrency_maintenance",
+        "r014_concurrency_maintenance",
+        "r015_concurrency_maintenance"
+      ],
+      "recommendation_count": 12,
+      "source_expert": "concurrency_maintenance",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "max_pred_locks_per_relation",
+      "type": "numeric",
+      "low": -1,
+      "high": 1,
+      "initial_step": 1.0,
+      "source_target": 0,
+      "expert_target": 0,
+      "log_scale": false,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r001_concurrency_maintenance",
+        "r002_concurrency_maintenance",
+        "r004_concurrency_maintenance",
+        "r005_concurrency_maintenance",
+        "r006_concurrency_maintenance",
+        "r007_concurrency_maintenance",
+        "r008_concurrency_maintenance",
+        "r009_concurrency_maintenance",
+        "r011_concurrency_maintenance",
+        "r012_concurrency_maintenance",
+        "r014_concurrency_maintenance",
+        "r015_concurrency_maintenance"
+      ],
+      "recommendation_count": 12,
+      "source_expert": "concurrency_maintenance",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "max_pred_locks_per_transaction",
+      "type": "numeric",
+      "low": 8192,
+      "high": 16384,
+      "initial_step": 8192.0,
+      "source_target": 16384,
+      "expert_target": 16384,
+      "log_scale": true,
+      "compile_rule": "repeated untested expert recommendation: full expert range",
+      "source_proposal_ids": [
+        "r010_concurrency_maintenance",
+        "r013_concurrency_maintenance"
+      ],
+      "recommendation_count": 2,
+      "source_expert": "concurrency_maintenance",
+      "evidence_confidence": "low"
+    },
+    {
+      "knob": "random_page_cost",
+      "type": "numeric",
+      "low": 1.0,
+      "high": 2.0,
+      "initial_step": 0.5,
+      "source_target": 1.5,
+      "expert_target": 1.5,
+      "log_scale": false,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r002_query_execution",
+        "r002_memory_storage",
+        "r007_query_execution",
+        "r008_query_execution",
+        "r011_query_execution",
+        "r012_query_execution"
+      ],
+      "recommendation_count": 6,
+      "source_expert": "query_execution",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "seq_page_cost",
+      "type": "numeric",
+      "low": 0.7,
+      "high": 0.9,
+      "initial_step": 0.1,
+      "source_target": 0.8,
+      "expert_target": 0.8,
+      "log_scale": false,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r002_query_execution",
+        "r002_memory_storage",
+        "r007_query_execution",
+        "r008_query_execution",
+        "r011_query_execution",
+        "r012_query_execution"
+      ],
+      "recommendation_count": 6,
+      "source_expert": "query_execution",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "shared_buffers",
+      "type": "numeric",
+      "low": 49152,
+      "high": 65536,
+      "initial_step": 16384.0,
+      "source_target": 65536,
+      "expert_target": 65536,
+      "log_scale": true,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r002_query_execution",
+        "r002_memory_storage"
+      ],
+      "recommendation_count": 2,
+      "source_expert": "query_execution",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "wal_buffers",
+      "type": "numeric",
+      "low": 1536,
+      "high": 2048,
+      "initial_step": 512.0,
+      "source_target": 2048,
+      "expert_target": 2048,
+      "log_scale": false,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r003_memory_storage",
+        "r003_concurrency_maintenance"
+      ],
+      "recommendation_count": 2,
+      "source_expert": "memory_storage",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "wal_writer_delay",
+      "type": "numeric",
+      "low": 20,
+      "high": 40,
+      "initial_step": 20.0,
+      "source_target": 20,
+      "expert_target": 20,
+      "log_scale": true,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r003_memory_storage",
+        "r003_concurrency_maintenance"
+      ],
+      "recommendation_count": 2,
+      "source_expert": "memory_storage",
+      "evidence_confidence": "high"
+    },
+    {
+      "knob": "wal_writer_flush_after",
+      "type": "numeric",
+      "low": 192,
+      "high": 320,
+      "initial_step": 64.0,
+      "source_target": 256,
+      "expert_target": 256,
+      "log_scale": false,
+      "compile_rule": "verified improvement: successful value ± one initial step",
+      "source_proposal_ids": [
+        "r003_memory_storage",
+        "r003_concurrency_maintenance",
+        "r004_memory_storage",
+        "r005_memory_storage",
+        "r006_memory_storage",
+        "r007_memory_storage",
+        "r008_memory_storage",
+        "r009_memory_storage",
+        "r010_memory_storage",
+        "r011_memory_storage",
+        "r012_memory_storage",
+        "r013_memory_storage",
+        "r014_memory_storage"
+      ],
+      "recommendation_count": 13,
+      "source_expert": "memory_storage",
+      "evidence_confidence": "high"
+    }
+  ],
+  "joint_constraints": [
+    {
+      "proposal_id": "r001_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "Under SERIALIZABLE, GetUserTweets dominates terminal capacity (0.885) and its p99 (1121us) is 5.7x its p50 (196us). With max_pred_locks_per_page=2 and max_pred_locks_per_relation=-2, per-tuple SIRead locks promote to page then relation level almost immediately, so concurrent readers of the same tweet rows acquire conflicting coarse predicate locks and serialize. Raising per-page to 16 and per-relation to 64 keeps locks at tuple/page granularity longer, reducing false conflicts and tail latency without changing WAL or commit semantics. max_pred_locks_per_transaction stays at 8192 (already ample), so no lock-table exhaustion risk."
+    },
+    {
+      "proposal_id": "r002_query_execution",
+      "knobs": [
+        "shared_buffers",
+        "effective_cache_size",
+        "effective_io_concurrency",
+        "random_page_cost",
+        "seq_page_cost"
+      ],
+      "mechanism": "GetUserTweets consumes 88.5% of finite client terminal time at p50=196us/p95=410us, so its per-call physical read cost directly caps TPS. Raising shared_buffers retains the hot tweets working set, cutting DataFileRead/BufferIO stalls. Raising effective_cache_size and effective_io_concurrency plus lowering random_page_cost/seq_page_cost makes the planner prefer cached index paths and prefetch, reducing per-call latency and terminal occupancy. This is the mandatory buffer_cache_capacity bundle, distinct from the refuted predicate-lock action."
+    },
+    {
+      "proposal_id": "r002_memory_storage",
+      "knobs": [
+        "shared_buffers",
+        "effective_cache_size",
+        "effective_io_concurrency",
+        "random_page_cost",
+        "seq_page_cost"
+      ],
+      "mechanism": "GetUserTweets dominates terminal capacity (0.885) and its p50=196us is inflated by physical reads: blks_read_per_txn 1.51 against blks_hit 9.23. Raising shared_buffers to 65536 (512MB) retains the hot tweet/user working set; raising effective_cache_size to 1048576 tells the planner most reads are cached; effective_io_concurrency=8 enables prefetch; lowering random_page_cost to 1.1 and seq_page_cost to 0.9 makes index paths on cached pages cheaper. Together they should cut blks_read_per_txn and GetUserTweets latency, freeing terminal capacity for more completed transactions."
+    },
+    {
+      "proposal_id": "r002_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "The prior test increased predicate-lock granularity, which lengthened GetUserTweets p99 by 25% and cut TPS 14.4% with zero lock waits and zero retries. That refutes the 'more SIRead slots reduce promotion' direction. Reversing to a tighter-than-default granularity (page 0, relation 0) forces coarser SIRead locking, reducing per-tuple predicate-lock bookkeeping on the dominant read path. With lock_waiting_backends and conflicts at 0, the cost of coarser locks is bounded, while the benefit is less lock-table churn per GetUserTweets transaction."
+    },
+    {
+      "proposal_id": "r004_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "r003's WAL commit-path bundle was accepted on Goodput but its stated mechanism (fewer/cheaper WAL syncs) was refuted: sync_average_ms was inconsistent and wal_bytes_per_txn rose. With only 5 terminals and commit_siblings=2, commit_delay=100us mostly adds a fixed stall to each commit rather than batching siblings, and wal_writer_flush_after=0 disables the background writer's flush batching. Reversing the group-commit window (commit_delay->0, commit_siblings->5) and restoring a modest writer flush batch (wal_writer_flush_after 0->64) removes the added commit stall while keeping the accepted WAL buffer capacity and compression. This tests whether the Goodput gain came from buffering/compression rather than the delay window."
+    },
+    {
+      "proposal_id": "r004_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "SERIALIZABLE retries are zero (server_retry_ratio=0.0, rollback_ratio=0.0) and lock_waiting_backends stays 0, so predicate locks are not causing waits; they are causing per-transaction lock churn. Raising max_pred_locks_per_page from 2 to 8 and max_pred_locks_per_relation from -2 to 4 lets PostgreSQL retain coarser page/relation-level SIRead locks instead of promoting to many tuple-level locks, reducing lock bookkeeping per GetUserTweets transaction. This is a distinct mechanism from the refuted WAL bundle: it targets lock memory churn, not fsync frequency."
+    },
+    {
+      "proposal_id": "r005_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "The r004 reversal (commit_delay 0, commit_siblings 5, flush_after 64) was inconclusive: it removed the collection window entirely, so no group commit could form and sync_average_ms stayed ~0.13ms while InsertTweet p95 swung 1.2ms-53ms. The incumbent's 100us window with siblings=2 is too short to collect the 5 terminals' commits. Widening commit_delay to 500us with commit_siblings=3 lets concurrent committers batch into one fsync, and raising wal_writer_flush_after to 256 (8kB units) makes the writer flush in larger batches instead of per-write, reducing sync frequency and wal_waiting_backends queueing."
+    },
+    {
+      "proposal_id": "r005_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "GetUserTweets dominates terminal capacity (0.88) and its p99 (1092us) is ~6x its p50 (171us). With max_pred_locks_per_page=2 and max_pred_locks_per_relation=-2, SERIALIZABLE SIRead locks are retained at fine page granularity, so each scan touches many lock entries; locks_total p95 reaches 7728 while lock_waiting stays 0, indicating bookkeeping cost rather than blocking. Raising page granularity to 8 and relation cap to 4 promotes SIRead locks to coarser relation-level entries, reducing per-transaction lock churn and tail latency on the dominant transaction, freeing terminal capacity for higher goodput."
+    },
+    {
+      "proposal_id": "r006_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "The WAL commit path is the only storage-side anomaly: wal_waiting_backends max=1 with sync_average_ms=0.13 and write_average_ms=0.022, host_io stalls zero, so the cost is sync frequency/queueing, not disk saturation. commit_delay=100us is too short to collect the 5 terminals' commits yet still adds a fixed stall to every commit; commit_siblings=2 gates group commit too eagerly. Widening the collection window to 500us and raising the activation threshold to 3 lets concurrent commits coalesce into one fsync, while wal_writer_flush_after=256 (2MB) batches background writer flushes instead of flushing per write. Together these reduce syncs per transaction and drain the WAL wait queue, freeing terminal capacity for GetUserTweets."
+    },
+    {
+      "proposal_id": "r006_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "SERIALIZABLE SIRead locks are promoted to coarser granularity when per-page/per-relation caps are exceeded. r005 showed the promotion path is real: locks_total.p95 fell ~80% and GetUserTweets.p99 fell 47-72% with page=8/relation=4, yet TPS was inconclusive because the effect was within run-to-run noise. Raising the caps further (page 32, relation 16) keeps the same mechanism but with a larger amplitude, so the lock-bookkeeping reduction should be measurable in locks_total.p95 and GetUserTweets.p99 while lock_waiting_backends stays at 0 (no true lock contention, only bookkeeping)."
+    },
+    {
+      "proposal_id": "r007_query_execution",
+      "knobs": [
+        "random_page_cost",
+        "seq_page_cost"
+      ],
+      "mechanism": "The r006 statistics escalation is withdrawn: it produced no reproducible latency reduction and its mechanism verdict is refuted. The dominant GetUserTweets path is already an Index Scan at estimated cost 8.45 with estimated_rows=1, so the remaining per-call cost is index descent plus heap tuple visibility checks. Lowering random_page_cost from 1.5 to 1.1 and seq_page_cost from 0.8 to 0.7 keeps the planner firmly on the index path while making the cost model consistent with a fully cached working set (2TB RAM, shared_buffers=512MB, zero io_waiting_backends), which prevents any marginal plan flip to a seq scan on skewed user_id values and stabilizes the hot path's per-call cost."
+    },
+    {
+      "proposal_id": "r007_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "WAL sync latency and wal_wait are present but small (sync_average_ms 0.137ms, write 0.026ms, host_io stalls 0). The commit path is not the dominant bottleneck (GetUserTweets terminal_capacity_fraction=0.88), yet the mandatory wal_commit_path bundle is actionable. Widen the group-commit collection window (commit_delay 100->500us) and lower the activation threshold (commit_siblings 2->3) so 5 terminals' commits coalesce, and set wal_writer_flush_after 0->256 (2MB) so the writer batches flushes instead of flushing per write. wal_compression stays on (already enabled, non-actionable). This tests whether coalescing syncs reduces wal_waiting_backends and sync time without adding per-commit stall."
+    },
+    {
+      "proposal_id": "r007_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "r005 raised max_pred_locks_per_page 2->8 and max_pred_locks_per_relation -2->4 and was refuted on TPS. r006 proposed a larger amplitude (32/16) but is untested. With zero server retries, zero rollbacks and zero lock waits, SIRead promotion is not causing serialization aborts; the coarsening direction is unsupported. Reversing to the safe low bounds (page=0, relation=0) forces the coarsest page/relation-level SIRead granularity, minimizing per-tuple predicate-lock bookkeeping and locks_total. This is a bounded direction reversal of a falsified group, not a replay."
+    },
+    {
+      "proposal_id": "r008_query_execution",
+      "knobs": [
+        "random_page_cost",
+        "seq_page_cost"
+      ],
+      "mechanism": "GetUserTweets consumes 88% of finite terminal capacity at p50=175us with an Index Scan plan. r007's downward cost move (1.5->1.1, 0.8->0.7) was refuted: TPS fell in blocks 2 and 3. Since reject_harmful is the only falsifying verdict and r007 was inconclusive-but-refuted on the TPS edge, reverse the group direction with equal-or-larger amplitude: raise random_page_cost to 2.5 and seq_page_cost to 1.0. This makes the planner less eager to choose random index paths for the dominant GetUserTweets template, favoring cheaper sequential/bitmap paths and reducing per-call page touches that occupy terminal time."
+    },
+    {
+      "proposal_id": "r008_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "WAL sync latency is not the dominant cost (sync_average_ms 0.137, write 0.026, host_io stalls 0), but a persistent wal_wait anomaly shows occasional commit-path queueing. The mandatory wal_commit_path bundle is actionable only on wal_writer_flush_after, commit_delay and commit_siblings (wal_buffers, wal_writer_delay, wal_compression are non-actionable at incumbent). Widening the group-commit collection window to 500us and raising the activation threshold to 3 lets the 5 terminals' commits coalesce into fewer fsyncs, while a 256-block (2MB) writer flush batch stops per-write flushing. This is a bounded amplitude increase over the previously parked r005/r006/r007 values, testing whether larger coalescing reduces the residual wal_wait without adding fixed per-commit stall."
+    },
+    {
+      "proposal_id": "r008_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "SERIALIZABLE GetUserTweets dominates terminal capacity (0.88). With max_pred_locks_per_page=2 and max_pred_locks_per_relation=-2, PostgreSQL promotes SIRead locks to page/relation granularity after only 2 page locks, inflating lock bookkeeping per transaction. Setting both to 0 forces the coarsest granularity immediately, minimizing per-txn predicate-lock churn. lock_waiting_backends.max=0 and locks_waiting.max=0 confirm no actual lock contention, so this is bookkeeping cost, not blocking. Prior r005 (2->8, -2->4) was refuted; r006 (2->32, -2->16) untested. The 0-bound is the untested opposite extreme of the same granularity axis."
+    },
+    {
+      "proposal_id": "r009_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "With only 5 client terminals, commit_delay cannot collect enough concurrent committers to amortize its fixed sleep; it adds ~100us to every commit while sync_average_ms stays ~0.10-0.14ms (fsync is already cheap, host_io stall fraction 0.0). r008's 500us window produced no consistent sync reduction and refuted the TPS gain. Reversing the group-commit window to 0 removes the per-commit stall, and setting wal_writer_flush_after=64 restores writer-side flush batching so the background writer coalesces WAL writes without gating foreground commits. commit_siblings=5 keeps the (now zero) window from ever activating."
+    },
+    {
+      "proposal_id": "r009_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "GetUserTweets consumes 88% of terminal capacity at p99 1816us while lock_waiting_backends stays 0 and server_retry_ratio is 0.0, so the cost is SIRead lock bookkeeping, not lock contention or serialization aborts. Setting max_pred_locks_per_page=0 and max_pred_locks_per_relation=0 forces the coarsest page/relation SIRead granularity, minimizing per-tuple predicate-lock entries and promotion work per transaction. This is the untested opposite extreme of the granularity axis (r005 tested 2->8, r006 tested 2->32); it should cut locks_total.p95 and GetUserTweets p99, freeing terminal capacity for higher successful TPS."
+    },
+    {
+      "proposal_id": "r010_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "The WAL commit path still shows a persistent wal_wait anomaly (wal_waiting_backends p95=1, max=1) with sync_average_ms=0.111ms and write_average_ms=0.020ms, while host_io stall fractions are zero and wal_bytes_per_txn is only 4.34. The bottleneck is sync coalescing, not volume: commit_delay=100us is too short to gather the 5 terminals' commits, and wal_writer_flush_after=0 makes the WAL writer fsync each write. Widening the group-commit window to 500us with commit_siblings=3 lets concurrent committers share one fsync, and setting wal_writer_flush_after=256 (2MB) batches background writer flushes. This is the mandatory wal_commit_path bundle; wal_buffers, wal_writer_delay and wal_compression are non-actionable at their safe bounds."
+    },
+    {
+      "proposal_id": "r011_query_execution",
+      "knobs": [
+        "random_page_cost",
+        "seq_page_cost"
+      ],
+      "mechanism": "GetUserTweets dominates terminal time (87.6% capacity, p50 138us, p95 200us). The incumbent cost model is cache-optimistic (random_page_cost 1.5, seq_page_cost 0.8), a direction already refuted at r007. Raising random_page_cost to 3.0 and seq_page_cost to 1.0 (PostgreSQL defaults) re-prices random index probes relative to sequential scans, so the planner may pick a cheaper path for the skewed user_id lookup and shrink pages touched per call. This is a bounded reversal of a falsified direction, not a replay of the WAL bundle."
+    },
+    {
+      "proposal_id": "r011_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "At 5 terminals the group-commit window cannot collect enough siblings to amortize its fixed sleep, so commit_delay is a pure per-commit tax. Reversing to commit_delay=0 removes the stall; raising commit_siblings to 8 keeps the (now zero) window inactive so no accidental sleep returns. Setting wal_writer_flush_after=128 (1MB) engages background writer flush batching so WAL writes are coalesced on the writer side rather than per-write, reducing wal_waiting_backends queueing without gating foreground commits. This is the opposite direction of the refuted r010 amplitude and targets the writer path, not the commit sleep."
+    },
+    {
+      "proposal_id": "r011_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "With max_pred_locks_per_page=0 and max_pred_locks_per_relation=0, PostgreSQL promotes SIRead locks to the coarsest granularity immediately, generating extra lock-manager work and lock-table churn on every GetUserTweets scan. Restoring the PostgreSQL defaults (page=2, relation=-2) keeps fine-grained SIRead locks longer, reducing promotion events and lock bookkeeping per transaction. Because GetUserTweets consumes 87.6% of finite terminal time, any per-transaction lock overhead reduction directly frees terminal capacity for more successful transactions. This is a distinct direction from the previously refuted 2->8/2->32 raises and the untested 0 extreme; it tests the default midpoint of the granularity axis."
+    },
+    {
+      "proposal_id": "r012_query_execution",
+      "knobs": [
+        "random_page_cost",
+        "seq_page_cost"
+      ],
+      "mechanism": "GetUserTweets is a single-row Index Scan (estimated_rows=1, cost 8.45) whose per-call latency dominates terminal time. With the working set fully cached (2TB RAM, shared_buffers 512MB, effective_cache_size 8GB), random reads are effectively as cheap as sequential, so the incumbent random_page_cost=1.5 over-prices index paths relative to seq_page_cost=0.8. r011 raised both costs and was refuted; the paired decision was inconclusive, not refutation of the direction. Lowering random_page_cost to 1.0 and seq_page_cost to 0.6 keeps the ratio cache-consistent and lets the planner prefer the cheapest index path for the skewed user_id predicate, reducing pages touched per GetUserTweets call and freeing terminal capacity."
+    },
+    {
+      "proposal_id": "r012_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "The incumbent pays a fixed 100us commit_delay on every commit but commit_siblings=2 means the window activates almost always, adding latency without reliably coalescing fsyncs; wal_writer_flush_after=0 forces the WAL writer to flush per write. Widening commit_delay to 200us with commit_siblings=3 makes the window activate only when >=3 backends are committing, so the sleep is amortized over a real group, and setting wal_writer_flush_after=64 (512kB) lets the writer batch background WAL writes. Together these reduce per-commit fsync frequency and WAL queueing, freeing terminal capacity for GetUserTweets."
+    },
+    {
+      "proposal_id": "r013_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "The r012 refutation was on predicate-lock granularity, not the WAL commit path; the WAL bundle remains the diagnosed mechanism (wal_wait alert, sync_average_ms=0.111, write_average_ms=0.020). Prior WAL attempts (r005/r006/r007/r008/r010) all widened commit_delay upward and were refuted or inconclusive, so the direction is reversed: commit_delay=0 removes the fixed per-commit sleep entirely, commit_siblings=20 (above the 5-terminal count) guarantees the zero window never activates, and wal_writer_flush_after=256 (2MB) engages writer-side flush batching so background WAL writes coalesce instead of flushing per write. This is a larger safe amplitude than r009/r011 (which used 64/128) on the flush-batch axis while fully eliminating the stall."
+    },
+    {
+      "proposal_id": "r014_memory_storage",
+      "knobs": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "mechanism": "The incumbent pays a fixed 100us group-commit sleep on almost every commit because commit_siblings=2 is trivially satisfied by 5 terminals, yet wal_writer_flush_after=0 prevents the WAL writer from batching writes. Setting commit_delay=0 removes the unconditional stall; raising commit_siblings to 20 keeps the (zero) window inactive so no accidental sleep returns; setting wal_writer_flush_after=256 (2MB) lets the WAL writer coalesce background writes, reducing wal_waiting_backends and InsertTweet commit latency without gating foreground commits."
+    },
+    {
+      "proposal_id": "r014_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "SERIALIZABLE GetUserTweets dominates terminal capacity (0.876) with zero lock waits and zero retries, so predicate-lock bookkeeping cost, not conflict, is the lever. With max_pred_locks_per_page=0 and max_pred_locks_per_relation=0 every scan immediately promotes to relation-level SIRead locks, maximizing per-transaction lock churn and locks_total. r012 tested the opposite extreme (2/-2) and was refuted, indicating the response is non-monotonic. Setting page=1 and relation=1 keeps promotion near the coarse end but avoids the degenerate zero-cap path, testing a distinct interior point on the same granularity axis with a new scalar prediction on locks_total.p95."
+    },
+    {
+      "proposal_id": "r015_concurrency_maintenance",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_relation"
+      ],
+      "mechanism": "With page cap 0 and relation cap 0, every predicate lock is promoted immediately to the coarsest granularity, so each GetUserTweets scan performs maximal promotion bookkeeping and holds coarse relation-level SIRead locks that inflate locks_total and lengthen the p99 tail. Restoring PostgreSQL defaults (page=2, relation=-2, i.e. relation cap derived as a fraction of the per-txn budget) keeps locks at page granularity longer, cutting promotion churn and coarse-lock footprint. The r012 test of the same default pair was refuted only while the WAL commit-path bundle was simultaneously perturbed; with the accepted WAL bundle now fixed, this isolates the SIRead granularity axis."
+    },
+    {
+      "proposal_id": "compiled_cross_hypothesis",
+      "knobs": [
+        "max_pred_locks_per_page",
+        "max_pred_locks_per_transaction"
+      ],
+      "mechanism": "bounded combination of a supported anchor and an inconclusive expert dimension"
+    },
+    {
+      "proposal_id": "compiled_cross_hypothesis",
+      "knobs": [
+        "max_pred_locks_per_relation",
+        "max_pred_locks_per_transaction"
+      ],
+      "mechanism": "bounded combination of a supported anchor and an inconclusive expert dimension"
+    }
+  ],
+  "excluded": [
+    {
+      "knob": "wal_compression",
+      "reason": "expert range is absent or has no legal variation"
+    }
+  ],
+  "provenance": "diagnosis hypothesis table and validation outcomes only; no BO reference"
+}

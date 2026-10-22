@@ -1,0 +1,154 @@
+{
+  "schema_version": "andromeda.incremental-causal-graph/v1",
+  "graph_kind": "tested",
+  "version": 2,
+  "generated_at": "2026-10-22T02:12:56.688520+00:00",
+  "nodes": [
+    {
+      "node_id": "r001_concurrency_maintenance_node_intervention",
+      "kind": "intervention",
+      "label": "Raise max_pred_locks_per_page/relation",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_concurrency_maintenance_node_mechanism",
+      "kind": "mechanism",
+      "label": "Fewer coarse SIRead promotions, less serialization",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_concurrency_maintenance_node_objective",
+      "kind": "objective",
+      "label": "Successful transaction TPS",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "r001_concurrency_maintenance_e1",
+      "source": "r001_concurrency_maintenance_node_intervention",
+      "target": "r001_concurrency_maintenance_node_mechanism",
+      "relation": "reduces_predicate_lock_promotion",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_concurrency_maintenance_p1",
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "expected_direction": "decrease",
+          "minimum_change": 2.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Coarser promotion removed; fewer relation-level SIRead conflicts shorten the tail."
+        },
+        {
+          "prediction_id": "r001_concurrency_maintenance_p2",
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Lower GetUserTweets tail frees terminal capacity, raising completed TPS."
+        }
+      ],
+      "validation_experiment_ids": [
+        "experiment:001:06a5cbbe"
+      ],
+      "observations": [
+        {
+          "state": "tested_refuted",
+          "reason": "paired TPS confidence interval shows a materially harmful direction",
+          "observations": [
+            {
+              "prediction_id": "r001_concurrency_maintenance_p1",
+              "state": "tested_refuted",
+              "reason": "frozen direction=decrease, threshold=2.0, observed=[25.11415525114155]",
+              "pairs": [
+                [
+                  1314.0,
+                  1644.0
+                ]
+              ]
+            },
+            {
+              "prediction_id": "r001_concurrency_maintenance_p2",
+              "state": "tested_refuted",
+              "reason": "frozen direction=increase, threshold=0.3, observed=[-14.443779506368129]",
+              "pairs": [
+                [
+                  21876.165443971036,
+                  18716.42034279556
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "state": "tested_refuted"
+    },
+    {
+      "edge_id": "r001_concurrency_maintenance_e2",
+      "source": "r001_concurrency_maintenance_node_mechanism",
+      "target": "r001_concurrency_maintenance_node_objective",
+      "relation": "lowers_tail_latency_raises_tps",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_concurrency_maintenance_p3",
+          "edge_id": "r001_concurrency_maintenance_e2",
+          "metric_id": "telemetry.gauges.locks_waiting.p95",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "Already 0; promotion thresholds should not create new waits."
+        }
+      ],
+      "validation_experiment_ids": [
+        "experiment:001:06a5cbbe"
+      ],
+      "observations": [
+        {
+          "state": "tested_supported",
+          "reason": "frozen direction=unchanged, threshold=0.0, observed=[0.0]",
+          "observations": [
+            {
+              "prediction_id": "r001_concurrency_maintenance_p3",
+              "state": "tested_supported",
+              "reason": "frozen direction=unchanged, threshold=0.0, observed=[0.0]",
+              "pairs": [
+                [
+                  0.0,
+                  0.0
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "state": "tested_supported"
+    }
+  ]
+}

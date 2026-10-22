@@ -1,0 +1,37 @@
+{
+  "schema_version": "andromeda.workload-switch-suite/v1",
+  "suite_id": "twitter-formal-20261021T111128Z",
+  "created_at": "2026-10-21T11:12:11.620537+00:00",
+  "workloads": [
+    "twitter"
+  ],
+  "directions": [
+    "tpcc_to_twitter",
+    "twitter_to_tpcc"
+  ],
+  "budgets": {
+    "bo": {
+      "tpcc": 100,
+      "twitter": 100
+    },
+    "diagnosis_rounds": 15,
+    "diagnosis_measurements": 186
+  },
+  "measurement": {
+    "duration": 120,
+    "warmup_seconds": 30,
+    "terminals_by_workload": {
+      "tpcc": 3,
+      "twitter": 5
+    },
+    "rate": "unlimited",
+    "seed": 20261021
+  },
+  "oracle_isolation": "target BO references are stored under oracle/ and never loaded by MultiAgentRunner",
+  "environment": {
+    "hostname": "dev-261021-185608-1792580211-worker-0",
+    "machine": "aarch64",
+    "kernel": "5.10.0-287.0.0.190.oe2203sp4.aarch64",
+    "code_revision": "37797125f938a91967bf323894fa92d518e93f6e"
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "schema_version": "andromeda.health-coverage/v1",
+  "mandatory_union": [
+    {
+      "subsystem": "memory_cache",
+      "knob": "shared_buffers",
+      "old_value": 16384,
+      "new_value": 65536,
+      "reason": "at least four times the default, capped near 25% RAM",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "wal_durability",
+      "knob": "wal_buffers",
+      "old_value": 512,
+      "new_value": 2048,
+      "reason": "four times the default",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "query_planning",
+      "knob": "random_page_cost",
+      "old_value": 4.0,
+      "new_value": 2.0,
+      "reason": "half the default",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "query_planning",
+      "knob": "random_page_cost",
+      "old_value": 4.0,
+      "new_value": 6.0,
+      "reason": "twice the default",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "concurrency_maintenance",
+      "knob": "work_mem",
+      "old_value": 4096,
+      "new_value": 8192,
+      "reason": "twice the default",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "concurrency_maintenance",
+      "knob": "work_mem",
+      "old_value": 4096,
+      "new_value": 16384,
+      "reason": "four times the default",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "memory_cache",
+      "knob": "effective_cache_size",
+      "old_value": 524288,
+      "new_value": 1048576,
+      "reason": "expert-protocol reserve: planner cache estimate",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "memory_cache",
+      "knob": "effective_io_concurrency",
+      "old_value": 1,
+      "new_value": 2,
+      "reason": "expert-protocol reserve: prefetch depth",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "wal_durability",
+      "knob": "wal_writer_delay",
+      "old_value": 200,
+      "new_value": 100,
+      "reason": "expert-protocol reserve: writer cadence",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "concurrency_maintenance",
+      "knob": "max_pred_locks_per_transaction",
+      "old_value": 8192,
+      "new_value": 16384,
+      "reason": "expert-protocol reserve: predicate-lock capacity",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "query_planning",
+      "knob": "seq_page_cost",
+      "old_value": 1.0,
+      "new_value": 0.5,
+      "reason": "coverage reserve: cheaper sequential access",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "query_planning",
+      "knob": "seq_page_cost",
+      "old_value": 1.0,
+      "new_value": 2.0,
+      "reason": "coverage reserve: more expensive sequential access",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "memory_cache",
+      "knob": "temp_buffers",
+      "old_value": 1024,
+      "new_value": 2048,
+      "reason": "coverage reserve: session-local temporary buffers",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "wal_durability",
+      "knob": "checkpoint_completion_target",
+      "old_value": 0.9,
+      "new_value": 0.95,
+      "reason": "coverage reserve: spread checkpoint writes",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    },
+    {
+      "subsystem": "wal_durability",
+      "knob": "bgwriter_lru_maxpages",
+      "old_value": 100,
+      "new_value": 200,
+      "reason": "coverage reserve: background writer capacity",
+      "duration_seconds": 30,
+      "minimum_paired_blocks": 2
+    }
+  ],
+  "expert_protocol": [
+    "name the top hidden bottleneck despite normal metrics",
+    "provide perturbation range and step",
+    "name likely parameter interactions"
+  ],
+  "selection": "union of mandatory coverage and each expert's first nomination"
+}

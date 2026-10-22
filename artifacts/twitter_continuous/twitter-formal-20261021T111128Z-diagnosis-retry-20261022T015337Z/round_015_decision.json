@@ -1,0 +1,813 @@
+{
+  "event": "candidate_frozen",
+  "round": 15,
+  "stage": "mechanism_diagnosis",
+  "anomalies": [
+    "wal_wait",
+    "transaction_terminal_saturation"
+  ],
+  "analysis_priority": "resource_or_wait_path_plus_contributing_sql",
+  "diagnostic_knowledge": {
+    "schema_version": "andromeda.postgres-diagnostic-knob-relations/v1",
+    "active_phenomena": [
+      "transaction_terminal_saturation",
+      "wal_sync_latency",
+      "wal_wait"
+    ],
+    "bundles": [
+      {
+        "bundle_id": "wal_commit_path",
+        "phenomenon": "wal_sync_latency",
+        "roles": [
+          "memory_storage"
+        ],
+        "mechanism": "WAL buffer capacity, writer cadence, flush batch size and group commit jointly determine commit-path sync frequency and queueing.",
+        "related_knobs": [
+          {
+            "knob": "wal_buffers",
+            "direction": "increase",
+            "role": "WAL buffering capacity",
+            "current": 2048,
+            "vartype": "integer",
+            "execution_class": "restart",
+            "unit": "8kB",
+            "safe_low": -1,
+            "safe_high": 2048,
+            "choices": [],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          },
+          {
+            "knob": "wal_writer_delay",
+            "direction": "decrease",
+            "role": "writer wake-up cadence",
+            "current": 20,
+            "vartype": "integer",
+            "execution_class": "reload",
+            "unit": "ms",
+            "safe_low": 20,
+            "safe_high": 500,
+            "choices": [],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          },
+          {
+            "knob": "wal_writer_flush_after",
+            "direction": "tune",
+            "role": "flush batch size",
+            "current": 256,
+            "vartype": "integer",
+            "execution_class": "reload",
+            "unit": "8kB",
+            "safe_low": 0,
+            "safe_high": 1024,
+            "choices": [],
+            "prior_experiment_count": 5,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "commit_delay",
+            "direction": "increase",
+            "role": "group-commit collection window",
+            "current": 0,
+            "vartype": "integer",
+            "execution_class": "superuser",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 1000,
+            "choices": [],
+            "prior_experiment_count": 5,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "commit_siblings",
+            "direction": "decrease",
+            "role": "group-commit activation threshold",
+            "current": 20,
+            "vartype": "integer",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 20,
+            "choices": [],
+            "prior_experiment_count": 5,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "wal_compression",
+            "direction": "enable",
+            "role": "reduce full-page-image WAL volume",
+            "current": "on",
+            "vartype": "bool",
+            "execution_class": "superuser",
+            "unit": "",
+            "safe_low": null,
+            "safe_high": null,
+            "choices": [
+              "off",
+              "on"
+            ],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          }
+        ],
+        "sources": [
+          {
+            "title": "PostgreSQL 14 WAL Configuration",
+            "url": "https://www.postgresql.org/docs/14/runtime-config-wal.html"
+          },
+          {
+            "title": "PostgreSQL 14 Asynchronous Commit",
+            "url": "https://www.postgresql.org/docs/14/wal-async-commit.html"
+          }
+        ],
+        "required_knobs": [
+          "wal_writer_flush_after",
+          "commit_delay",
+          "commit_siblings"
+        ],
+        "non_actionable_knobs": [
+          "wal_buffers",
+          "wal_writer_delay",
+          "wal_compression"
+        ]
+      }
+    ],
+    "mandatory_bundle_by_role": {
+      "memory_storage": {
+        "bundle_id": "wal_commit_path",
+        "phenomenon": "wal_sync_latency",
+        "roles": [
+          "memory_storage"
+        ],
+        "mechanism": "WAL buffer capacity, writer cadence, flush batch size and group commit jointly determine commit-path sync frequency and queueing.",
+        "related_knobs": [
+          {
+            "knob": "wal_buffers",
+            "direction": "increase",
+            "role": "WAL buffering capacity",
+            "current": 2048,
+            "vartype": "integer",
+            "execution_class": "restart",
+            "unit": "8kB",
+            "safe_low": -1,
+            "safe_high": 2048,
+            "choices": [],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          },
+          {
+            "knob": "wal_writer_delay",
+            "direction": "decrease",
+            "role": "writer wake-up cadence",
+            "current": 20,
+            "vartype": "integer",
+            "execution_class": "reload",
+            "unit": "ms",
+            "safe_low": 20,
+            "safe_high": 500,
+            "choices": [],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          },
+          {
+            "knob": "wal_writer_flush_after",
+            "direction": "tune",
+            "role": "flush batch size",
+            "current": 256,
+            "vartype": "integer",
+            "execution_class": "reload",
+            "unit": "8kB",
+            "safe_low": 0,
+            "safe_high": 1024,
+            "choices": [],
+            "prior_experiment_count": 5,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "commit_delay",
+            "direction": "increase",
+            "role": "group-commit collection window",
+            "current": 0,
+            "vartype": "integer",
+            "execution_class": "superuser",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 1000,
+            "choices": [],
+            "prior_experiment_count": 5,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "commit_siblings",
+            "direction": "decrease",
+            "role": "group-commit activation threshold",
+            "current": 20,
+            "vartype": "integer",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 20,
+            "choices": [],
+            "prior_experiment_count": 5,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "wal_compression",
+            "direction": "enable",
+            "role": "reduce full-page-image WAL volume",
+            "current": "on",
+            "vartype": "bool",
+            "execution_class": "superuser",
+            "unit": "",
+            "safe_low": null,
+            "safe_high": null,
+            "choices": [
+              "off",
+              "on"
+            ],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          }
+        ],
+        "sources": [
+          {
+            "title": "PostgreSQL 14 WAL Configuration",
+            "url": "https://www.postgresql.org/docs/14/runtime-config-wal.html"
+          },
+          {
+            "title": "PostgreSQL 14 Asynchronous Commit",
+            "url": "https://www.postgresql.org/docs/14/wal-async-commit.html"
+          }
+        ],
+        "required_knobs": [
+          "wal_writer_flush_after",
+          "commit_delay",
+          "commit_siblings"
+        ],
+        "non_actionable_knobs": [
+          "wal_buffers",
+          "wal_writer_delay",
+          "wal_compression"
+        ]
+      }
+    },
+    "policy": "A mechanism action tunes every actionable knob in its required_knobs as one coherent group. The expert chooses exact values from the live safe ranges and explains each knob's role.",
+    "knowledge_source": "/root/Openguass/knowledge/postgres_diagnostic_knob_relations.json"
+  },
+  "scheduler_reason": "softmax EWMA gain sample with bounded anomaly priority; probabilities={'query_execution': 0.2954439911185576, 'memory_storage': 0.40047200757719714, 'concurrency_maintenance': 0.3040840013042452}; selected r015_concurrency_maintenance: executable against current incumbent; score=4.017; discriminating reviews=proposal alternatives",
+  "group": "expert:concurrency_maintenance",
+  "expert_proposals": [
+    {
+      "schema_version": "andromeda.expert-proposal/v1",
+      "proposal_id": "r015_query_execution",
+      "expert": "query_execution",
+      "incumbent_config_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "workload_fingerprint_hash": "ccbaaddc081053693e83f45cd77d1f9a81d3ea974892c7a98642bebb4fa0b287",
+      "title": "Lower default_statistics_target 300->150 to cut planner/estimate cost on dominant GetUserTweets",
+      "anomaly": {
+        "metric_id": "client.transaction_latency.GetUserTweets.terminal_capacity_fraction",
+        "source": "client.bottleneck_summary",
+        "measurement_type": "per_transaction",
+        "unit": "fraction",
+        "aggregation": "terminal_capacity_fraction",
+        "sampling_window_seconds": 161.84728337125853,
+        "observed_value": 0.86475862
+      },
+      "configuration_cause": "default_statistics_target=300 inflates histogram/MCV build and planner estimate cost for the skewed user_id predicate driving 86% of terminal capacity; the r013 300->500 upward step was refuted, so the resolution axis is unresolved and a downward amplitude is justified.",
+      "mechanism": "GetUserTweets consumes 86.5% of finite client terminal time at p50 121us with an Index Scan already chosen (plan_evidence uses_index=true), so the residual cost is per-call planning/estimate overhead rather than access-path choice. default_statistics_target=300 forces larger MCV/histogram arrays for the skewed user_id column, raising per-statement estimate cost on the hottest template. Lowering to 150 halves statistics resolution while keeping the Index Scan path; the r013 300->500 raise was refuted, so the downward direction is the untested safe amplitude.",
+      "intermediate_metrics": [
+        {
+          "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+          "source": "client.transaction_latency",
+          "measurement_type": "per_transaction",
+          "unit": "us",
+          "aggregation": "p50",
+          "sampling_window_seconds": 161.84728337125853,
+          "observed_value": 121.0
+        },
+        {
+          "metric_id": "client.transaction_latency.GetUserTweets.p95_us",
+          "source": "client.transaction_latency",
+          "measurement_type": "per_transaction",
+          "unit": "us",
+          "aggregation": "p95",
+          "sampling_window_seconds": 161.84728337125853,
+          "observed_value": 165.0
+        },
+        {
+          "metric_id": "client.successful_transaction_tps",
+          "source": "client",
+          "measurement_type": "rate_per_second",
+          "unit": "tps",
+          "aggregation": "mean",
+          "sampling_window_seconds": 161.84728337125853,
+          "observed_value": 36506.056438061554
+        }
+      ],
+      "query_effect": "GetUserTweets remains on the Index Scan path (plan_evidence uses_index=true, estimated_rows=1); reduced statistics resolution lowers per-call estimate cost without changing the chosen plan.",
+      "expected_tps_effect": "Small increase in successful_transaction_tps as terminal capacity freed from GetUserTweets planning overhead; bounded because the dominant cost is execution, not planning.",
+      "expected_latency_effect": "Slight decrease in GetUserTweets p50/p95; no regression expected on InsertTweet or GetTweetsFromFollowing.",
+      "knob_changes": [
+        {
+          "knob": "default_statistics_target",
+          "old_value": 300,
+          "new_value": 150,
+          "numerical_basis": "Lower from incumbent 300 to 150, inside allowed [50,500]; 2x reduction in histogram/MCV resolution, a larger safe downward amplitude than the refuted r013 300->500 upward step.",
+          "mechanism_role": "column statistics resolution for skewed user_id selectivity; lower target cuts histogram/MCV build and planner estimate cost",
+          "recommended_min": 100,
+          "recommended_max": 300,
+          "initial_step": 50
+        }
+      ],
+      "predictions": [
+        {
+          "prediction_id": "r015_query_execution_r015_qe_p1",
+          "edge_id": "r015_query_execution_r015_query_execution_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+          "expected_direction": "decrease",
+          "minimum_change": 1.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Lower statistics resolution cuts per-call estimate cost on the dominant template; r013 refuted the upward direction, so downward is the untested amplitude."
+        },
+        {
+          "prediction_id": "r015_query_execution_r015_qe_p2",
+          "edge_id": "r015_query_execution_r015_query_execution_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p95_us",
+          "expected_direction": "decrease",
+          "minimum_change": 1.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Tail of the dominant template should track the p50 improvement if planning overhead is the residual cost."
+        },
+        {
+          "prediction_id": "r015_query_execution_r015_qe_p3",
+          "edge_id": "r015_query_execution_r015_query_execution_e2",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Freed terminal capacity from GetUserTweets converts to completed-transaction goodput."
+        }
+      ],
+      "alternatives": [
+        {
+          "alternative_id": "alt_plan_unchanged",
+          "statement": "If the Index Scan path and estimate cost are already minimal, lowering default_statistics_target leaves GetUserTweets latency unchanged and TPS flat.",
+          "discriminating_metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+          "expected_direction": "unchanged"
+        },
+        {
+          "alternative_id": "alt_estimate_regression",
+          "statement": "If coarser statistics misestimate the skewed user_id predicate, GetUserTweets p95 could rise despite lower planning cost.",
+          "discriminating_metric_id": "client.transaction_latency.GetUserTweets.p95_us",
+          "expected_direction": "increase"
+        }
+      ],
+      "cross_domain_requirements": [
+        "memory_storage owns the verified WAL commit-path bundle (commit_delay=0, commit_siblings=20, wal_writer_flush_after=256); do not perturb it here",
+        "unverified interaction note (demoted to pending constraint): default_statistics_target",
+        "unverified interaction note (demoted to pending constraint): random_page_cost"
+      ],
+      "why_exceeds_incumbent": "Incumbent sits at default_statistics_target=300 after the r013 300->500 raise was refuted; the downward amplitude 300->150 is untested and targets the dominant GetUserTweets planning overhead without disturbing the verified WAL commit-path bundle.",
+      "cost": {
+        "restart_required": false,
+        "workload_measurements": 2,
+        "estimated_seconds": 180
+      },
+      "nodes": [
+        {
+          "node_id": "r015_query_execution_node_intervention",
+          "kind": "intervention",
+          "label": "Lower default_statistics_target 300->150",
+          "attributes": {}
+        },
+        {
+          "node_id": "r015_query_execution_node_mechanism",
+          "kind": "mechanism",
+          "label": "Reduced histogram/MCV resolution lowers per-call estimate cost on dominant GetUserTweets while keeping Index Scan",
+          "attributes": {}
+        },
+        {
+          "node_id": "r015_query_execution_node_objective",
+          "kind": "objective",
+          "label": "Successful transaction TPS",
+          "attributes": {}
+        }
+      ],
+      "edges": [
+        {
+          "edge_id": "r015_query_execution_r015_query_execution_e1",
+          "source": "r015_query_execution_node_intervention",
+          "target": "r015_query_execution_node_mechanism",
+          "relation": "lowers_statistics_resolution_and_planning_cost",
+          "context_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+          "prediction_ids": [
+            "r015_query_execution_r015_qe_p1",
+            "r015_query_execution_r015_qe_p2"
+          ]
+        },
+        {
+          "edge_id": "r015_query_execution_r015_query_execution_e2",
+          "source": "r015_query_execution_node_mechanism",
+          "target": "r015_query_execution_node_objective",
+          "relation": "frees_terminal_capacity_raises_tps",
+          "context_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+          "prediction_ids": [
+            "r015_query_execution_r015_qe_p3"
+          ]
+        }
+      ],
+      "interaction_factors": [],
+      "interaction_predictions": {},
+      "interaction_design": null,
+      "created_at": "2026-10-22T06:00:00Z"
+    },
+    {
+      "schema_version": "andromeda.expert-proposal/v1",
+      "proposal_id": "r015_concurrency_maintenance",
+      "expert": "concurrency_maintenance",
+      "incumbent_config_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "workload_fingerprint_hash": "ccbaaddc081053693e83f45cd77d1f9a81d3ea974892c7a98642bebb4fa0b287",
+      "title": "Restore default SIRead granularity caps (page=2, relation=-2)",
+      "anomaly": {
+        "metric_id": "telemetry.gauges.locks_total.p95",
+        "source": "pg_stat_activity/pg_locks sampler",
+        "measurement_type": "state",
+        "unit": "count",
+        "aggregation": "p95",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 264.0
+      },
+      "configuration_cause": "Incumbent runs degenerate zero caps max_pred_locks_per_page=0 and max_pred_locks_per_relation=0, forcing immediate promotion of every SIRead lock to coarser granularity; this maximizes promotion churn per GetUserTweets scan rather than minimizing it.",
+      "mechanism": "With page cap 0 and relation cap 0, every predicate lock is promoted immediately to the coarsest granularity, so each GetUserTweets scan performs maximal promotion bookkeeping and holds coarse relation-level SIRead locks that inflate locks_total and lengthen the p99 tail. Restoring PostgreSQL defaults (page=2, relation=-2, i.e. relation cap derived as a fraction of the per-txn budget) keeps locks at page granularity longer, cutting promotion churn and coarse-lock footprint. The r012 test of the same default pair was refuted only while the WAL commit-path bundle was simultaneously perturbed; with the accepted WAL bundle now fixed, this isolates the SIRead granularity axis.",
+      "intermediate_metrics": [
+        {
+          "metric_id": "telemetry.gauges.locks_total.p95",
+          "source": "pg_locks sampler",
+          "measurement_type": "state",
+          "unit": "count",
+          "aggregation": "p95",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 264.0
+        },
+        {
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "source": "benchbase client",
+          "measurement_type": "per_transaction",
+          "unit": "us",
+          "aggregation": "p99",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 300.0
+        },
+        {
+          "metric_id": "telemetry.gauges.lock_waiting_backends.max",
+          "source": "pg_stat_activity sampler",
+          "measurement_type": "state",
+          "unit": "count",
+          "aggregation": "max",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 0.0
+        }
+      ],
+      "query_effect": "GetUserTweets scans retain page-level SIRead locks instead of promoting to relation granularity, reducing per-scan lock bookkeeping and coarse-lock footprint.",
+      "expected_tps_effect": "Small increase in successful transaction TPS as GetUserTweets terminal occupancy (0.865 of capacity) shrinks slightly.",
+      "expected_latency_effect": "GetUserTweets p99 decreases; p50/p95 roughly unchanged.",
+      "knob_changes": [
+        {
+          "knob": "max_pred_locks_per_page",
+          "old_value": 0,
+          "new_value": 2,
+          "numerical_basis": "PostgreSQL default 2, inside allowed [0,256]; reverses incumbent 0 extreme toward the default midpoint, one step from the degenerate zero-cap path.",
+          "mechanism_role": "page-level predicate-lock granularity cap; 2 retains page-level SIRead locks longer before promotion",
+          "recommended_min": 0,
+          "recommended_max": 8,
+          "initial_step": 1
+        },
+        {
+          "knob": "max_pred_locks_per_relation",
+          "old_value": 0,
+          "new_value": -2,
+          "numerical_basis": "PostgreSQL default -2, inside allowed [-2,4096]; -2 derives the relation cap as a fraction of the per-txn budget instead of the degenerate zero cap.",
+          "mechanism_role": "relation-level predicate-lock granularity cap; -2 uses the default fraction of the per-txn SIRead budget",
+          "recommended_min": -2,
+          "recommended_max": 4,
+          "initial_step": 1
+        }
+      ],
+      "predictions": [
+        {
+          "prediction_id": "r015_concurrency_maintenance_r015_cm_p1",
+          "edge_id": "r015_concurrency_maintenance_r015_cm_e1",
+          "metric_id": "telemetry.gauges.locks_total.p95",
+          "expected_direction": "decrease",
+          "minimum_change": 3.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Default caps keep locks at page granularity longer, cutting promotion churn versus zero-cap immediate promotion."
+        },
+        {
+          "prediction_id": "r015_concurrency_maintenance_r015_cm_p2",
+          "edge_id": "r015_concurrency_maintenance_r015_cm_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "expected_direction": "decrease",
+          "minimum_change": 1.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Less promotion bookkeeping and smaller coarse-lock footprint shorten the dominant transaction's tail."
+        },
+        {
+          "prediction_id": "r015_concurrency_maintenance_r015_cm_p3",
+          "edge_id": "r015_concurrency_maintenance_r015_cm_e2",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Freed terminal capacity from the dominant GetUserTweets class raises completed-transaction goodput."
+        }
+      ],
+      "alternatives": [
+        {
+          "alternative_id": "alt_zero_cap_optimal",
+          "statement": "Zero caps are already optimal; restoring defaults increases promotion churn and lowers TPS.",
+          "discriminating_metric_id": "telemetry.gauges.locks_total.p95",
+          "expected_direction": "increase"
+        },
+        {
+          "alternative_id": "alt_lock_irrelevant",
+          "statement": "SIRead granularity is irrelevant at 0 lock waits; locks_total.p95 stays flat and TPS is unchanged.",
+          "discriminating_metric_id": "telemetry.gauges.locks_total.p95",
+          "expected_direction": "unchanged"
+        }
+      ],
+      "cross_domain_requirements": [
+        "Hold the accepted WAL commit-path bundle (commit_delay=0, commit_siblings=20, wal_writer_flush_after=256) fixed to isolate the SIRead axis.",
+        "unverified interaction note (demoted to pending constraint): max_pred_locks_per_transaction"
+      ],
+      "why_exceeds_incumbent": "Incumbent sits at the degenerate zero-cap extreme that maximizes promotion churn; the default pair is the untested interior point on the same axis with the accepted WAL bundle held fixed, isolating the SIRead mechanism.",
+      "cost": {
+        "restart_required": false,
+        "workload_measurements": 2,
+        "estimated_seconds": 320
+      },
+      "nodes": [
+        {
+          "node_id": "r015_concurrency_maintenance_node_intervention",
+          "kind": "intervention",
+          "label": "Restore max_pred_locks_per_page=2, max_pred_locks_per_relation=-2",
+          "attributes": {}
+        },
+        {
+          "node_id": "r015_concurrency_maintenance_node_mechanism",
+          "kind": "mechanism",
+          "label": "Default SIRead granularity reduces promotion churn and coarse-lock footprint per GetUserTweets",
+          "attributes": {}
+        },
+        {
+          "node_id": "r015_concurrency_maintenance_node_objective",
+          "kind": "objective",
+          "label": "Successful transaction TPS",
+          "attributes": {}
+        }
+      ],
+      "edges": [
+        {
+          "edge_id": "r015_concurrency_maintenance_r015_cm_e1",
+          "source": "r015_concurrency_maintenance_node_intervention",
+          "target": "r015_concurrency_maintenance_node_mechanism",
+          "relation": "restores_default_predicate_lock_granularity",
+          "context_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+          "prediction_ids": [
+            "r015_concurrency_maintenance_r015_cm_p1",
+            "r015_concurrency_maintenance_r015_cm_p2"
+          ]
+        },
+        {
+          "edge_id": "r015_concurrency_maintenance_r015_cm_e2",
+          "source": "r015_concurrency_maintenance_node_mechanism",
+          "target": "r015_concurrency_maintenance_node_objective",
+          "relation": "frees_terminal_capacity_raises_tps",
+          "context_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+          "prediction_ids": [
+            "r015_concurrency_maintenance_r015_cm_p3"
+          ]
+        }
+      ],
+      "interaction_factors": [],
+      "interaction_predictions": {},
+      "interaction_design": null,
+      "created_at": "2026-10-22T06:00:00Z"
+    }
+  ],
+  "selected": {
+    "schema_version": "andromeda.expert-proposal/v1",
+    "proposal_id": "r015_concurrency_maintenance",
+    "expert": "concurrency_maintenance",
+    "incumbent_config_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+    "workload_fingerprint_hash": "ccbaaddc081053693e83f45cd77d1f9a81d3ea974892c7a98642bebb4fa0b287",
+    "title": "Restore default SIRead granularity caps (page=2, relation=-2)",
+    "anomaly": {
+      "metric_id": "telemetry.gauges.locks_total.p95",
+      "source": "pg_stat_activity/pg_locks sampler",
+      "measurement_type": "state",
+      "unit": "count",
+      "aggregation": "p95",
+      "sampling_window_seconds": 120.0,
+      "observed_value": 264.0
+    },
+    "configuration_cause": "Incumbent runs degenerate zero caps max_pred_locks_per_page=0 and max_pred_locks_per_relation=0, forcing immediate promotion of every SIRead lock to coarser granularity; this maximizes promotion churn per GetUserTweets scan rather than minimizing it.",
+    "mechanism": "With page cap 0 and relation cap 0, every predicate lock is promoted immediately to the coarsest granularity, so each GetUserTweets scan performs maximal promotion bookkeeping and holds coarse relation-level SIRead locks that inflate locks_total and lengthen the p99 tail. Restoring PostgreSQL defaults (page=2, relation=-2, i.e. relation cap derived as a fraction of the per-txn budget) keeps locks at page granularity longer, cutting promotion churn and coarse-lock footprint. The r012 test of the same default pair was refuted only while the WAL commit-path bundle was simultaneously perturbed; with the accepted WAL bundle now fixed, this isolates the SIRead granularity axis.",
+    "intermediate_metrics": [
+      {
+        "metric_id": "telemetry.gauges.locks_total.p95",
+        "source": "pg_locks sampler",
+        "measurement_type": "state",
+        "unit": "count",
+        "aggregation": "p95",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 264.0
+      },
+      {
+        "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+        "source": "benchbase client",
+        "measurement_type": "per_transaction",
+        "unit": "us",
+        "aggregation": "p99",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 300.0
+      },
+      {
+        "metric_id": "telemetry.gauges.lock_waiting_backends.max",
+        "source": "pg_stat_activity sampler",
+        "measurement_type": "state",
+        "unit": "count",
+        "aggregation": "max",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 0.0
+      }
+    ],
+    "query_effect": "GetUserTweets scans retain page-level SIRead locks instead of promoting to relation granularity, reducing per-scan lock bookkeeping and coarse-lock footprint.",
+    "expected_tps_effect": "Small increase in successful transaction TPS as GetUserTweets terminal occupancy (0.865 of capacity) shrinks slightly.",
+    "expected_latency_effect": "GetUserTweets p99 decreases; p50/p95 roughly unchanged.",
+    "knob_changes": [
+      {
+        "knob": "max_pred_locks_per_page",
+        "old_value": 0,
+        "new_value": 2,
+        "numerical_basis": "PostgreSQL default 2, inside allowed [0,256]; reverses incumbent 0 extreme toward the default midpoint, one step from the degenerate zero-cap path.",
+        "mechanism_role": "page-level predicate-lock granularity cap; 2 retains page-level SIRead locks longer before promotion",
+        "recommended_min": 0,
+        "recommended_max": 8,
+        "initial_step": 1
+      },
+      {
+        "knob": "max_pred_locks_per_relation",
+        "old_value": 0,
+        "new_value": -2,
+        "numerical_basis": "PostgreSQL default -2, inside allowed [-2,4096]; -2 derives the relation cap as a fraction of the per-txn budget instead of the degenerate zero cap.",
+        "mechanism_role": "relation-level predicate-lock granularity cap; -2 uses the default fraction of the per-txn SIRead budget",
+        "recommended_min": -2,
+        "recommended_max": 4,
+        "initial_step": 1
+      }
+    ],
+    "predictions": [
+      {
+        "prediction_id": "r015_concurrency_maintenance_r015_cm_p1",
+        "edge_id": "r015_concurrency_maintenance_r015_cm_e1",
+        "metric_id": "telemetry.gauges.locks_total.p95",
+        "expected_direction": "decrease",
+        "minimum_change": 3.0,
+        "comparison_method": "relative_percent",
+        "rationale": "Default caps keep locks at page granularity longer, cutting promotion churn versus zero-cap immediate promotion."
+      },
+      {
+        "prediction_id": "r015_concurrency_maintenance_r015_cm_p2",
+        "edge_id": "r015_concurrency_maintenance_r015_cm_e1",
+        "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+        "expected_direction": "decrease",
+        "minimum_change": 1.0,
+        "comparison_method": "relative_percent",
+        "rationale": "Less promotion bookkeeping and smaller coarse-lock footprint shorten the dominant transaction's tail."
+      },
+      {
+        "prediction_id": "r015_concurrency_maintenance_r015_cm_p3",
+        "edge_id": "r015_concurrency_maintenance_r015_cm_e2",
+        "metric_id": "client.successful_transaction_tps",
+        "expected_direction": "increase",
+        "minimum_change": 0.3,
+        "comparison_method": "relative_percent",
+        "rationale": "Freed terminal capacity from the dominant GetUserTweets class raises completed-transaction goodput."
+      }
+    ],
+    "alternatives": [
+      {
+        "alternative_id": "alt_zero_cap_optimal",
+        "statement": "Zero caps are already optimal; restoring defaults increases promotion churn and lowers TPS.",
+        "discriminating_metric_id": "telemetry.gauges.locks_total.p95",
+        "expected_direction": "increase"
+      },
+      {
+        "alternative_id": "alt_lock_irrelevant",
+        "statement": "SIRead granularity is irrelevant at 0 lock waits; locks_total.p95 stays flat and TPS is unchanged.",
+        "discriminating_metric_id": "telemetry.gauges.locks_total.p95",
+        "expected_direction": "unchanged"
+      }
+    ],
+    "cross_domain_requirements": [
+      "Hold the accepted WAL commit-path bundle (commit_delay=0, commit_siblings=20, wal_writer_flush_after=256) fixed to isolate the SIRead axis.",
+      "unverified interaction note (demoted to pending constraint): max_pred_locks_per_transaction"
+    ],
+    "why_exceeds_incumbent": "Incumbent sits at the degenerate zero-cap extreme that maximizes promotion churn; the default pair is the untested interior point on the same axis with the accepted WAL bundle held fixed, isolating the SIRead mechanism.",
+    "cost": {
+      "restart_required": false,
+      "workload_measurements": 2,
+      "estimated_seconds": 320
+    },
+    "nodes": [
+      {
+        "node_id": "r015_concurrency_maintenance_node_intervention",
+        "kind": "intervention",
+        "label": "Restore max_pred_locks_per_page=2, max_pred_locks_per_relation=-2",
+        "attributes": {}
+      },
+      {
+        "node_id": "r015_concurrency_maintenance_node_mechanism",
+        "kind": "mechanism",
+        "label": "Default SIRead granularity reduces promotion churn and coarse-lock footprint per GetUserTweets",
+        "attributes": {}
+      },
+      {
+        "node_id": "r015_concurrency_maintenance_node_objective",
+        "kind": "objective",
+        "label": "Successful transaction TPS",
+        "attributes": {}
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "r015_concurrency_maintenance_r015_cm_e1",
+        "source": "r015_concurrency_maintenance_node_intervention",
+        "target": "r015_concurrency_maintenance_node_mechanism",
+        "relation": "restores_default_predicate_lock_granularity",
+        "context_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+        "prediction_ids": [
+          "r015_concurrency_maintenance_r015_cm_p1",
+          "r015_concurrency_maintenance_r015_cm_p2"
+        ]
+      },
+      {
+        "edge_id": "r015_concurrency_maintenance_r015_cm_e2",
+        "source": "r015_concurrency_maintenance_node_mechanism",
+        "target": "r015_concurrency_maintenance_node_objective",
+        "relation": "frees_terminal_capacity_raises_tps",
+        "context_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+        "prediction_ids": [
+          "r015_concurrency_maintenance_r015_cm_p3"
+        ]
+      }
+    ],
+    "interaction_factors": [],
+    "interaction_predictions": {},
+    "interaction_design": null,
+    "created_at": "2026-10-22T06:00:00Z"
+  },
+  "action_consistency": {
+    "at": "2026-10-22T05:59:55.597753+00:00",
+    "round": 15,
+    "stage": "mechanism_diagnosis",
+    "proposal_id": "r015_concurrency_maintenance",
+    "expert_changes": [
+      {
+        "knob": "max_pred_locks_per_page",
+        "old_value": 0,
+        "new_value": 2,
+        "numerical_basis": "PostgreSQL default 2, inside allowed [0,256]; reverses incumbent 0 extreme toward the default midpoint, one step from the degenerate zero-cap path.",
+        "mechanism_role": "page-level predicate-lock granularity cap; 2 retains page-level SIRead locks longer before promotion",
+        "recommended_min": 0,
+        "recommended_max": 8,
+        "initial_step": 1
+      },
+      {
+        "knob": "max_pred_locks_per_relation",
+        "old_value": 0,
+        "new_value": -2,
+        "numerical_basis": "PostgreSQL default -2, inside allowed [-2,4096]; -2 derives the relation cap as a fraction of the per-txn budget instead of the degenerate zero cap.",
+        "mechanism_role": "relation-level predicate-lock granularity cap; -2 uses the default fraction of the per-txn SIRead budget",
+        "recommended_min": -2,
+        "recommended_max": 4,
+        "initial_step": 1
+      }
+    ],
+    "candidate_changes": {
+      "max_pred_locks_per_page": 2,
+      "max_pred_locks_per_relation": -2
+    },
+    "applied_changes": null,
+    "verdict": "exact_match",
+    "reasons": []
+  },
+  "candidate_config_hash": "daf93568ea8a39de62faeadf91fb15a948a5d7649e05dc8aa1154c0c3ca6c92e",
+  "action_boundaries": {
+    "ddl_executed": false,
+    "sql_rewrite_executed": false,
+    "index_build_executed": false
+  }
+}

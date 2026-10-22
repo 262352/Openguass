@@ -1,0 +1,9 @@
+{
+  "workload": "twitter",
+  "scale_factor": 100.0,
+  "expected_objects": 50000,
+  "actual_objects": 50000,
+  "object": "user_profiles",
+  "compatible": true,
+  "basis": "BenchBase TwitterConstants.NUM_USERS=500 multiplied by XML scale factor"
+}

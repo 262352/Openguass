@@ -1,0 +1,824 @@
+{
+  "measurement": {
+    "throughput_rps": 35095.82192875627,
+    "p95_us": 228.0,
+    "average_us": 144.0,
+    "p99_us": 407.0,
+    "max_us": 34477.0,
+    "transaction_latency": {
+      "GetFollowers": {
+        "count": 73950,
+        "mean_us": 118.81122379986478,
+        "p50_us": 100.0,
+        "p95_us": 204.0,
+        "p99_us": 341.0,
+        "max_us": 14596.0,
+        "total_latency_seconds": 8.78609,
+        "terminal_capacity_fraction": 0.058573933333333335
+      },
+      "GetUserTweets": {
+        "count": 950376,
+        "mean_us": 141.343453538389,
+        "p50_us": 125.0,
+        "p95_us": 195.0,
+        "p99_us": 350.0,
+        "max_us": 14746.0,
+        "total_latency_seconds": 134.329426,
+        "terminal_capacity_fraction": 0.8955295066666666
+      },
+      "GetTweetsFromFollowing": {
+        "count": 10700,
+        "mean_us": 379.07971962616824,
+        "p50_us": 274.0,
+        "p95_us": 851.0,
+        "p99_us": 1845.0,
+        "max_us": 12655.0,
+        "total_latency_seconds": 4.056153,
+        "terminal_capacity_fraction": 0.02704102
+      },
+      "InsertTweet": {
+        "count": 10575,
+        "mean_us": 409.2620330969267,
+        "p50_us": 359.0,
+        "p95_us": 576.0,
+        "p99_us": 859.0,
+        "max_us": 34477.0,
+        "total_latency_seconds": 4.327946,
+        "terminal_capacity_fraction": 0.028852973333333334
+      },
+      "GetTweet": {
+        "count": 10549,
+        "mean_us": 112.7190255000474,
+        "p50_us": 99.0,
+        "p95_us": 157.0,
+        "p99_us": 299.0,
+        "max_us": 14626.0,
+        "total_latency_seconds": 1.189073,
+        "terminal_capacity_fraction": 0.007927153333333334
+      }
+    },
+    "healthy": true,
+    "label": "round_022_treatment_2",
+    "run_id": "20261022T070300652222Z-twitter",
+    "elapsed_seconds": 43.243201359175146,
+    "telemetry": {
+      "sample_count": 41,
+      "elapsed_seconds": 43.19012689590454,
+      "rates_per_second": {
+        "xact_commit": 25195.29527252179,
+        "xact_rollback": 0.0,
+        "blks_read": 264.36597483307463,
+        "blks_hit": 329056.9864324163,
+        "tup_returned": 246975.40309869935,
+        "tup_fetched": 245401.7795674741,
+        "tup_inserted": 252.41879993257837,
+        "tup_updated": 0.9029841494561142,
+        "tup_deleted": 0.0,
+        "conflicts": 0.0,
+        "temp_files": 0.0,
+        "temp_bytes": 0.0,
+        "deadlocks": 0.0,
+        "blk_read_time": 1.1400059119730506,
+        "blk_write_time": 0.6935381336617064,
+        "buffers_checkpoint": 0.0,
+        "buffers_clean": 0.0,
+        "buffers_backend": 0.0,
+        "checkpoints_timed": 0.0,
+        "checkpoints_req": 0.0,
+        "checkpoint_write_time": 0.0,
+        "checkpoint_sync_time": 0.0,
+        "wal_records": 2392.143932547624,
+        "wal_fpi": 11.553566425092331,
+        "wal_bytes": 219622.4156243323,
+        "wal_write": 254.5952232671649,
+        "wal_sync": 254.57206982743526,
+        "wal_write_time": 4.9081587676474205,
+        "wal_sync_time": 30.57414031643297,
+        "io_pressure_some_total_us": 0.0,
+        "io_pressure_full_total_us": 0.0,
+        "seq_scan": 0.0,
+        "idx_scan": 26128.309433307255,
+        "n_live_tup": 251.79365705987797,
+        "n_dead_tup": 0.0,
+        "vacuum_count": 0.0,
+        "autovacuum_count": 0.02315343972964395,
+        "analyze_count": 0.0,
+        "autoanalyze_count": 0.02315343972964395,
+        "host_cpu_total_ticks": 19127.102867538328,
+        "host_cpu_busy_ticks": 885.3643818218551,
+        "disk_read_bytes": 189.67297826524324,
+        "disk_write_bytes": 12089423.706914641,
+        "buffer_hit_ratio": 0.9991972401033197,
+        "rollback_ratio": 0.0
+      },
+      "gauges": {
+        "numbackends": {
+          "median": 6.0,
+          "p95": 7.0,
+          "max": 7.0
+        },
+        "active_backends": {
+          "median": 3.0,
+          "p95": 6.0,
+          "max": 6.0
+        },
+        "waiting_backends": {
+          "median": 1.0,
+          "p95": 3.0,
+          "max": 4.0
+        },
+        "idle_in_transaction": {
+          "median": 1.0,
+          "p95": 2.0,
+          "max": 3.0
+        },
+        "locks_total": {
+          "median": 58.0,
+          "p95": 264.0,
+          "max": 477.0
+        },
+        "locks_waiting": {
+          "median": 0.0,
+          "p95": 0.0,
+          "max": 0.0
+        },
+        "client_waiting_backends": {
+          "median": 1.0,
+          "p95": 3.0,
+          "max": 3.0
+        },
+        "io_waiting_backends": {
+          "median": 0.0,
+          "p95": 0.0,
+          "max": 0.0
+        },
+        "lock_waiting_backends": {
+          "median": 0.0,
+          "p95": 0.0,
+          "max": 0.0
+        },
+        "wal_waiting_backends": {
+          "median": 0.0,
+          "p95": 0.0,
+          "max": 0.0
+        },
+        "dirty_bytes": {
+          "median": 23162880.0,
+          "p95": 77963264.0,
+          "max": 78749696.0
+        },
+        "writeback_bytes": {
+          "median": 0.0,
+          "p95": 24576.0,
+          "max": 413696.0
+        },
+        "track_io_timing_enabled": {
+          "median": 1.0,
+          "p95": 1.0,
+          "max": 1.0
+        },
+        "track_wal_io_timing_enabled": {
+          "median": 1.0,
+          "p95": 1.0,
+          "max": 1.0
+        },
+        "load1": {
+          "median": 17.06,
+          "p95": 17.34,
+          "max": 17.34
+        },
+        "load5": {
+          "median": 17.28,
+          "p95": 17.33,
+          "max": 17.33
+        },
+        "memory_available_bytes": {
+          "median": 2100770844672.0,
+          "p95": 2101451038720.0,
+          "max": 2101480902656.0
+        },
+        "memory_total_bytes": {
+          "median": 2162876633088.0,
+          "p95": 2162876633088.0,
+          "max": 2162876633088.0
+        }
+      },
+      "counter_window": {
+        "method": "last_sample_minus_first_sample",
+        "start_monotonic": 1792652580.577934,
+        "end_monotonic": 1792652623.768061,
+        "aligned_to": "current BenchBase measurement only",
+        "counter_resets": []
+      },
+      "wal_timing": {
+        "sync_average_ms": 0.12010013642564174,
+        "write_average_ms": 0.019278283011998777,
+        "timing_enabled": true
+      },
+      "host_io": {
+        "some_stall_fraction": 0.0,
+        "full_stall_fraction": 0.0
+      },
+      "host": {
+        "cpu_busy_fraction": 0.046288472852020694,
+        "load1_median": 17.06,
+        "load5_median": 17.28,
+        "memory_available_bytes_median": 2100770844672.0,
+        "memory_total_bytes_median": 2162876633088.0,
+        "disk_read_bytes_per_second": 189.67297826524324,
+        "disk_write_bytes_per_second": 12089423.706914641
+      },
+      "anomalies": [],
+      "per_transaction": {
+        "xact_commit_per_txn": 0.7179001342002383,
+        "xact_rollback_per_txn": 0.0,
+        "blks_read_per_txn": 0.007532690796349823,
+        "blks_hit_per_txn": 9.375958970284115,
+        "tup_returned_per_txn": 7.037173929137602,
+        "tup_fetched_per_txn": 6.992336012692172,
+        "tup_inserted_per_txn": 0.007192274922211051,
+        "tup_updated_per_txn": 2.5729106766302603e-05,
+        "tup_deleted_per_txn": 0.0,
+        "conflicts_per_txn": 0.0,
+        "temp_files_per_txn": 0.0,
+        "temp_bytes_per_txn": 0.0,
+        "deadlocks_per_txn": 0.0,
+        "blk_read_time_per_txn": 3.248266743224413e-05,
+        "blk_write_time_per_txn": 1.9761273437891645e-05,
+        "buffers_checkpoint_per_txn": 0.0,
+        "buffers_clean_per_txn": 0.0,
+        "buffers_backend_per_txn": 0.0,
+        "checkpoints_timed_per_txn": 0.0,
+        "checkpoints_req_per_txn": 0.0,
+        "checkpoint_write_time_per_txn": 0.0,
+        "checkpoint_sync_time_per_txn": 0.0,
+        "wal_records_per_txn": 0.06816036214805347,
+        "wal_fpi_per_txn": 0.00032920062247141017,
+        "wal_bytes_per_txn": 6.25779376445894,
+        "wal_write_per_txn": 0.007254288666724703,
+        "wal_sync_per_txn": 0.007253628946038387,
+        "wal_write_time_per_txn": 0.0001398502299678541,
+        "wal_sync_time_per_txn": 0.0008711618260001943,
+        "io_pressure_some_total_us_per_txn": 0.0,
+        "io_pressure_full_total_us_per_txn": 0.0,
+        "seq_scan_per_txn": 0.0,
+        "idx_scan_per_txn": 0.7444848986966921,
+        "n_live_tup_per_txn": 0.007174462463680533,
+        "n_dead_tup_per_txn": 0.0,
+        "vacuum_count_per_txn": 0.0,
+        "autovacuum_count_per_txn": 6.597206863154513e-07,
+        "analyze_count_per_txn": 0.0,
+        "autoanalyze_count_per_txn": 6.597206863154513e-07,
+        "host_cpu_total_ticks_per_txn": 0.544996578406567,
+        "host_cpu_busy_ticks_per_txn": 0.025227059324016542,
+        "disk_read_bytes_per_txn": 0.005404431862296177,
+        "disk_write_bytes_per_txn": 344.46902914699933
+      },
+      "normalization": {
+        "denominator": "BenchBase throughput_rps",
+        "warning": "per-second counters alone are not causal mechanism evidence"
+      }
+    },
+    "query_evidence": {
+      "status": "fallback",
+      "reason": "pg_stat_statements view is unavailable; aggregate query deltas are disabled",
+      "fallback_mode": "pg_stat_activity_sampling_only",
+      "statistics": {
+        "status": "fallback",
+        "reason": "pg_stat_statements view is unavailable; aggregate query deltas are disabled",
+        "fallback_mode": "pg_stat_activity_sampling_only",
+        "fallback_limit": "wait sampling remains available; statement aggregates may be absent",
+        "postgresql_version_num": "140024"
+      },
+      "wait_samples": {
+        "status": "available",
+        "sample_count": 42,
+        "sampling_interval_seconds": 1.0,
+        "rows": [
+          {
+            "dbid": "17544",
+            "userid": "17541",
+            "queryid": "unknown",
+            "wait_event_type": "CPU",
+            "wait_event": "running",
+            "sampled_sessions": 91
+          },
+          {
+            "dbid": "17544",
+            "userid": "17541",
+            "queryid": "unknown",
+            "wait_event_type": "Client",
+            "wait_event": "ClientRead",
+            "sampled_sessions": 45
+          },
+          {
+            "dbid": "17544",
+            "userid": "None",
+            "queryid": "unknown",
+            "wait_event_type": "Timeout",
+            "wait_event": "VacuumDelay",
+            "sampled_sessions": 8
+          },
+          {
+            "dbid": "17544",
+            "userid": "17541",
+            "queryid": "unknown",
+            "wait_event_type": "LWLock",
+            "wait_event": "SerializableFinishedList",
+            "sampled_sessions": 6
+          },
+          {
+            "dbid": "17544",
+            "userid": "17541",
+            "queryid": "unknown",
+            "wait_event_type": "LWLock",
+            "wait_event": "SerializableXactHash",
+            "sampled_sessions": 4
+          },
+          {
+            "dbid": "17544",
+            "userid": "17541",
+            "queryid": "unknown",
+            "wait_event_type": "LWLock",
+            "wait_event": "PredicateLockManager",
+            "sampled_sessions": 3
+          },
+          {
+            "dbid": "17544",
+            "userid": "17541",
+            "queryid": "unknown",
+            "wait_event_type": "IO",
+            "wait_event": "WALSync",
+            "sampled_sessions": 2
+          }
+        ],
+        "errors": []
+      },
+      "leaderboards": {},
+      "window_seconds": 43.325983406975865
+    },
+    "plan_evidence": {
+      "status": "observed",
+      "sql": "SELECT * FROM tweets WHERE id = 1",
+      "root_node_type": "Index Scan",
+      "node_types": [
+        "Index Scan"
+      ],
+      "uses_index": true,
+      "estimated_rows": 1.0,
+      "estimated_total_cost": 8.45,
+      "source": "EXPLAIN FORMAT JSON (not EXPLAIN ANALYZE)"
+    },
+    "client": {
+      "failed": 0,
+      "timeouts": 0,
+      "objective": "successful completed transaction Goodput",
+      "successful_transactions": 1087965,
+      "completed_transactions_by_type": {
+        "GetFollowers": 73950,
+        "GetUserTweets": 950376,
+        "GetTweetsFromFollowing": 10700,
+        "InsertTweet": 10575,
+        "GetTweet": 10549
+      },
+      "transaction_attempts": 1087965,
+      "aborted_transactions": 0,
+      "final_failures": 0,
+      "reconnect_retry_transactions": 0,
+      "successful_transaction_tps": 35095.82192875627,
+      "attempted_transaction_tps": 36265.5,
+      "counter_window": {
+        "scope": "single_benchbase_run_histograms",
+        "run_id": "20261022T070300652222Z-twitter",
+        "duration_seconds": 30,
+        "cumulative_postgresql_counters": false
+      },
+      "unexpected_sql_errors": 0,
+      "retryable_database_aborts": 0,
+      "server_retry_transactions": 0,
+      "server_retry_ratio": 0.0,
+      "regime": "clean",
+      "regime_basis": {
+        "metric": "server_retry_ratio",
+        "normalized_value": 0.0,
+        "clean_max": 0.1,
+        "storm_min": 0.5
+      },
+      "unexpected_error_ratio": 0.0,
+      "status": "passed",
+      "goodput_rps": 35095.82192875627,
+      "benchbase_reported_throughput_rps": 34069.52643702319,
+      "average_latency_us": 144.0,
+      "p99_latency_us": 407.0,
+      "max_latency_us": 34477.0,
+      "transaction_latency": {
+        "GetFollowers": {
+          "count": 73950,
+          "mean_us": 118.81122379986478,
+          "p50_us": 100.0,
+          "p95_us": 204.0,
+          "p99_us": 341.0,
+          "max_us": 14596.0,
+          "total_latency_seconds": 8.78609,
+          "terminal_capacity_fraction": 0.058573933333333335
+        },
+        "GetUserTweets": {
+          "count": 950376,
+          "mean_us": 141.343453538389,
+          "p50_us": 125.0,
+          "p95_us": 195.0,
+          "p99_us": 350.0,
+          "max_us": 14746.0,
+          "total_latency_seconds": 134.329426,
+          "terminal_capacity_fraction": 0.8955295066666666
+        },
+        "GetTweetsFromFollowing": {
+          "count": 10700,
+          "mean_us": 379.07971962616824,
+          "p50_us": 274.0,
+          "p95_us": 851.0,
+          "p99_us": 1845.0,
+          "max_us": 12655.0,
+          "total_latency_seconds": 4.056153,
+          "terminal_capacity_fraction": 0.02704102
+        },
+        "InsertTweet": {
+          "count": 10575,
+          "mean_us": 409.2620330969267,
+          "p50_us": 359.0,
+          "p95_us": 576.0,
+          "p99_us": 859.0,
+          "max_us": 34477.0,
+          "total_latency_seconds": 4.327946,
+          "terminal_capacity_fraction": 0.028852973333333334
+        },
+        "GetTweet": {
+          "count": 10549,
+          "mean_us": 112.7190255000474,
+          "p50_us": 99.0,
+          "p95_us": 157.0,
+          "p99_us": 299.0,
+          "max_us": 14626.0,
+          "total_latency_seconds": 1.189073,
+          "terminal_capacity_fraction": 0.007927153333333334
+        }
+      },
+      "bottleneck_summary": {
+        "detected": true,
+        "critical_transaction": "GetUserTweets",
+        "terminal_capacity_fraction": 0.8955295066666666,
+        "transaction_p50_us": 125.0,
+        "transaction_p99_us": 350.0,
+        "overall_p95_us": 228.0,
+        "tail_masked_by_overall_p95": false,
+        "reason": "one transaction type consumes at least half of total client terminal capacity"
+      }
+    },
+    "database_state": {
+      "snapshot": "twitter.dump",
+      "restored_before_run": true,
+      "snapshot_restore": {
+        "restored": true,
+        "snapshot": "/root/Openguass/artifacts/snapshots/twitter.dump",
+        "elapsed_seconds": 10.995,
+        "transactional": true
+      },
+      "pre_measurement_quiescence": {
+        "checkpoint_completed": true,
+        "settle_seconds": 5.0,
+        "checkpoint_timeout_seconds": 300.0,
+        "storage_quiet": {
+          "passed": true,
+          "reason": "psi_io_unavailable_after_checkpoint",
+          "threshold_percent": 30.0,
+          "samples": [
+            {
+              "elapsed_seconds": 0.0,
+              "psi_io_full_avg10_percent": null
+            }
+          ]
+        },
+        "pg_stat_bgwriter_before": {
+          "checkpoint_write_time": 1384637.0,
+          "checkpoint_sync_time": 196389.0,
+          "buffers_checkpoint": 5689431.0,
+          "buffers_clean": 5155987.0,
+          "buffers_backend": 28789925.0,
+          "buffers_backend_fsync": 0.0
+        },
+        "pg_stat_bgwriter_after": {
+          "checkpoint_write_time": 1384950.0,
+          "checkpoint_sync_time": 197395.0,
+          "buffers_checkpoint": 5731554.0,
+          "buffers_clean": 5155987.0,
+          "buffers_backend": 28817623.0,
+          "buffers_backend_fsync": 0.0
+        },
+        "pg_stat_bgwriter_delta": {
+          "checkpoint_write_time": 313.0,
+          "checkpoint_sync_time": 1006.0,
+          "buffers_checkpoint": 42123.0,
+          "buffers_clean": 0.0,
+          "buffers_backend": 27698.0,
+          "buffers_backend_fsync": 0.0
+        },
+        "elapsed_seconds": 6.511
+      }
+    },
+    "experiment_context": {
+      "source_config_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "workload_fingerprint": {
+        "workload": "twitter",
+        "sha256": "2a8189f7998a8fb56f3d465f59b7f73325fb3f8d12bcfa732c2726487eebd637",
+        "config": "benchmarks/postgres/twitter.xml"
+      },
+      "snapshot": {
+        "path_name": "twitter.dump",
+        "sha256": "758fbc378a888decd0e80d371b5a4b52a112077dc0085e209ea061aa1da1ae68"
+      },
+      "hardware": {
+        "hostname": "dev-261021-185608-1792580211-worker-0",
+        "machine": "aarch64",
+        "kernel": "5.10.0-287.0.0.190.oe2203sp4.aarch64",
+        "cpu_count": 192,
+        "memory_bytes": 2162876633088,
+        "postgresql_version": "14.24 (Ubuntu 14.24-0ubuntu0.22.04.1)",
+        "data_directory_hash": "cc584515691196675fc7bf7482d392b5c1ecbe0aa88a138190248618fac9cd7a",
+        "cluster_version": "14",
+        "cluster_name": "main"
+      },
+      "duration": 120,
+      "warmup_seconds": 30,
+      "snapshot_settle_seconds": 5.0,
+      "terminals": 5,
+      "seed": 20261021,
+      "diagnostic_instrumentation": {
+        "before": {
+          "track_io_timing": "off",
+          "track_wal_io_timing": "off"
+        },
+        "after": {
+          "track_io_timing": "on",
+          "track_wal_io_timing": "on"
+        },
+        "changed": [
+          "track_io_timing",
+          "track_wal_io_timing"
+        ],
+        "restored_with_postgresql_auto_conf": true
+      }
+    },
+    "requested_config_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3"
+  },
+  "apply": {
+    "session_settings": {
+      "backend_flush_after": "0",
+      "commit_siblings": "20",
+      "default_statistics_target": "300",
+      "effective_cache_size": "1048576",
+      "effective_io_concurrency": "32",
+      "from_collapse_limit": "8",
+      "jit": "on",
+      "join_collapse_limit": "8",
+      "maintenance_work_mem": "65536",
+      "max_parallel_maintenance_workers": "2",
+      "max_parallel_workers": "8",
+      "max_parallel_workers_per_gather": "2",
+      "random_page_cost": "1.5",
+      "seq_page_cost": "0.8",
+      "temp_buffers": "1024",
+      "vacuum_cost_delay": "0",
+      "vacuum_cost_limit": "200",
+      "work_mem": "4096"
+    },
+    "global_settings": {
+      "autovacuum_analyze_scale_factor": 0.1,
+      "autovacuum_freeze_max_age": 200000000,
+      "autovacuum_max_workers": 3,
+      "autovacuum_naptime": 60,
+      "autovacuum_vacuum_cost_delay": 2.0,
+      "autovacuum_vacuum_cost_limit": -1,
+      "autovacuum_vacuum_scale_factor": 0.2,
+      "bgwriter_delay": 200,
+      "bgwriter_flush_after": 64,
+      "bgwriter_lru_maxpages": 100,
+      "bgwriter_lru_multiplier": 2.0,
+      "checkpoint_completion_target": 0.9,
+      "checkpoint_flush_after": 32,
+      "checkpoint_timeout": 300,
+      "checkpoint_warning": 30,
+      "commit_delay": 0,
+      "deadlock_timeout": 1000,
+      "hot_standby_feedback": "off",
+      "huge_pages": "try",
+      "log_checkpoints": "off",
+      "log_connections": "off",
+      "log_disconnections": "off",
+      "log_min_duration_statement": -1,
+      "log_rotation_size": 10240,
+      "log_temp_files": -1,
+      "logging_collector": "off",
+      "max_connections": 100,
+      "max_locks_per_transaction": 512,
+      "max_pred_locks_per_page": 0,
+      "max_pred_locks_per_relation": 0,
+      "max_pred_locks_per_transaction": 8192,
+      "max_replication_slots": 10,
+      "max_standby_streaming_delay": 30000,
+      "max_wal_senders": 10,
+      "max_wal_size": 1024,
+      "max_worker_processes": 8,
+      "min_wal_size": 80,
+      "shared_buffers": 65536,
+      "track_activity_query_size": 1024,
+      "wal_buffers": 2048,
+      "wal_compression": "on",
+      "wal_sync_method": "fdatasync",
+      "wal_writer_delay": 20,
+      "wal_writer_flush_after": 256
+    },
+    "changed_global_count": 0,
+    "reload": false,
+    "restart": false,
+    "restart_seconds": 0.0,
+    "apply_seconds": 0.054,
+    "observed": {
+      "autovacuum_analyze_scale_factor": {
+        "setting": "0.1",
+        "pending_restart": "f"
+      },
+      "autovacuum_freeze_max_age": {
+        "setting": "200000000",
+        "pending_restart": "f"
+      },
+      "autovacuum_max_workers": {
+        "setting": "3",
+        "pending_restart": "f"
+      },
+      "autovacuum_naptime": {
+        "setting": "60",
+        "pending_restart": "f"
+      },
+      "autovacuum_vacuum_cost_delay": {
+        "setting": "2",
+        "pending_restart": "f"
+      },
+      "autovacuum_vacuum_cost_limit": {
+        "setting": "-1",
+        "pending_restart": "f"
+      },
+      "autovacuum_vacuum_scale_factor": {
+        "setting": "0.2",
+        "pending_restart": "f"
+      },
+      "bgwriter_delay": {
+        "setting": "200",
+        "pending_restart": "f"
+      },
+      "bgwriter_flush_after": {
+        "setting": "64",
+        "pending_restart": "f"
+      },
+      "bgwriter_lru_maxpages": {
+        "setting": "100",
+        "pending_restart": "f"
+      },
+      "bgwriter_lru_multiplier": {
+        "setting": "2",
+        "pending_restart": "f"
+      },
+      "checkpoint_completion_target": {
+        "setting": "0.9",
+        "pending_restart": "f"
+      },
+      "checkpoint_flush_after": {
+        "setting": "32",
+        "pending_restart": "f"
+      },
+      "checkpoint_timeout": {
+        "setting": "300",
+        "pending_restart": "f"
+      },
+      "checkpoint_warning": {
+        "setting": "30",
+        "pending_restart": "f"
+      },
+      "commit_delay": {
+        "setting": "0",
+        "pending_restart": "f"
+      },
+      "deadlock_timeout": {
+        "setting": "1000",
+        "pending_restart": "f"
+      },
+      "hot_standby_feedback": {
+        "setting": "off",
+        "pending_restart": "f"
+      },
+      "huge_pages": {
+        "setting": "try",
+        "pending_restart": "f"
+      },
+      "log_checkpoints": {
+        "setting": "off",
+        "pending_restart": "f"
+      },
+      "log_connections": {
+        "setting": "off",
+        "pending_restart": "f"
+      },
+      "log_disconnections": {
+        "setting": "off",
+        "pending_restart": "f"
+      },
+      "log_min_duration_statement": {
+        "setting": "-1",
+        "pending_restart": "f"
+      },
+      "log_rotation_size": {
+        "setting": "10240",
+        "pending_restart": "f"
+      },
+      "log_temp_files": {
+        "setting": "-1",
+        "pending_restart": "f"
+      },
+      "logging_collector": {
+        "setting": "off",
+        "pending_restart": "f"
+      },
+      "max_connections": {
+        "setting": "100",
+        "pending_restart": "f"
+      },
+      "max_locks_per_transaction": {
+        "setting": "512",
+        "pending_restart": "f"
+      },
+      "max_pred_locks_per_page": {
+        "setting": "0",
+        "pending_restart": "f"
+      },
+      "max_pred_locks_per_relation": {
+        "setting": "0",
+        "pending_restart": "f"
+      },
+      "max_pred_locks_per_transaction": {
+        "setting": "8192",
+        "pending_restart": "f"
+      },
+      "max_replication_slots": {
+        "setting": "10",
+        "pending_restart": "f"
+      },
+      "max_standby_streaming_delay": {
+        "setting": "30000",
+        "pending_restart": "f"
+      },
+      "max_wal_senders": {
+        "setting": "10",
+        "pending_restart": "f"
+      },
+      "max_wal_size": {
+        "setting": "1024",
+        "pending_restart": "f"
+      },
+      "max_worker_processes": {
+        "setting": "8",
+        "pending_restart": "f"
+      },
+      "min_wal_size": {
+        "setting": "80",
+        "pending_restart": "f"
+      },
+      "shared_buffers": {
+        "setting": "65536",
+        "pending_restart": "f"
+      },
+      "track_activity_query_size": {
+        "setting": "1024",
+        "pending_restart": "f"
+      },
+      "wal_buffers": {
+        "setting": "2048",
+        "pending_restart": "f"
+      },
+      "wal_compression": {
+        "setting": "on",
+        "pending_restart": "f"
+      },
+      "wal_sync_method": {
+        "setting": "fdatasync",
+        "pending_restart": "f"
+      },
+      "wal_writer_delay": {
+        "setting": "20",
+        "pending_restart": "f"
+      },
+      "wal_writer_flush_after": {
+        "setting": "256",
+        "pending_restart": "f"
+      }
+    }
+  }
+}

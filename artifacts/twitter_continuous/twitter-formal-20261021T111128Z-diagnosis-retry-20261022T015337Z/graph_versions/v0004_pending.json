@@ -1,0 +1,196 @@
+{
+  "schema_version": "andromeda.incremental-causal-graph/v1",
+  "graph_kind": "pending",
+  "version": 4,
+  "generated_at": "2026-10-22T02:28:44.464973+00:00",
+  "nodes": [
+    {
+      "node_id": "r002_memory_storage_node_intervention",
+      "kind": "intervention",
+      "label": "Raise shared_buffers/effective_cache_size, lower random/seq_page_cost, raise effective_io_concurrency",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_memory_storage_node_mechanism",
+      "kind": "mechanism",
+      "label": "Hot working set retained in cache; planner prefers cached index paths",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_memory_storage_node_objective",
+      "kind": "objective",
+      "label": "Successful transaction TPS",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_concurrency_maintenance_node_intervention",
+      "kind": "intervention",
+      "label": "Tighten max_pred_locks_per_page/relation",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_concurrency_maintenance_node_mechanism",
+      "kind": "mechanism",
+      "label": "Coarser SIRead locking reduces per-txn lock churn",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_concurrency_maintenance_node_objective",
+      "kind": "objective",
+      "label": "Successful transaction TPS",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_concurrency_maintenance"
+      ],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "r002_memory_storage_r002_memory_storage_e1",
+      "source": "r002_memory_storage_node_intervention",
+      "target": "r002_memory_storage_node_mechanism",
+      "relation": "increases_cache_hit_and_lowers_physical_reads",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r002_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r002_memory_storage_r002_memory_storage_p1",
+          "edge_id": "r002_memory_storage_r002_memory_storage_e1",
+          "metric_id": "telemetry.per_transaction.blks_read_per_txn",
+          "expected_direction": "decrease",
+          "minimum_change": 10.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Larger cache plus cache-aware planner costs reduce physical block reads."
+        },
+        {
+          "prediction_id": "r002_memory_storage_r002_memory_storage_p2",
+          "edge_id": "r002_memory_storage_r002_memory_storage_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+          "expected_direction": "decrease",
+          "minimum_change": 3.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Fewer physical reads shorten the dominant transaction's median."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r002_memory_storage_r002_memory_storage_e2",
+      "source": "r002_memory_storage_node_mechanism",
+      "target": "r002_memory_storage_node_objective",
+      "relation": "frees_terminal_capacity_raises_tps",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r002_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r002_memory_storage_r002_memory_storage_p3",
+          "edge_id": "r002_memory_storage_r002_memory_storage_e2",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 1.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Lower terminal occupancy on GetUserTweets frees capacity for completed transactions."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r002_concurrency_maintenance_r002_e1",
+      "source": "r002_concurrency_maintenance_node_intervention",
+      "target": "r002_concurrency_maintenance_node_mechanism",
+      "relation": "reduces_predicate_lock_bookkeeping",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r002_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r002_concurrency_maintenance_r002_p1",
+          "edge_id": "r002_concurrency_maintenance_r002_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "expected_direction": "decrease",
+          "minimum_change": 2.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Reversing the falsified granularity increase should recover the 25% p99 regression seen in the treatment."
+        },
+        {
+          "prediction_id": "r002_concurrency_maintenance_r002_p2",
+          "edge_id": "r002_concurrency_maintenance_r002_e1",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Recovering the -14.4% TPS loss from the refuted direction; coarser SIRead locks reduce per-txn lock churn."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    },
+    {
+      "edge_id": "r002_concurrency_maintenance_r002_e2",
+      "source": "r002_concurrency_maintenance_node_mechanism",
+      "target": "r002_concurrency_maintenance_node_objective",
+      "relation": "lowers_tail_latency_raises_tps",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r002_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r002_concurrency_maintenance_r002_p3",
+          "edge_id": "r002_concurrency_maintenance_r002_e2",
+          "metric_id": "telemetry.gauges.lock_waiting_backends.max",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "Baseline lock waits are already 0; coarser locks must not introduce blocking waits."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [],
+      "state": "proposed"
+    }
+  ]
+}

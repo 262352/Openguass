@@ -1,0 +1,97 @@
+{
+  "schema_version": "andromeda.single-workload-continuous/v1",
+  "experiment_id": "twitter-formal-20261021T111128Z-diagnosis",
+  "workload": "twitter",
+  "created_at": "2026-10-21T17:41:38.172001+00:00",
+  "context": {
+    "source_config_hash": "1e3c9d3c8bc3020cc640cee90e2a7d877eafc21aad8fc698f16778b72c736dbd",
+    "workload_fingerprint": {
+      "workload": "twitter",
+      "sha256": "2a8189f7998a8fb56f3d465f59b7f73325fb3f8d12bcfa732c2726487eebd637",
+      "config": "benchmarks/postgres/twitter.xml"
+    },
+    "snapshot": {
+      "path_name": "twitter.dump",
+      "sha256": "758fbc378a888decd0e80d371b5a4b52a112077dc0085e209ea061aa1da1ae68"
+    },
+    "hardware": {
+      "hostname": "dev-261021-185608-1792580211-worker-0",
+      "machine": "aarch64",
+      "kernel": "5.10.0-287.0.0.190.oe2203sp4.aarch64",
+      "cpu_count": 192,
+      "memory_bytes": 2162876633088,
+      "postgresql_version": "14.24 (Ubuntu 14.24-0ubuntu0.22.04.1)",
+      "data_directory_hash": "cc584515691196675fc7bf7482d392b5c1ecbe0aa88a138190248618fac9cd7a",
+      "cluster_version": "14",
+      "cluster_name": "main"
+    },
+    "duration": 120,
+    "warmup_seconds": 30,
+    "snapshot_settle_seconds": 5.0,
+    "terminals": 5,
+    "seed": 20261021,
+    "diagnostic_instrumentation": {
+      "before": {
+        "track_io_timing": "off",
+        "track_wal_io_timing": "off"
+      },
+      "after": {
+        "track_io_timing": "on",
+        "track_wal_io_timing": "on"
+      },
+      "changed": [
+        "track_io_timing",
+        "track_wal_io_timing"
+      ],
+      "restored_with_postgresql_auto_conf": true
+    }
+  },
+  "objective": "effective twitter throughput_rps",
+  "online_inputs": [
+    "current episode measurements",
+    "versioned evidence graph"
+  ],
+  "forbidden_online_inputs": [
+    "Bayesian/GP result",
+    "historical twitter best TPS",
+    "other-workload configuration"
+  ],
+  "algorithm": "graph-frontier expert diagnosis",
+  "action_mode": {
+    "parameters": true,
+    "ddl": false,
+    "sql_rewrite": false,
+    "index_build": false
+  },
+  "budgets": {
+    "diagnosis_rounds": 15,
+    "search_rounds": 0,
+    "health_coverage_rounds": 15,
+    "workload_measurements": 186,
+    "wall_seconds": 43200,
+    "model_calls": 45,
+    "measurements_per_candidate": 6,
+    "baseline_stability_retries": 1
+  },
+  "baseline_initialization": {
+    "source_config": "artifacts/workload_switch/twitter-formal-20261021T111128Z/bo_initial_config.json",
+    "maximum_attempts": 2,
+    "repeats_per_attempt": 3,
+    "unstable_fallback": "median throughput of the final attempt"
+  },
+  "acceptance_rule": "sequential synchronous champion/candidate blocks; log-gain delta_min=PAIRED_DELTA_MIN (default 0.03); early stop harmful first blocks, require consistent positive direction for promotion, maximum 3 blocks",
+  "immutable_workload_protocol": {
+    "terminals": 5,
+    "scale_factor": 100,
+    "isolation": "TRANSACTION_SERIALIZABLE",
+    "client_retry": {
+      "maxRetries": 10,
+      "baseDelayMs": 50,
+      "jitter": "full"
+    },
+    "mutation_policy": "immutable during tuning; change only in a separate capacity scan"
+  },
+  "evidence_refresh": "after every intervention, all untested sibling hypotheses are superseded and all experts must observe the result before proposing the next graph frontier",
+  "mechanism_action_policy": "diagnosed phenomena are joined with the versioned literature relation database and the live PostgreSQL knob catalog; every actionable knob in the selected mechanism is tested jointly",
+  "non_improvement_policy": "equivalent TPS is inconclusive and triggers a larger same-direction step; only a materially harmful paired confidence interval refutes the direction and triggers reversal"
+}

@@ -1,0 +1,55 @@
+{
+  "round": 15,
+  "alpha": 0.3,
+  "beta": 5.0,
+  "probabilities": {
+    "query_execution": 0.3039973527088383,
+    "memory_storage": 0.4120660219777772,
+    "concurrency_maintenance": 0.28393662531338454
+  },
+  "experts": {
+    "query_execution": {
+      "ewma_log_gain": 0.02896348191817278,
+      "samples": 5,
+      "consecutive_negative": 2,
+      "last_selected_round": 13,
+      "state": "active",
+      "gains": [
+        0.10390382306986064,
+        0.13551941165424522,
+        0.017694862101625634,
+        -0.016809134233626417,
+        -0.03
+      ]
+    },
+    "memory_storage": {
+      "ewma_log_gain": 0.0897964000894621,
+      "samples": 5,
+      "consecutive_negative": 0,
+      "last_selected_round": 14,
+      "state": "active",
+      "gains": [
+        0.13197360611106185,
+        0.049369886264844516,
+        -0.03509571556492665,
+        0.016576105574996308,
+        0.1823582132761289
+      ]
+    },
+    "concurrency_maintenance": {
+      "ewma_log_gain": 0.015309895874331557,
+      "samples": 5,
+      "consecutive_negative": 2,
+      "last_selected_round": 15,
+      "state": "active",
+      "gains": [
+        -0.03,
+        0.10691925832291503,
+        0.2749605468053667,
+        -0.0948014104165967,
+        -0.03
+      ]
+    }
+  },
+  "reactivation": "new anomaly, interaction evidence, or every fifth-round wake-up"
+}

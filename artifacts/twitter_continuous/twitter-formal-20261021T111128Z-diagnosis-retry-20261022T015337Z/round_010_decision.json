@@ -1,0 +1,1058 @@
+{
+  "event": "candidate_frozen",
+  "round": 10,
+  "stage": "mechanism_diagnosis",
+  "anomalies": [
+    "wal_wait",
+    "transaction_terminal_saturation"
+  ],
+  "analysis_priority": "resource_or_wait_path_plus_contributing_sql",
+  "diagnostic_knowledge": {
+    "schema_version": "andromeda.postgres-diagnostic-knob-relations/v1",
+    "active_phenomena": [
+      "transaction_terminal_saturation",
+      "wal_sync_latency",
+      "wal_wait"
+    ],
+    "bundles": [
+      {
+        "bundle_id": "wal_commit_path",
+        "phenomenon": "wal_sync_latency",
+        "roles": [
+          "memory_storage"
+        ],
+        "mechanism": "WAL buffer capacity, writer cadence, flush batch size and group commit jointly determine commit-path sync frequency and queueing.",
+        "related_knobs": [
+          {
+            "knob": "wal_buffers",
+            "direction": "increase",
+            "role": "WAL buffering capacity",
+            "current": 2048,
+            "vartype": "integer",
+            "execution_class": "restart",
+            "unit": "8kB",
+            "safe_low": -1,
+            "safe_high": 2048,
+            "choices": [],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          },
+          {
+            "knob": "wal_writer_delay",
+            "direction": "decrease",
+            "role": "writer wake-up cadence",
+            "current": 20,
+            "vartype": "integer",
+            "execution_class": "reload",
+            "unit": "ms",
+            "safe_low": 20,
+            "safe_high": 500,
+            "choices": [],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          },
+          {
+            "knob": "wal_writer_flush_after",
+            "direction": "tune",
+            "role": "flush batch size",
+            "current": 0,
+            "vartype": "integer",
+            "execution_class": "reload",
+            "unit": "8kB",
+            "safe_low": 0,
+            "safe_high": 1024,
+            "choices": [],
+            "prior_experiment_count": 3,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "commit_delay",
+            "direction": "increase",
+            "role": "group-commit collection window",
+            "current": 100,
+            "vartype": "integer",
+            "execution_class": "superuser",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 1000,
+            "choices": [],
+            "prior_experiment_count": 3,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "commit_siblings",
+            "direction": "decrease",
+            "role": "group-commit activation threshold",
+            "current": 2,
+            "vartype": "integer",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 20,
+            "choices": [],
+            "prior_experiment_count": 3,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "wal_compression",
+            "direction": "enable",
+            "role": "reduce full-page-image WAL volume",
+            "current": "on",
+            "vartype": "bool",
+            "execution_class": "superuser",
+            "unit": "",
+            "safe_low": null,
+            "safe_high": null,
+            "choices": [
+              "off",
+              "on"
+            ],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          }
+        ],
+        "sources": [
+          {
+            "title": "PostgreSQL 14 WAL Configuration",
+            "url": "https://www.postgresql.org/docs/14/runtime-config-wal.html"
+          },
+          {
+            "title": "PostgreSQL 14 Asynchronous Commit",
+            "url": "https://www.postgresql.org/docs/14/wal-async-commit.html"
+          }
+        ],
+        "required_knobs": [
+          "wal_writer_flush_after",
+          "commit_delay",
+          "commit_siblings"
+        ],
+        "non_actionable_knobs": [
+          "wal_buffers",
+          "wal_writer_delay",
+          "wal_compression"
+        ]
+      }
+    ],
+    "mandatory_bundle_by_role": {
+      "memory_storage": {
+        "bundle_id": "wal_commit_path",
+        "phenomenon": "wal_sync_latency",
+        "roles": [
+          "memory_storage"
+        ],
+        "mechanism": "WAL buffer capacity, writer cadence, flush batch size and group commit jointly determine commit-path sync frequency and queueing.",
+        "related_knobs": [
+          {
+            "knob": "wal_buffers",
+            "direction": "increase",
+            "role": "WAL buffering capacity",
+            "current": 2048,
+            "vartype": "integer",
+            "execution_class": "restart",
+            "unit": "8kB",
+            "safe_low": -1,
+            "safe_high": 2048,
+            "choices": [],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          },
+          {
+            "knob": "wal_writer_delay",
+            "direction": "decrease",
+            "role": "writer wake-up cadence",
+            "current": 20,
+            "vartype": "integer",
+            "execution_class": "reload",
+            "unit": "ms",
+            "safe_low": 20,
+            "safe_high": 500,
+            "choices": [],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          },
+          {
+            "knob": "wal_writer_flush_after",
+            "direction": "tune",
+            "role": "flush batch size",
+            "current": 0,
+            "vartype": "integer",
+            "execution_class": "reload",
+            "unit": "8kB",
+            "safe_low": 0,
+            "safe_high": 1024,
+            "choices": [],
+            "prior_experiment_count": 3,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "commit_delay",
+            "direction": "increase",
+            "role": "group-commit collection window",
+            "current": 100,
+            "vartype": "integer",
+            "execution_class": "superuser",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 1000,
+            "choices": [],
+            "prior_experiment_count": 3,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "commit_siblings",
+            "direction": "decrease",
+            "role": "group-commit activation threshold",
+            "current": 2,
+            "vartype": "integer",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 20,
+            "choices": [],
+            "prior_experiment_count": 3,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "wal_compression",
+            "direction": "enable",
+            "role": "reduce full-page-image WAL volume",
+            "current": "on",
+            "vartype": "bool",
+            "execution_class": "superuser",
+            "unit": "",
+            "safe_low": null,
+            "safe_high": null,
+            "choices": [
+              "off",
+              "on"
+            ],
+            "prior_experiment_count": 1,
+            "actionable_from_current": false
+          }
+        ],
+        "sources": [
+          {
+            "title": "PostgreSQL 14 WAL Configuration",
+            "url": "https://www.postgresql.org/docs/14/runtime-config-wal.html"
+          },
+          {
+            "title": "PostgreSQL 14 Asynchronous Commit",
+            "url": "https://www.postgresql.org/docs/14/wal-async-commit.html"
+          }
+        ],
+        "required_knobs": [
+          "wal_writer_flush_after",
+          "commit_delay",
+          "commit_siblings"
+        ],
+        "non_actionable_knobs": [
+          "wal_buffers",
+          "wal_writer_delay",
+          "wal_compression"
+        ]
+      }
+    },
+    "policy": "A mechanism action tunes every actionable knob in its required_knobs as one coherent group. The expert chooses exact values from the live safe ranges and explains each knob's role.",
+    "knowledge_source": "/root/Openguass/knowledge/postgres_diagnostic_knob_relations.json"
+  },
+  "scheduler_reason": "softmax EWMA gain sample with bounded anomaly priority; probabilities={'query_execution': 0.3410358586814872, 'memory_storage': 0.3083130705256764, 'concurrency_maintenance': 0.35065107079283636}; selected r010_memory_storage: executable against current incumbent; score=4.467; discriminating reviews=proposal alternatives",
+  "group": "expert:memory_storage",
+  "expert_proposals": [
+    {
+      "schema_version": "andromeda.expert-proposal/v1",
+      "proposal_id": "r010_query_execution",
+      "expert": "query_execution",
+      "incumbent_config_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+      "workload_fingerprint_hash": "ccbaaddc081053693e83f45cd77d1f9a81d3ea974892c7a98642bebb4fa0b287",
+      "title": "Raise default_statistics_target 300->500 for skewed GetUserTweets selectivity",
+      "anomaly": {
+        "metric_id": "client.bottleneck_summary.terminal_capacity_fraction",
+        "source": "client.bottleneck_summary",
+        "measurement_type": "per_transaction",
+        "unit": "fraction",
+        "aggregation": "max_over_transaction_types",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 0.8764548516666667
+      },
+      "configuration_cause": "default_statistics_target=300 leaves histogram/MCV resolution coarse for the heavily skewed user_id predicate driving GetUserTweets, which consumes 87.6% of client terminal capacity; finer statistics can tighten the index path and reduce per-call pages.",
+      "mechanism": "GetUserTweets dominates terminal capacity (0.876 fraction, p50 138us, p95 200us). Its predicate on skewed user_id is planned from column statistics; at target 300 the histogram/MCV sample is coarse relative to the skew. Raising to the safe high bound 500 increases resolution 1.67x, letting the planner pick a tighter index path and fewer heap pages per call, lowering per-transaction service time and freeing terminal capacity for more completed transactions. This is a distinct amplitude from the refuted 100->300 step (r006) and the untested 300->500 parked edge.",
+      "intermediate_metrics": [
+        {
+          "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+          "source": "client.transaction_latency",
+          "measurement_type": "per_transaction",
+          "unit": "us",
+          "aggregation": "p50",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 138.0
+        },
+        {
+          "metric_id": "client.transaction_latency.GetUserTweets.p95_us",
+          "source": "client.transaction_latency",
+          "measurement_type": "per_transaction",
+          "unit": "us",
+          "aggregation": "p95",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 200.0
+        },
+        {
+          "metric_id": "client.bottleneck_summary.terminal_capacity_fraction",
+          "source": "client.bottleneck_summary",
+          "measurement_type": "per_transaction",
+          "unit": "fraction",
+          "aggregation": "max_over_transaction_types",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 0.8764548516666667
+        }
+      ],
+      "query_effect": "Finer user_id selectivity estimates should keep GetUserTweets on a stable Index Scan with fewer estimated-vs-actual row mismatches, reducing pages touched per call.",
+      "expected_tps_effect": "Modest increase in successful_transaction_tps as GetUserTweets service time falls and terminal capacity is freed.",
+      "expected_latency_effect": "Small decrease in GetUserTweets p50/p95; other transaction classes roughly unchanged.",
+      "knob_changes": [
+        {
+          "knob": "default_statistics_target",
+          "old_value": 300,
+          "new_value": 500,
+          "numerical_basis": "Raise from incumbent 300 to the safe high bound 500 (allowed [50,500]); 1.67x histogram/MCV resolution for skewed user_id, distinct from the refuted r006 100->300 step.",
+          "mechanism_role": "column statistics resolution for skewed predicate selectivity",
+          "recommended_min": 300,
+          "recommended_max": 500,
+          "initial_step": 100
+        }
+      ],
+      "predictions": [
+        {
+          "prediction_id": "r010_query_execution_r010_qe_p1",
+          "edge_id": "r010_query_execution_r010_query_execution_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+          "expected_direction": "decrease",
+          "minimum_change": 1.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Finer histogram/MCV resolution for skewed user_id tightens the index path, lowering median service time."
+        },
+        {
+          "prediction_id": "r010_query_execution_r010_qe_p2",
+          "edge_id": "r010_query_execution_r010_query_execution_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p95_us",
+          "expected_direction": "decrease",
+          "minimum_change": 1.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Better selectivity estimates reduce occasional over-fetch of heap pages, trimming the p95 tail."
+        },
+        {
+          "prediction_id": "r010_query_execution_r010_qe_p3",
+          "edge_id": "r010_query_execution_r010_query_execution_e2",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Lower GetUserTweets service time frees terminal capacity, raising completed transaction throughput."
+        }
+      ],
+      "alternatives": [
+        {
+          "alternative_id": "r010_alt_planner_noop",
+          "statement": "If the GetUserTweets plan is already optimal at target 300, raising to 500 changes no plan and latency/TPS stay flat.",
+          "discriminating_metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+          "expected_direction": "unchanged"
+        },
+        {
+          "alternative_id": "r010_alt_analyze_cost",
+          "statement": "If higher statistics target only adds ANALYZE cost without plan change, TPS may dip slightly while latency is unchanged.",
+          "discriminating_metric_id": "client.successful_transaction_tps",
+          "expected_direction": "decrease"
+        }
+      ],
+      "cross_domain_requirements": [
+        "ANALYZE must run after the statistics target change for the new resolution to take effect on tweets.user_id.",
+        "unverified interaction note (demoted to pending constraint): default_statistics_target",
+        "unverified interaction note (demoted to pending constraint): random_page_cost",
+        "unverified interaction note (demoted to pending constraint): seq_page_cost"
+      ],
+      "why_exceeds_incumbent": "Incumbent already accepted the coarsest SIRead locking win; the remaining dominant cost is GetUserTweets terminal occupancy. Finer statistics at the safe high bound is the untested amplitude on the planner axis and can reduce per-call pages without touching the proven lock settings.",
+      "cost": {
+        "restart_required": false,
+        "workload_measurements": 2,
+        "estimated_seconds": 320
+      },
+      "nodes": [
+        {
+          "node_id": "r010_query_execution_node_intervention",
+          "kind": "intervention",
+          "label": "Raise default_statistics_target 300->500",
+          "attributes": {}
+        },
+        {
+          "node_id": "r010_query_execution_node_mechanism",
+          "kind": "mechanism",
+          "label": "Finer user_id selectivity estimates tighten GetUserTweets index path",
+          "attributes": {}
+        },
+        {
+          "node_id": "r010_query_execution_node_objective",
+          "kind": "objective",
+          "label": "Successful transaction TPS",
+          "attributes": {}
+        }
+      ],
+      "edges": [
+        {
+          "edge_id": "r010_query_execution_r010_query_execution_e1",
+          "source": "r010_query_execution_node_intervention",
+          "target": "r010_query_execution_node_mechanism",
+          "relation": "sharpens_selectivity_estimates",
+          "context_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+          "prediction_ids": [
+            "r010_query_execution_r010_qe_p1",
+            "r010_query_execution_r010_qe_p2"
+          ]
+        },
+        {
+          "edge_id": "r010_query_execution_r010_query_execution_e2",
+          "source": "r010_query_execution_node_mechanism",
+          "target": "r010_query_execution_node_objective",
+          "relation": "frees_terminal_capacity_raises_tps",
+          "context_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+          "prediction_ids": [
+            "r010_query_execution_r010_qe_p3"
+          ]
+        }
+      ],
+      "interaction_factors": [],
+      "interaction_predictions": {},
+      "interaction_design": null,
+      "created_at": "2026-10-22T04:40:00Z"
+    },
+    {
+      "schema_version": "andromeda.expert-proposal/v1",
+      "proposal_id": "r010_memory_storage",
+      "expert": "memory_storage",
+      "incumbent_config_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+      "workload_fingerprint_hash": "ccbaaddc081053693e83f45cd77d1f9a81d3ea974892c7a98642bebb4fa0b287",
+      "title": "WAL commit-path: widen group-commit window and batch writer flushes",
+      "anomaly": {
+        "metric_id": "telemetry.gauges.wal_waiting_backends.p95",
+        "source": "pg_stat_activity wait sampling",
+        "measurement_type": "state",
+        "unit": "backends",
+        "aggregation": "p95 over 120s window",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 1.0
+      },
+      "configuration_cause": "commit_delay=100us with commit_siblings=2 opens a group-commit window on nearly every commit but is too narrow to collect siblings, and wal_writer_flush_after=0 forces the WAL writer to issue an fsync per write instead of batching; wal_waiting_backends persists at p95=1 with sync_average_ms=0.111ms.",
+      "mechanism": "The WAL commit path still shows a persistent wal_wait anomaly (wal_waiting_backends p95=1, max=1) with sync_average_ms=0.111ms and write_average_ms=0.020ms, while host_io stall fractions are zero and wal_bytes_per_txn is only 4.34. The bottleneck is sync coalescing, not volume: commit_delay=100us is too short to gather the 5 terminals' commits, and wal_writer_flush_after=0 makes the WAL writer fsync each write. Widening the group-commit window to 500us with commit_siblings=3 lets concurrent committers share one fsync, and setting wal_writer_flush_after=256 (2MB) batches background writer flushes. This is the mandatory wal_commit_path bundle; wal_buffers, wal_writer_delay and wal_compression are non-actionable at their safe bounds.",
+      "intermediate_metrics": [
+        {
+          "metric_id": "telemetry.wal_timing.sync_average_ms",
+          "source": "pg_stat_wal",
+          "measurement_type": "per_transaction",
+          "unit": "ms",
+          "aggregation": "mean",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 0.11094043487137524
+        },
+        {
+          "metric_id": "telemetry.gauges.wal_waiting_backends.p95",
+          "source": "pg_stat_activity wait sampling",
+          "measurement_type": "state",
+          "unit": "backends",
+          "aggregation": "p95",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 1.0
+        },
+        {
+          "metric_id": "telemetry.per_transaction.wal_sync_per_txn",
+          "source": "pg_stat_wal",
+          "measurement_type": "per_transaction",
+          "unit": "syncs/txn",
+          "aggregation": "mean",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 0.007665730334734174
+        }
+      ],
+      "query_effect": "GetUserTweets dominates terminal capacity (0.876); reducing commit-path queueing shortens InsertTweet and mixed-transaction stalls, freeing terminal slots for the dominant read path.",
+      "expected_tps_effect": "Modest increase in successful_transaction_tps as commit-path fsync coalescing removes residual wal_wait stalls.",
+      "expected_latency_effect": "InsertTweet p95 and overall p95 decrease slightly; GetUserTweets p50 unchanged.",
+      "knob_changes": [
+        {
+          "knob": "commit_delay",
+          "old_value": 100,
+          "new_value": 500,
+          "numerical_basis": "Widen from 100us to 500us within safe [0,1000]; 5x window to collect 5 terminals' commits, still under 1ms added latency.",
+          "mechanism_role": "group-commit collection window",
+          "recommended_min": 200,
+          "recommended_max": 1000,
+          "initial_step": 100
+        },
+        {
+          "knob": "commit_siblings",
+          "old_value": 2,
+          "new_value": 3,
+          "numerical_basis": "Raise from 2 to 3 within safe [0,20]; with 5 terminals, 3 siblings reliably triggers group commit without over-gating.",
+          "mechanism_role": "group-commit activation threshold",
+          "recommended_min": 2,
+          "recommended_max": 5,
+          "initial_step": 1
+        },
+        {
+          "knob": "wal_writer_flush_after",
+          "old_value": 0,
+          "new_value": 256,
+          "numerical_basis": "Set from 0 to 256 (8kB units = 2MB) within safe [0,1024]; batches writer-side WAL flushes instead of per-write fsync.",
+          "mechanism_role": "flush batch size",
+          "recommended_min": 64,
+          "recommended_max": 512,
+          "initial_step": 64
+        }
+      ],
+      "predictions": [
+        {
+          "prediction_id": "r010_memory_storage_r010_ms_p1",
+          "edge_id": "r010_memory_storage_r010_ms_e1",
+          "metric_id": "telemetry.wal_timing.sync_average_ms",
+          "expected_direction": "decrease",
+          "minimum_change": 3.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Wider group-commit window plus batched writer flushes coalesce fsyncs, lowering mean sync latency."
+        },
+        {
+          "prediction_id": "r010_memory_storage_r010_ms_p2",
+          "edge_id": "r010_memory_storage_r010_ms_e1",
+          "metric_id": "telemetry.gauges.wal_waiting_backends.p95",
+          "expected_direction": "decrease",
+          "minimum_change": 0.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "Fewer per-commit fsyncs reduce backends waiting on WAL."
+        },
+        {
+          "prediction_id": "r010_memory_storage_r010_ms_p3",
+          "edge_id": "r010_memory_storage_r010_ms_e2",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Freed terminal capacity from shorter commit stalls raises completed transaction throughput."
+        }
+      ],
+      "alternatives": [
+        {
+          "alternative_id": "r010_alt1",
+          "statement": "If the residual wal_wait is caused by WAL buffer pressure rather than sync coalescing, widening the group-commit window will not reduce sync_average_ms and TPS stays flat.",
+          "discriminating_metric_id": "telemetry.wal_timing.sync_average_ms",
+          "expected_direction": "unchanged"
+        },
+        {
+          "alternative_id": "r010_alt2",
+          "statement": "If commit_delay itself adds fixed latency without collecting siblings, InsertTweet p95 rises while sync_average_ms is unchanged.",
+          "discriminating_metric_id": "client.transaction_latency.InsertTweet.p95_us",
+          "expected_direction": "increase"
+        }
+      ],
+      "cross_domain_requirements": [
+        "Keep max_pred_locks_per_page=0 and max_pred_locks_per_relation=0 from the accepted r009 concurrency action; do not revert."
+      ],
+      "why_exceeds_incumbent": "Incumbent leaves commit_delay=100us (too narrow to collect 5 terminals) and wal_writer_flush_after=0 (per-write fsync). Widening the window to 500us with commit_siblings=3 and batching writer flushes to 256 (2MB) directly targets the persistent wal_wait anomaly without touching the supported predicate-lock gains.",
+      "cost": {
+        "restart_required": false,
+        "workload_measurements": 2,
+        "estimated_seconds": 320
+      },
+      "nodes": [
+        {
+          "node_id": "r010_memory_storage_node_intervention",
+          "kind": "intervention",
+          "label": "WAL commit-path bundle: commit_delay 500, commit_siblings 3, wal_writer_flush_after 256",
+          "attributes": {}
+        },
+        {
+          "node_id": "r010_memory_storage_node_mechanism",
+          "kind": "mechanism",
+          "label": "Wider group-commit window plus larger writer flush batch coalesce fsyncs",
+          "attributes": {}
+        },
+        {
+          "node_id": "r010_memory_storage_node_objective",
+          "kind": "objective",
+          "label": "Successful transaction TPS",
+          "attributes": {}
+        }
+      ],
+      "edges": [
+        {
+          "edge_id": "r010_memory_storage_r010_ms_e1",
+          "source": "r010_memory_storage_node_intervention",
+          "target": "r010_memory_storage_node_mechanism",
+          "relation": "coalesces_wal_syncs",
+          "context_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+          "prediction_ids": [
+            "r010_memory_storage_r010_ms_p1",
+            "r010_memory_storage_r010_ms_p2"
+          ]
+        },
+        {
+          "edge_id": "r010_memory_storage_r010_ms_e2",
+          "source": "r010_memory_storage_node_mechanism",
+          "target": "r010_memory_storage_node_objective",
+          "relation": "frees_terminal_capacity_raises_tps",
+          "context_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+          "prediction_ids": [
+            "r010_memory_storage_r010_ms_p3"
+          ]
+        }
+      ],
+      "interaction_factors": [
+        "commit_delay",
+        "commit_siblings",
+        "wal_writer_flush_after"
+      ],
+      "interaction_predictions": {
+        "baseline": 32428.77,
+        "a_only": 32550.0,
+        "b_only": 32500.0,
+        "a_plus_b": 32700.0
+      },
+      "interaction_design": {
+        "factor_a_knobs": [
+          "commit_delay",
+          "commit_siblings"
+        ],
+        "factor_b_knobs": [
+          "wal_writer_flush_after"
+        ],
+        "predicted_tps": {
+          "baseline": 32428.77,
+          "a_only": 32550.0,
+          "b_only": 32500.0,
+          "a_plus_b": 32700.0
+        },
+        "comparison_scale": "absolute_tps_additivity",
+        "minimum_nonadditivity_percent": 5.0,
+        "repeats_per_cell": 2
+      },
+      "created_at": "2026-10-22T05:00:00Z"
+    },
+    {
+      "schema_version": "andromeda.expert-proposal/v1",
+      "proposal_id": "r010_concurrency_maintenance",
+      "expert": "concurrency_maintenance",
+      "incumbent_config_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+      "workload_fingerprint_hash": "ccbaaddc081053693e83f45cd77d1f9a81d3ea974892c7a98642bebb4fa0b287",
+      "title": "Raise max_pred_locks_per_transaction 8192->16384 to cut SIRead promotion churn",
+      "anomaly": {
+        "metric_id": "client.bottleneck_summary.terminal_capacity_fraction",
+        "source": "client.bottleneck_summary",
+        "measurement_type": "per_transaction",
+        "unit": "fraction",
+        "aggregation": "max_over_transaction_types",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 0.8764548516666667
+      },
+      "configuration_cause": "max_pred_locks_per_transaction=8192 is the only predicate-lock dimension not yet tested; per-page/per-relation caps are already at their coarsest (0), so the remaining lever on SIRead bookkeeping is the per-transaction lock budget that governs promotion to coarser granularity.",
+      "mechanism": "r009 proved that coarsening SIRead granularity (max_pred_locks_per_page=0, max_pred_locks_per_relation=0) cut locks_total.p95 by ~83% and GetUserTweets.p99 by ~68%, raising TPS 21-42%. With both granularity caps pinned at 0, promotion is now driven by the per-transaction lock budget. Doubling max_pred_locks_per_transaction 8192->16384 lets each SERIALIZABLE transaction retain more fine-grained SIRead locks before promotion, reducing promotion churn and lock-table contention on the dominant GetUserTweets path (87.6% of terminal capacity). No retries exist (server_retry_ratio=0.0), so this is bookkeeping cost, not conflict aborts.",
+      "intermediate_metrics": [
+        {
+          "metric_id": "telemetry.gauges.locks_total.p95",
+          "source": "telemetry.gauges",
+          "measurement_type": "state",
+          "unit": "count",
+          "aggregation": "p95",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 340.0
+        },
+        {
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "source": "client.transaction_latency",
+          "measurement_type": "per_transaction",
+          "unit": "us",
+          "aggregation": "p99",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 440.0
+        },
+        {
+          "metric_id": "telemetry.gauges.lock_waiting_backends.max",
+          "source": "telemetry.gauges",
+          "measurement_type": "state",
+          "unit": "count",
+          "aggregation": "max",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 0.0
+        }
+      ],
+      "query_effect": "GetUserTweets p99 tail should shrink as fewer SIRead promotions occur per transaction; p50 unchanged since promotion is a tail phenomenon.",
+      "expected_tps_effect": "Modest increase (0.3-1.5%) by freeing terminal capacity on the dominant transaction class.",
+      "expected_latency_effect": "GetUserTweets p99 decreases; p50/p95 roughly unchanged.",
+      "knob_changes": [
+        {
+          "knob": "max_pred_locks_per_transaction",
+          "old_value": 8192,
+          "new_value": 16384,
+          "numerical_basis": "Double from 8192 to 16384, the safe high bound (allowed [64,16384]); 2x per-txn SIRead budget to test whether promotion churn is budget-bound.",
+          "mechanism_role": "per-transaction SIRead lock budget governing promotion to coarser granularity",
+          "recommended_min": 8192,
+          "recommended_max": 16384,
+          "initial_step": 8192
+        }
+      ],
+      "predictions": [
+        {
+          "prediction_id": "r010_concurrency_maintenance_r010_cm_p1",
+          "edge_id": "r010_concurrency_maintenance_r010_cm_e1",
+          "metric_id": "telemetry.gauges.locks_total.p95",
+          "expected_direction": "decrease",
+          "minimum_change": 3.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Larger per-txn SIRead budget reduces promotion churn, lowering total lock count p95."
+        },
+        {
+          "prediction_id": "r010_concurrency_maintenance_r010_cm_p2",
+          "edge_id": "r010_concurrency_maintenance_r010_cm_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "expected_direction": "decrease",
+          "minimum_change": 1.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Fewer promotions reduce tail lock bookkeeping on the dominant transaction."
+        },
+        {
+          "prediction_id": "r010_concurrency_maintenance_r010_cm_p3",
+          "edge_id": "r010_concurrency_maintenance_r010_cm_e2",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Freed terminal capacity on GetUserTweets raises completed transaction throughput."
+        }
+      ],
+      "alternatives": [
+        {
+          "alternative_id": "alt_no_effect",
+          "statement": "If promotion is already fully suppressed by the 0 granularity caps, the per-transaction budget is non-binding and locks_total.p95 stays flat.",
+          "discriminating_metric_id": "telemetry.gauges.locks_total.p95",
+          "expected_direction": "unchanged"
+        },
+        {
+          "alternative_id": "alt_conflict_risk",
+          "statement": "A larger per-txn SIRead budget could retain more locks and increase conflict detection, raising lock_waiting_backends.max above 0.",
+          "discriminating_metric_id": "telemetry.gauges.lock_waiting_backends.max",
+          "expected_direction": "increase"
+        }
+      ],
+      "cross_domain_requirements": [
+        "unverified interaction note (demoted to pending constraint): max_pred_locks_per_page",
+        "unverified interaction note (demoted to pending constraint): max_pred_locks_per_relation"
+      ],
+      "why_exceeds_incumbent": "Targets the one untested predicate-lock dimension after r009's supported granularity coarsening, with a bounded 2x amplitude inside the safe range and no retry/conflict risk given server_retry_ratio=0.0.",
+      "cost": {
+        "restart_required": true,
+        "workload_measurements": 2,
+        "estimated_seconds": 320
+      },
+      "nodes": [
+        {
+          "node_id": "r010_concurrency_maintenance_node_intervention",
+          "kind": "intervention",
+          "label": "Raise max_pred_locks_per_transaction 8192->16384",
+          "attributes": {}
+        },
+        {
+          "node_id": "r010_concurrency_maintenance_node_mechanism",
+          "kind": "mechanism",
+          "label": "Larger per-txn SIRead budget reduces promotion churn",
+          "attributes": {}
+        },
+        {
+          "node_id": "r010_concurrency_maintenance_node_objective",
+          "kind": "objective",
+          "label": "Successful transaction TPS",
+          "attributes": {}
+        }
+      ],
+      "edges": [
+        {
+          "edge_id": "r010_concurrency_maintenance_r010_cm_e1",
+          "source": "r010_concurrency_maintenance_node_intervention",
+          "target": "r010_concurrency_maintenance_node_mechanism",
+          "relation": "reduces_predicate_lock_promotion_churn",
+          "context_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+          "prediction_ids": [
+            "r010_concurrency_maintenance_r010_cm_p1",
+            "r010_concurrency_maintenance_r010_cm_p2"
+          ]
+        },
+        {
+          "edge_id": "r010_concurrency_maintenance_r010_cm_e2",
+          "source": "r010_concurrency_maintenance_node_mechanism",
+          "target": "r010_concurrency_maintenance_node_objective",
+          "relation": "frees_terminal_capacity_raises_tps",
+          "context_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+          "prediction_ids": [
+            "r010_concurrency_maintenance_r010_cm_p3"
+          ]
+        }
+      ],
+      "interaction_factors": [],
+      "interaction_predictions": {},
+      "interaction_design": null,
+      "created_at": "2026-10-22T04:40:00Z"
+    }
+  ],
+  "selected": {
+    "schema_version": "andromeda.expert-proposal/v1",
+    "proposal_id": "r010_memory_storage",
+    "expert": "memory_storage",
+    "incumbent_config_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+    "workload_fingerprint_hash": "ccbaaddc081053693e83f45cd77d1f9a81d3ea974892c7a98642bebb4fa0b287",
+    "title": "WAL commit-path: widen group-commit window and batch writer flushes",
+    "anomaly": {
+      "metric_id": "telemetry.gauges.wal_waiting_backends.p95",
+      "source": "pg_stat_activity wait sampling",
+      "measurement_type": "state",
+      "unit": "backends",
+      "aggregation": "p95 over 120s window",
+      "sampling_window_seconds": 120.0,
+      "observed_value": 1.0
+    },
+    "configuration_cause": "commit_delay=100us with commit_siblings=2 opens a group-commit window on nearly every commit but is too narrow to collect siblings, and wal_writer_flush_after=0 forces the WAL writer to issue an fsync per write instead of batching; wal_waiting_backends persists at p95=1 with sync_average_ms=0.111ms.",
+    "mechanism": "The WAL commit path still shows a persistent wal_wait anomaly (wal_waiting_backends p95=1, max=1) with sync_average_ms=0.111ms and write_average_ms=0.020ms, while host_io stall fractions are zero and wal_bytes_per_txn is only 4.34. The bottleneck is sync coalescing, not volume: commit_delay=100us is too short to gather the 5 terminals' commits, and wal_writer_flush_after=0 makes the WAL writer fsync each write. Widening the group-commit window to 500us with commit_siblings=3 lets concurrent committers share one fsync, and setting wal_writer_flush_after=256 (2MB) batches background writer flushes. This is the mandatory wal_commit_path bundle; wal_buffers, wal_writer_delay and wal_compression are non-actionable at their safe bounds.",
+    "intermediate_metrics": [
+      {
+        "metric_id": "telemetry.wal_timing.sync_average_ms",
+        "source": "pg_stat_wal",
+        "measurement_type": "per_transaction",
+        "unit": "ms",
+        "aggregation": "mean",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 0.11094043487137524
+      },
+      {
+        "metric_id": "telemetry.gauges.wal_waiting_backends.p95",
+        "source": "pg_stat_activity wait sampling",
+        "measurement_type": "state",
+        "unit": "backends",
+        "aggregation": "p95",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 1.0
+      },
+      {
+        "metric_id": "telemetry.per_transaction.wal_sync_per_txn",
+        "source": "pg_stat_wal",
+        "measurement_type": "per_transaction",
+        "unit": "syncs/txn",
+        "aggregation": "mean",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 0.007665730334734174
+      }
+    ],
+    "query_effect": "GetUserTweets dominates terminal capacity (0.876); reducing commit-path queueing shortens InsertTweet and mixed-transaction stalls, freeing terminal slots for the dominant read path.",
+    "expected_tps_effect": "Modest increase in successful_transaction_tps as commit-path fsync coalescing removes residual wal_wait stalls.",
+    "expected_latency_effect": "InsertTweet p95 and overall p95 decrease slightly; GetUserTweets p50 unchanged.",
+    "knob_changes": [
+      {
+        "knob": "commit_delay",
+        "old_value": 100,
+        "new_value": 500,
+        "numerical_basis": "Widen from 100us to 500us within safe [0,1000]; 5x window to collect 5 terminals' commits, still under 1ms added latency.",
+        "mechanism_role": "group-commit collection window",
+        "recommended_min": 200,
+        "recommended_max": 1000,
+        "initial_step": 100
+      },
+      {
+        "knob": "commit_siblings",
+        "old_value": 2,
+        "new_value": 3,
+        "numerical_basis": "Raise from 2 to 3 within safe [0,20]; with 5 terminals, 3 siblings reliably triggers group commit without over-gating.",
+        "mechanism_role": "group-commit activation threshold",
+        "recommended_min": 2,
+        "recommended_max": 5,
+        "initial_step": 1
+      },
+      {
+        "knob": "wal_writer_flush_after",
+        "old_value": 0,
+        "new_value": 256,
+        "numerical_basis": "Set from 0 to 256 (8kB units = 2MB) within safe [0,1024]; batches writer-side WAL flushes instead of per-write fsync.",
+        "mechanism_role": "flush batch size",
+        "recommended_min": 64,
+        "recommended_max": 512,
+        "initial_step": 64
+      }
+    ],
+    "predictions": [
+      {
+        "prediction_id": "r010_memory_storage_r010_ms_p1",
+        "edge_id": "r010_memory_storage_r010_ms_e1",
+        "metric_id": "telemetry.wal_timing.sync_average_ms",
+        "expected_direction": "decrease",
+        "minimum_change": 3.0,
+        "comparison_method": "relative_percent",
+        "rationale": "Wider group-commit window plus batched writer flushes coalesce fsyncs, lowering mean sync latency."
+      },
+      {
+        "prediction_id": "r010_memory_storage_r010_ms_p2",
+        "edge_id": "r010_memory_storage_r010_ms_e1",
+        "metric_id": "telemetry.gauges.wal_waiting_backends.p95",
+        "expected_direction": "decrease",
+        "minimum_change": 0.0,
+        "comparison_method": "absolute_delta",
+        "rationale": "Fewer per-commit fsyncs reduce backends waiting on WAL."
+      },
+      {
+        "prediction_id": "r010_memory_storage_r010_ms_p3",
+        "edge_id": "r010_memory_storage_r010_ms_e2",
+        "metric_id": "client.successful_transaction_tps",
+        "expected_direction": "increase",
+        "minimum_change": 0.3,
+        "comparison_method": "relative_percent",
+        "rationale": "Freed terminal capacity from shorter commit stalls raises completed transaction throughput."
+      }
+    ],
+    "alternatives": [
+      {
+        "alternative_id": "r010_alt1",
+        "statement": "If the residual wal_wait is caused by WAL buffer pressure rather than sync coalescing, widening the group-commit window will not reduce sync_average_ms and TPS stays flat.",
+        "discriminating_metric_id": "telemetry.wal_timing.sync_average_ms",
+        "expected_direction": "unchanged"
+      },
+      {
+        "alternative_id": "r010_alt2",
+        "statement": "If commit_delay itself adds fixed latency without collecting siblings, InsertTweet p95 rises while sync_average_ms is unchanged.",
+        "discriminating_metric_id": "client.transaction_latency.InsertTweet.p95_us",
+        "expected_direction": "increase"
+      }
+    ],
+    "cross_domain_requirements": [
+      "Keep max_pred_locks_per_page=0 and max_pred_locks_per_relation=0 from the accepted r009 concurrency action; do not revert."
+    ],
+    "why_exceeds_incumbent": "Incumbent leaves commit_delay=100us (too narrow to collect 5 terminals) and wal_writer_flush_after=0 (per-write fsync). Widening the window to 500us with commit_siblings=3 and batching writer flushes to 256 (2MB) directly targets the persistent wal_wait anomaly without touching the supported predicate-lock gains.",
+    "cost": {
+      "restart_required": false,
+      "workload_measurements": 2,
+      "estimated_seconds": 320
+    },
+    "nodes": [
+      {
+        "node_id": "r010_memory_storage_node_intervention",
+        "kind": "intervention",
+        "label": "WAL commit-path bundle: commit_delay 500, commit_siblings 3, wal_writer_flush_after 256",
+        "attributes": {}
+      },
+      {
+        "node_id": "r010_memory_storage_node_mechanism",
+        "kind": "mechanism",
+        "label": "Wider group-commit window plus larger writer flush batch coalesce fsyncs",
+        "attributes": {}
+      },
+      {
+        "node_id": "r010_memory_storage_node_objective",
+        "kind": "objective",
+        "label": "Successful transaction TPS",
+        "attributes": {}
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "r010_memory_storage_r010_ms_e1",
+        "source": "r010_memory_storage_node_intervention",
+        "target": "r010_memory_storage_node_mechanism",
+        "relation": "coalesces_wal_syncs",
+        "context_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+        "prediction_ids": [
+          "r010_memory_storage_r010_ms_p1",
+          "r010_memory_storage_r010_ms_p2"
+        ]
+      },
+      {
+        "edge_id": "r010_memory_storage_r010_ms_e2",
+        "source": "r010_memory_storage_node_mechanism",
+        "target": "r010_memory_storage_node_objective",
+        "relation": "frees_terminal_capacity_raises_tps",
+        "context_hash": "a0546df0f2a0bfd34c5889193e7b39d3e9132b8e92c784016ac71cde14c6c9e8",
+        "prediction_ids": [
+          "r010_memory_storage_r010_ms_p3"
+        ]
+      }
+    ],
+    "interaction_factors": [
+      "commit_delay",
+      "commit_siblings",
+      "wal_writer_flush_after"
+    ],
+    "interaction_predictions": {
+      "baseline": 32428.77,
+      "a_only": 32550.0,
+      "b_only": 32500.0,
+      "a_plus_b": 32700.0
+    },
+    "interaction_design": {
+      "factor_a_knobs": [
+        "commit_delay",
+        "commit_siblings"
+      ],
+      "factor_b_knobs": [
+        "wal_writer_flush_after"
+      ],
+      "predicted_tps": {
+        "baseline": 32428.77,
+        "a_only": 32550.0,
+        "b_only": 32500.0,
+        "a_plus_b": 32700.0
+      },
+      "comparison_scale": "absolute_tps_additivity",
+      "minimum_nonadditivity_percent": 5.0,
+      "repeats_per_cell": 2
+    },
+    "created_at": "2026-10-22T05:00:00Z"
+  },
+  "action_consistency": {
+    "at": "2026-10-22T04:39:24.508167+00:00",
+    "round": 10,
+    "stage": "mechanism_diagnosis",
+    "proposal_id": "r010_memory_storage",
+    "expert_changes": [
+      {
+        "knob": "commit_delay",
+        "old_value": 100,
+        "new_value": 500,
+        "numerical_basis": "Widen from 100us to 500us within safe [0,1000]; 5x window to collect 5 terminals' commits, still under 1ms added latency.",
+        "mechanism_role": "group-commit collection window",
+        "recommended_min": 200,
+        "recommended_max": 1000,
+        "initial_step": 100
+      },
+      {
+        "knob": "commit_siblings",
+        "old_value": 2,
+        "new_value": 3,
+        "numerical_basis": "Raise from 2 to 3 within safe [0,20]; with 5 terminals, 3 siblings reliably triggers group commit without over-gating.",
+        "mechanism_role": "group-commit activation threshold",
+        "recommended_min": 2,
+        "recommended_max": 5,
+        "initial_step": 1
+      },
+      {
+        "knob": "wal_writer_flush_after",
+        "old_value": 0,
+        "new_value": 256,
+        "numerical_basis": "Set from 0 to 256 (8kB units = 2MB) within safe [0,1024]; batches writer-side WAL flushes instead of per-write fsync.",
+        "mechanism_role": "flush batch size",
+        "recommended_min": 64,
+        "recommended_max": 512,
+        "initial_step": 64
+      }
+    ],
+    "candidate_changes": {
+      "commit_delay": 500,
+      "commit_siblings": 3,
+      "wal_writer_flush_after": 256
+    },
+    "applied_changes": null,
+    "verdict": "exact_match",
+    "reasons": []
+  },
+  "candidate_config_hash": "7c8b8804979314557a1231e5c13e9cddd607bc52c773aa5c372c6063b97a468b",
+  "action_boundaries": {
+    "ddl_executed": false,
+    "sql_rewrite_executed": false,
+    "index_build_executed": false
+  }
+}

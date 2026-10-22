@@ -1,0 +1,36 @@
+{
+  "stable": true,
+  "values": [
+    20893.421984579814,
+    22781.848400945248,
+    20596.238097430927
+  ],
+  "median": 20893.421984579814,
+  "spread_percent": 10.460757960698773,
+  "max_min_ratio": 1.1061169662719592,
+  "reason": "stable",
+  "attempt": 1,
+  "maximum_retries": 1,
+  "maximum_attempts": 2,
+  "attempts": [
+    {
+      "attempt": 1,
+      "stable": true,
+      "values": [
+        20893.421984579814,
+        22781.848400945248,
+        20596.238097430927
+      ],
+      "median": 20893.421984579814,
+      "spread_percent": 10.460757960698773,
+      "max_min_ratio": 1.1061169662719592,
+      "reason": "stable",
+      "action": "accepted"
+    }
+  ],
+  "fallback_used": false,
+  "initialization_allowed": true,
+  "initialization_score_method": "minimum_of_stable_repeats",
+  "initialization_tps": 20596.238097430927,
+  "fallback_reason": null
+}

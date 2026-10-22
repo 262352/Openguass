@@ -1,0 +1,918 @@
+{
+  "schema_version": "andromeda.incremental-causal-graph/v1",
+  "graph_kind": "tested",
+  "version": 13,
+  "generated_at": "2026-10-22T02:43:11.223066+00:00",
+  "nodes": [
+    {
+      "node_id": "r001_concurrency_maintenance_node_intervention",
+      "kind": "intervention",
+      "label": "Raise max_pred_locks_per_page/relation",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_concurrency_maintenance_node_mechanism",
+      "kind": "mechanism",
+      "label": "Fewer coarse SIRead promotions, less serialization",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r001_concurrency_maintenance_node_objective",
+      "kind": "objective",
+      "label": "Successful transaction TPS",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_query_execution_node_intervention",
+      "kind": "intervention",
+      "label": "buffer_cache_capacity bundle",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_query_execution"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_query_execution_node_mechanism",
+      "kind": "mechanism",
+      "label": "Cache retention + cache-aware planner costs",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_query_execution"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_query_execution_node_objective",
+      "kind": "objective",
+      "label": "Successful transaction TPS",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_query_execution"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_memory_storage_node_intervention",
+      "kind": "intervention",
+      "label": "Raise shared_buffers/effective_cache_size, lower random/seq_page_cost, raise effective_io_concurrency",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_memory_storage_node_mechanism",
+      "kind": "mechanism",
+      "label": "Hot working set retained in cache; planner prefers cached index paths",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_memory_storage_node_objective",
+      "kind": "objective",
+      "label": "Successful transaction TPS",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_concurrency_maintenance_node_intervention",
+      "kind": "intervention",
+      "label": "Tighten max_pred_locks_per_page/relation",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_concurrency_maintenance_node_mechanism",
+      "kind": "mechanism",
+      "label": "Coarser SIRead locking reduces per-txn lock churn",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r002_concurrency_maintenance_node_objective",
+      "kind": "objective",
+      "label": "Successful transaction TPS",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposal_ids": [
+        "r002_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r003_query_execution_node_intervention",
+      "kind": "intervention",
+      "label": "Raise default_statistics_target 100->400",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposal_ids": [
+        "r003_query_execution"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r003_query_execution_node_mechanism",
+      "kind": "mechanism",
+      "label": "Finer selectivity estimates for skewed user_id reduce GetUserTweets pages per call",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposal_ids": [
+        "r003_query_execution"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r003_query_execution_node_objective",
+      "kind": "objective",
+      "label": "Successful transaction TPS",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposal_ids": [
+        "r003_query_execution"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r003_memory_storage_node_intervention",
+      "kind": "intervention",
+      "label": "WAL commit-path bundle: wal_buffers 2048, wal_writer_delay 20, wal_writer_flush_after 0, commit_delay 100, commit_siblings 2, wal_compression on",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposal_ids": [
+        "r003_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r003_memory_storage_node_mechanism",
+      "kind": "mechanism",
+      "label": "Pre-flushed WAL + group commit + compressed FPI reduce per-commit fsync frequency and queueing",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposal_ids": [
+        "r003_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r003_memory_storage_node_objective",
+      "kind": "objective",
+      "label": "Successful transaction TPS",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposal_ids": [
+        "r003_memory_storage"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_node_intervention",
+      "kind": "intervention",
+      "label": "WAL commit-path bundle (buffers, writer cadence, flush batch, group commit, compression)",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposal_ids": [
+        "r003_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_node_mechanism",
+      "kind": "mechanism",
+      "label": "Batched WAL syncs reduce commit-path queueing",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposal_ids": [
+        "r003_concurrency_maintenance"
+      ],
+      "attributes": {}
+    },
+    {
+      "node_id": "r003_concurrency_maintenance_node_objective",
+      "kind": "objective",
+      "label": "Successful transaction TPS",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposal_ids": [
+        "r003_concurrency_maintenance"
+      ],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "r001_concurrency_maintenance_e1",
+      "source": "r001_concurrency_maintenance_node_intervention",
+      "target": "r001_concurrency_maintenance_node_mechanism",
+      "relation": "reduces_predicate_lock_promotion",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_concurrency_maintenance_p1",
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "expected_direction": "decrease",
+          "minimum_change": 2.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Coarser promotion removed; fewer relation-level SIRead conflicts shorten the tail."
+        },
+        {
+          "prediction_id": "r001_concurrency_maintenance_p2",
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Lower GetUserTweets tail frees terminal capacity, raising completed TPS."
+        }
+      ],
+      "validation_experiment_ids": [
+        "experiment:001:06a5cbbe"
+      ],
+      "observations": [
+        {
+          "state": "tested_refuted",
+          "reason": "paired TPS confidence interval shows a materially harmful direction",
+          "observations": [
+            {
+              "prediction_id": "r001_concurrency_maintenance_p1",
+              "state": "tested_refuted",
+              "reason": "frozen direction=decrease, threshold=2.0, observed=[25.11415525114155]",
+              "pairs": [
+                [
+                  1314.0,
+                  1644.0
+                ]
+              ]
+            },
+            {
+              "prediction_id": "r001_concurrency_maintenance_p2",
+              "state": "tested_refuted",
+              "reason": "frozen direction=increase, threshold=0.3, observed=[-14.443779506368129]",
+              "pairs": [
+                [
+                  21876.165443971036,
+                  18716.42034279556
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "state": "tested_refuted"
+    },
+    {
+      "edge_id": "r001_concurrency_maintenance_e2",
+      "source": "r001_concurrency_maintenance_node_mechanism",
+      "target": "r001_concurrency_maintenance_node_objective",
+      "relation": "lowers_tail_latency_raises_tps",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r001_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r001_concurrency_maintenance_p3",
+          "edge_id": "r001_concurrency_maintenance_e2",
+          "metric_id": "telemetry.gauges.locks_waiting.p95",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "Already 0; promotion thresholds should not create new waits."
+        }
+      ],
+      "validation_experiment_ids": [
+        "experiment:001:06a5cbbe"
+      ],
+      "observations": [
+        {
+          "state": "tested_supported",
+          "reason": "frozen direction=unchanged, threshold=0.0, observed=[0.0]",
+          "observations": [
+            {
+              "prediction_id": "r001_concurrency_maintenance_p3",
+              "state": "tested_supported",
+              "reason": "frozen direction=unchanged, threshold=0.0, observed=[0.0]",
+              "pairs": [
+                [
+                  0.0,
+                  0.0
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "state": "stale"
+    },
+    {
+      "edge_id": "r002_query_execution_r002_e1",
+      "source": "r002_query_execution_node_intervention",
+      "target": "r002_query_execution_node_mechanism",
+      "relation": "enables_cache_retention",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "query_execution"
+      ],
+      "proposal_ids": [
+        "r002_query_execution"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r002_query_execution_r002_p1",
+          "edge_id": "r002_query_execution_r002_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p95_us",
+          "expected_direction": "decrease",
+          "minimum_change": 3.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Larger cache and cache-aware planner costs cut physical reads on the dominant transaction."
+        },
+        {
+          "prediction_id": "r002_query_execution_r002_p2",
+          "edge_id": "r002_query_execution_r002_e1",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 1.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Lower terminal occupancy on GetUserTweets frees terminal capacity for more completions."
+        }
+      ],
+      "validation_experiment_ids": [
+        "experiment:002:4a794433"
+      ],
+      "observations": [
+        {
+          "state": "tested_refuted",
+          "reason": "frozen direction=decrease, threshold=3.0, observed=[2.056555269922879, 23.415977961432507]; frozen direction=increase, threshold=1.0, observed=[5.215267816809294, 16.995982547145577]",
+          "observations": [
+            {
+              "prediction_id": "r002_query_execution_r002_p1",
+              "state": "tested_refuted",
+              "reason": "frozen direction=decrease, threshold=3.0, observed=[2.056555269922879, 23.415977961432507]",
+              "pairs": [
+                [
+                  389.0,
+                  397.0
+                ],
+                [
+                  363.0,
+                  448.0
+                ]
+              ]
+            },
+            {
+              "prediction_id": "r002_query_execution_r002_p2",
+              "state": "tested_supported",
+              "reason": "frozen direction=increase, threshold=1.0, observed=[5.215267816809294, 16.995982547145577]",
+              "pairs": [
+                [
+                  21947.355880367446,
+                  23091.96926823685
+                ],
+                [
+                  19670.406412473214,
+                  23013.585253289766
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "state": "tested_refuted"
+    },
+    {
+      "edge_id": "r002_query_execution_r002_e2",
+      "source": "r002_query_execution_node_mechanism",
+      "target": "r002_query_execution_node_objective",
+      "relation": "reduces_terminal_occupancy",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "query_execution"
+      ],
+      "proposal_ids": [
+        "r002_query_execution"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r002_query_execution_r002_p3",
+          "edge_id": "r002_query_execution_r002_e2",
+          "metric_id": "telemetry.gauges.io_waiting_backends.p95",
+          "expected_direction": "decrease",
+          "minimum_change": 0.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "Better cache retention reduces IO wait backends."
+        }
+      ],
+      "validation_experiment_ids": [
+        "experiment:002:4a794433"
+      ],
+      "observations": [
+        {
+          "state": "tested_supported",
+          "reason": "frozen direction=decrease, threshold=0.0, observed=[-1.0, -2.0]",
+          "observations": [
+            {
+              "prediction_id": "r002_query_execution_r002_p3",
+              "state": "tested_supported",
+              "reason": "frozen direction=decrease, threshold=0.0, observed=[-1.0, -2.0]",
+              "pairs": [
+                [
+                  1.0,
+                  0.0
+                ],
+                [
+                  2.0,
+                  0.0
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "state": "stale"
+    },
+    {
+      "edge_id": "r002_memory_storage_r002_memory_storage_e1",
+      "source": "r002_memory_storage_node_intervention",
+      "target": "r002_memory_storage_node_mechanism",
+      "relation": "increases_cache_hit_and_lowers_physical_reads",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r002_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r002_memory_storage_r002_memory_storage_p1",
+          "edge_id": "r002_memory_storage_r002_memory_storage_e1",
+          "metric_id": "telemetry.per_transaction.blks_read_per_txn",
+          "expected_direction": "decrease",
+          "minimum_change": 10.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Larger cache plus cache-aware planner costs reduce physical block reads."
+        },
+        {
+          "prediction_id": "r002_memory_storage_r002_memory_storage_p2",
+          "edge_id": "r002_memory_storage_r002_memory_storage_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+          "expected_direction": "decrease",
+          "minimum_change": 3.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Fewer physical reads shorten the dominant transaction's median."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [
+        {
+          "state": "parked",
+          "status": "parked",
+          "reason": "new evidence from r002_query_execution requires expert revision",
+          "observations": []
+        }
+      ],
+      "state": "parked"
+    },
+    {
+      "edge_id": "r002_memory_storage_r002_memory_storage_e2",
+      "source": "r002_memory_storage_node_mechanism",
+      "target": "r002_memory_storage_node_objective",
+      "relation": "frees_terminal_capacity_raises_tps",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r002_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r002_memory_storage_r002_memory_storage_p3",
+          "edge_id": "r002_memory_storage_r002_memory_storage_e2",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 1.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Lower terminal occupancy on GetUserTweets frees capacity for completed transactions."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [
+        {
+          "state": "parked",
+          "status": "parked",
+          "reason": "new evidence from r002_query_execution requires expert revision",
+          "observations": []
+        }
+      ],
+      "state": "parked"
+    },
+    {
+      "edge_id": "r002_concurrency_maintenance_r002_e1",
+      "source": "r002_concurrency_maintenance_node_intervention",
+      "target": "r002_concurrency_maintenance_node_mechanism",
+      "relation": "reduces_predicate_lock_bookkeeping",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r002_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r002_concurrency_maintenance_r002_p1",
+          "edge_id": "r002_concurrency_maintenance_r002_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "expected_direction": "decrease",
+          "minimum_change": 2.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Reversing the falsified granularity increase should recover the 25% p99 regression seen in the treatment."
+        },
+        {
+          "prediction_id": "r002_concurrency_maintenance_r002_p2",
+          "edge_id": "r002_concurrency_maintenance_r002_e1",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Recovering the -14.4% TPS loss from the refuted direction; coarser SIRead locks reduce per-txn lock churn."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [
+        {
+          "state": "parked",
+          "status": "parked",
+          "reason": "new evidence from r002_query_execution requires expert revision",
+          "observations": []
+        }
+      ],
+      "state": "parked"
+    },
+    {
+      "edge_id": "r002_concurrency_maintenance_r002_e2",
+      "source": "r002_concurrency_maintenance_node_mechanism",
+      "target": "r002_concurrency_maintenance_node_objective",
+      "relation": "lowers_tail_latency_raises_tps",
+      "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r002_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r002_concurrency_maintenance_r002_p3",
+          "edge_id": "r002_concurrency_maintenance_r002_e2",
+          "metric_id": "telemetry.gauges.lock_waiting_backends.max",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "Baseline lock waits are already 0; coarser locks must not introduce blocking waits."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [
+        {
+          "state": "parked",
+          "status": "parked",
+          "reason": "new evidence from r002_query_execution requires expert revision",
+          "observations": []
+        }
+      ],
+      "state": "parked"
+    },
+    {
+      "edge_id": "r003_query_execution_r003_qe_e1",
+      "source": "r003_query_execution_node_intervention",
+      "target": "r003_query_execution_node_mechanism",
+      "relation": "sharpens_selectivity_estimates",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposed_by": [
+        "query_execution"
+      ],
+      "proposal_ids": [
+        "r003_query_execution"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r003_query_execution_r003_qe_p1",
+          "edge_id": "r003_query_execution_r003_qe_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p50_us",
+          "expected_direction": "decrease",
+          "minimum_change": 2.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Higher stats resolution tightens selectivity for skewed user_id, reducing pages touched per GetUserTweets call."
+        },
+        {
+          "prediction_id": "r003_query_execution_r003_qe_p3",
+          "edge_id": "r003_query_execution_r003_qe_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p95_us",
+          "expected_direction": "decrease",
+          "minimum_change": 2.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Better estimates reduce worst-case over-reads on heavy-hitter users, trimming the p95 tail."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [
+        {
+          "state": "parked",
+          "status": "parked",
+          "reason": "new evidence from r003_memory_storage requires expert revision",
+          "observations": []
+        }
+      ],
+      "state": "parked"
+    },
+    {
+      "edge_id": "r003_query_execution_r003_qe_e2",
+      "source": "r003_query_execution_node_mechanism",
+      "target": "r003_query_execution_node_objective",
+      "relation": "frees_terminal_capacity_raises_tps",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposed_by": [
+        "query_execution"
+      ],
+      "proposal_ids": [
+        "r003_query_execution"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r003_query_execution_r003_qe_p2",
+          "edge_id": "r003_query_execution_r003_qe_e2",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.5,
+          "comparison_method": "relative_percent",
+          "rationale": "Lower GetUserTweets terminal occupancy frees finite client terminal capacity for more completed transactions."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [
+        {
+          "state": "parked",
+          "status": "parked",
+          "reason": "new evidence from r003_memory_storage requires expert revision",
+          "observations": []
+        }
+      ],
+      "state": "parked"
+    },
+    {
+      "edge_id": "r003_memory_storage_r003_e1",
+      "source": "r003_memory_storage_node_intervention",
+      "target": "r003_memory_storage_node_mechanism",
+      "relation": "reduces_wal_sync_frequency_and_queueing",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r003_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r003_memory_storage_r003_p1",
+          "edge_id": "r003_memory_storage_r003_e1",
+          "metric_id": "telemetry.gauges.wal_waiting_backends.max",
+          "expected_direction": "decrease",
+          "minimum_change": 0.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "Larger wal_buffers + faster writer cadence + group commit reduce backends waiting on WAL flush."
+        },
+        {
+          "prediction_id": "r003_memory_storage_r003_p2",
+          "edge_id": "r003_memory_storage_r003_e1",
+          "metric_id": "telemetry.wal_timing.sync_average_ms",
+          "expected_direction": "decrease",
+          "minimum_change": 5.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Group commit batches multiple committers per fsync, lowering average sync time per commit."
+        },
+        {
+          "prediction_id": "r003_memory_storage_r003_p3",
+          "edge_id": "r003_memory_storage_r003_e1",
+          "metric_id": "telemetry.per_transaction.wal_bytes_per_txn",
+          "expected_direction": "decrease",
+          "minimum_change": 5.0,
+          "comparison_method": "relative_percent",
+          "rationale": "wal_compression=on compresses FPI, reducing WAL bytes per transaction."
+        }
+      ],
+      "validation_experiment_ids": [
+        "experiment:003:4bdecc37"
+      ],
+      "observations": [
+        {
+          "state": "tested_refuted",
+          "reason": "frozen direction=decrease, threshold=0.0, observed=[0.0, 0.0]; frozen direction=decrease, threshold=5.0, observed=[6.538490807339799, -5.246642907990468]; frozen direction=decrease, threshold=5.0, observed=[-15.443226970350343, -19.454552149451146]",
+          "observations": [
+            {
+              "prediction_id": "r003_memory_storage_r003_p1",
+              "state": "tested_supported",
+              "reason": "frozen direction=decrease, threshold=0.0, observed=[0.0, 0.0]",
+              "pairs": [
+                [
+                  1.0,
+                  1.0
+                ],
+                [
+                  1.0,
+                  1.0
+                ]
+              ]
+            },
+            {
+              "prediction_id": "r003_memory_storage_r003_p2",
+              "state": "tested_refuted",
+              "reason": "frozen direction=decrease, threshold=5.0, observed=[6.538490807339799, -5.246642907990468]",
+              "pairs": [
+                [
+                  0.1286611696776158,
+                  0.13707366842960256
+                ],
+                [
+                  0.13771977059801793,
+                  0.13049410602103628
+                ]
+              ]
+            },
+            {
+              "prediction_id": "r003_memory_storage_r003_p3",
+              "state": "tested_supported",
+              "reason": "frozen direction=decrease, threshold=5.0, observed=[-15.443226970350343, -19.454552149451146]",
+              "pairs": [
+                [
+                  5.17083340137016,
+                  4.37228986293788
+                ],
+                [
+                  5.167476624723991,
+                  4.162167189956365
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "state": "tested_refuted"
+    },
+    {
+      "edge_id": "r003_memory_storage_r003_e2",
+      "source": "r003_memory_storage_node_mechanism",
+      "target": "r003_memory_storage_node_objective",
+      "relation": "frees_terminal_capacity_raises_tps",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposed_by": [
+        "memory_storage"
+      ],
+      "proposal_ids": [
+        "r003_memory_storage"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r003_memory_storage_r003_p4",
+          "edge_id": "r003_memory_storage_r003_e2",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Reduced commit-path queueing frees terminal capacity, raising completed transaction throughput."
+        }
+      ],
+      "validation_experiment_ids": [
+        "experiment:003:4bdecc37"
+      ],
+      "observations": [
+        {
+          "state": "tested_supported",
+          "reason": "frozen direction=increase, threshold=0.3, observed=[4.44027115128584, 24.67024906274012]",
+          "observations": [
+            {
+              "prediction_id": "r003_memory_storage_r003_p4",
+              "state": "tested_supported",
+              "reason": "frozen direction=increase, threshold=0.3, observed=[4.44027115128584, 24.67024906274012]",
+              "pairs": [
+                [
+                  18904.248830588862,
+                  19743.64873778079
+                ],
+                [
+                  18827.53443486787,
+                  23472.334072322934
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "state": "stale"
+    },
+    {
+      "edge_id": "r003_concurrency_maintenance_r003_cm_e1",
+      "source": "r003_concurrency_maintenance_node_intervention",
+      "target": "r003_concurrency_maintenance_node_mechanism",
+      "relation": "batches_wal_syncs",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r003_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r003_concurrency_maintenance_r003_cm_p1",
+          "edge_id": "r003_concurrency_maintenance_r003_cm_e1",
+          "metric_id": "telemetry.gauges.wal_waiting_backends.max",
+          "expected_direction": "decrease",
+          "minimum_change": 0.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "Larger WAL buffers plus shorter writer cadence and group-commit window batch syncs, lowering peak WAL waiters."
+        },
+        {
+          "prediction_id": "r003_concurrency_maintenance_r003_cm_p2",
+          "edge_id": "r003_concurrency_maintenance_r003_cm_e1",
+          "metric_id": "telemetry.per_transaction.wal_sync_time_per_txn",
+          "expected_direction": "decrease",
+          "minimum_change": 5.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Group commit amortizes fdatasync across siblings, reducing per-transaction sync time."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [
+        {
+          "state": "parked",
+          "status": "parked",
+          "reason": "new evidence from r003_memory_storage requires expert revision",
+          "observations": []
+        }
+      ],
+      "state": "parked"
+    },
+    {
+      "edge_id": "r003_concurrency_maintenance_r003_cm_e2",
+      "source": "r003_concurrency_maintenance_node_mechanism",
+      "target": "r003_concurrency_maintenance_node_objective",
+      "relation": "frees_terminal_capacity_raises_tps",
+      "context_hash": "90bff8e8ad6911f45daf413a1f0a1378271c52829b815ad030bea935b7aa8b90",
+      "proposed_by": [
+        "concurrency_maintenance"
+      ],
+      "proposal_ids": [
+        "r003_concurrency_maintenance"
+      ],
+      "frozen_predictions": [
+        {
+          "prediction_id": "r003_concurrency_maintenance_r003_cm_p3",
+          "edge_id": "r003_concurrency_maintenance_r003_cm_e2",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Reduced commit-path queueing frees terminal capacity for the dominant GetUserTweets class."
+        }
+      ],
+      "validation_experiment_ids": [],
+      "observations": [
+        {
+          "state": "parked",
+          "status": "parked",
+          "reason": "new evidence from r003_memory_storage requires expert revision",
+          "observations": []
+        }
+      ],
+      "state": "parked"
+    }
+  ]
+}

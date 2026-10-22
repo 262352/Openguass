@@ -1,0 +1,19 @@
+{
+  "experiment_id": "twitter-formal-20261021T111128Z-twitter",
+  "state": "completed",
+  "workload": "twitter",
+  "knob_count": 62,
+  "objective": "maximize throughput_rps",
+  "budget": 100,
+  "completed": 100,
+  "remaining": 0,
+  "lhs_completed": 10,
+  "gp_completed": 90,
+  "baseline_tps": 18748.294891166068,
+  "best_tps": 29792.06028238248,
+  "improvement_percent": 58.90543889631308,
+  "best_trial": 87,
+  "elapsed_seconds": 22713.005,
+  "updated_at": "2026-10-21T17:30:44.746438+00:00",
+  "completed_at": "2026-10-21T17:30:44.749377+00:00"
+}

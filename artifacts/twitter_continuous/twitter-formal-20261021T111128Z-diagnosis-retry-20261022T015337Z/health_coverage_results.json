@@ -1,0 +1,1160 @@
+{
+  "completed": 15,
+  "results": [
+    {
+      "experiment_id": "health:001:5dbf6c60",
+      "action": {
+        "subsystem": "memory_cache",
+        "knob": "shared_buffers",
+        "old_value": 16384,
+        "new_value": 65536,
+        "reason": "at least four times the default, capped near 25% RAM",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "experiment_parent": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "decision": {
+        "verdict": "inconclusive",
+        "reason": "valid paired blocks do not show a consistent effect above delta_min",
+        "effect_mean": -5.9488312915612886e-05,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 3,
+        "valid_blocks": 3,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 32834.266644961084,
+          "candidate_tps": 33193.45182647276,
+          "log_gain": 0.010879937486059433,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "a second paired block is required for the one-block comeback check",
+            "effect_mean": 0.010879937486059433,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 32444.660473991764,
+          "candidate_tps": 31163.102965907983,
+          "log_gain": -0.04030108560586392,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "paired effects cross zero; run one final block",
+            "effect_mean": -0.014710574059902243,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 3,
+          "champion_tps": 33768.06855233608,
+          "candidate_tps": 34770.117374574795,
+          "log_gain": 0.02924268318105765,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "inconclusive",
+            "reason": "valid paired blocks do not show a consistent effect above delta_min",
+            "effect_mean": -5.9488312915612886e-05,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 3,
+            "valid_blocks": 3,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:002:8cefe9fc",
+      "action": {
+        "subsystem": "wal_durability",
+        "knob": "wal_buffers",
+        "old_value": 512,
+        "new_value": 2048,
+        "reason": "four times the default",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "experiment_parent": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "decision": {
+        "verdict": "inconclusive",
+        "reason": "valid paired blocks do not show a consistent effect above delta_min",
+        "effect_mean": -0.07008914385373174,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 3,
+        "valid_blocks": 3,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 34370.08376548981,
+          "candidate_tps": 35344.03812500513,
+          "log_gain": 0.027943197333599155,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "a second paired block is required",
+            "effect_mean": 0.027943197333599155,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 35239.11868232506,
+          "candidate_tps": 33343.29454147387,
+          "log_gain": -0.05530010281909468,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "paired effects cross zero; run one final block",
+            "effect_mean": -0.013678452742747762,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 3,
+          "champion_tps": 36064.21930106616,
+          "candidate_tps": 30035.820697970747,
+          "log_gain": -0.18291052607569971,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "inconclusive",
+            "reason": "valid paired blocks do not show a consistent effect above delta_min",
+            "effect_mean": -0.07008914385373174,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 3,
+            "valid_blocks": 3,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:003:41837b86",
+      "action": {
+        "subsystem": "query_planning",
+        "knob": "random_page_cost",
+        "old_value": 4.0,
+        "new_value": 2.0,
+        "reason": "half the default",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "8c32909fd180167639fa80ad7ad40511ff132def26d1b3012a7488ba2289ba93",
+      "experiment_parent": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "decision": {
+        "verdict": "reject_harmful",
+        "reason": "mean paired log gain is below the harmful boundary and all valid blocks agree",
+        "effect_mean": -0.043257659241663325,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 2,
+        "valid_blocks": 2,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 35267.7347558644,
+          "candidate_tps": 32587.525255511107,
+          "log_gain": -0.07903896211517238,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "early_stopped_worse",
+            "reason": "first paired log gain is below the harmful boundary",
+            "effect_mean": -0.07903896211517238,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 33616.26692455518,
+          "candidate_tps": 33365.87690209333,
+          "log_gain": -0.007476356368154274,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "reject_harmful",
+            "reason": "mean paired log gain is below the harmful boundary and all valid blocks agree",
+            "effect_mean": -0.043257659241663325,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:004:0cb44d3f",
+      "action": {
+        "subsystem": "query_planning",
+        "knob": "random_page_cost",
+        "old_value": 4.0,
+        "new_value": 6.0,
+        "reason": "twice the default",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "402356ec204dad2b5671fa24ed47fe29e1be766678459bed55efef5eda13fae6",
+      "experiment_parent": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "decision": {
+        "verdict": "inconclusive",
+        "reason": "valid paired blocks do not show a consistent effect above delta_min",
+        "effect_mean": -0.03468142938561023,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 3,
+        "valid_blocks": 3,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 32589.626575044247,
+          "candidate_tps": 32468.31205872963,
+          "log_gain": -0.0037294343925619975,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "a second paired block is required for the one-block comeback check",
+            "effect_mean": -0.0037294343925619975,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 31611.508490936085,
+          "candidate_tps": 34508.73788125559,
+          "log_gain": 0.08769131684792182,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "paired effects cross zero; run one final block",
+            "effect_mean": 0.04198094122767991,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 3,
+          "champion_tps": 31907.23436333445,
+          "candidate_tps": 26438.640517478078,
+          "log_gain": -0.18800617061219052,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "inconclusive",
+            "reason": "valid paired blocks do not show a consistent effect above delta_min",
+            "effect_mean": -0.03468142938561023,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 3,
+            "valid_blocks": 3,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:005:78f09a39",
+      "action": {
+        "subsystem": "concurrency_maintenance",
+        "knob": "work_mem",
+        "old_value": 4096,
+        "new_value": 8192,
+        "reason": "twice the default",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "4f6dc3daf1861b0174eb123888d81d77da558fb4f1adf334a2e3416f6a7a355e",
+      "experiment_parent": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "decision": {
+        "verdict": "reject_harmful",
+        "reason": "mean paired log gain is below the harmful boundary and all valid blocks agree",
+        "effect_mean": -0.10105168628952439,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 2,
+        "valid_blocks": 2,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 38375.99105256002,
+          "candidate_tps": 31722.901590423608,
+          "log_gain": -0.19039316335677933,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "early_stopped_worse",
+            "reason": "first paired log gain is below the harmful boundary",
+            "effect_mean": -0.19039316335677933,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 31744.01333042275,
+          "candidate_tps": 31374.452334180023,
+          "log_gain": -0.01171020922226944,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "reject_harmful",
+            "reason": "mean paired log gain is below the harmful boundary and all valid blocks agree",
+            "effect_mean": -0.10105168628952439,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:006:6d6b8c43",
+      "action": {
+        "subsystem": "concurrency_maintenance",
+        "knob": "work_mem",
+        "old_value": 4096,
+        "new_value": 16384,
+        "reason": "four times the default",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "b421079120a102ad3e6db2fea7a99c06d6fe3f755e8de65e6ca7c2a145ab2e17",
+      "experiment_parent": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "decision": {
+        "verdict": "reject_harmful",
+        "reason": "mean paired log gain is below the harmful boundary and all valid blocks agree",
+        "effect_mean": -0.07904798006702243,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 2,
+        "valid_blocks": 2,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 35439.509573216186,
+          "candidate_tps": 32583.530565894343,
+          "log_gain": -0.0840203240613238,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "early_stopped_worse",
+            "reason": "first paired log gain is below the harmful boundary",
+            "effect_mean": -0.0840203240613238,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 32852.028093693596,
+          "candidate_tps": 30506.441101231332,
+          "log_gain": -0.07407563607272105,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "reject_harmful",
+            "reason": "mean paired log gain is below the harmful boundary and all valid blocks agree",
+            "effect_mean": -0.07904798006702243,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:007:7f711c0e",
+      "action": {
+        "subsystem": "memory_cache",
+        "knob": "effective_cache_size",
+        "old_value": 524288,
+        "new_value": 1048576,
+        "reason": "expert-protocol reserve: planner cache estimate",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "experiment_parent": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "decision": {
+        "verdict": "reject_harmful",
+        "reason": "mean paired log gain is below the harmful boundary and all valid blocks agree",
+        "effect_mean": -0.03197123976323586,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 2,
+        "valid_blocks": 2,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 30357.150829336166,
+          "candidate_tps": 29396.730042978248,
+          "log_gain": -0.032148656791604883,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "early_stopped_worse",
+            "reason": "first paired log gain is below the harmful boundary",
+            "effect_mean": -0.032148656791604883,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 36229.58001869121,
+          "candidate_tps": 35095.82192875627,
+          "log_gain": -0.03179382273486684,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "reject_harmful",
+            "reason": "mean paired log gain is below the harmful boundary and all valid blocks agree",
+            "effect_mean": -0.03197123976323586,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:008:fe6e447f",
+      "action": {
+        "subsystem": "memory_cache",
+        "knob": "effective_io_concurrency",
+        "old_value": 1,
+        "new_value": 2,
+        "reason": "expert-protocol reserve: prefetch depth",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "76c8474236277f120b1ba734a6f95edf49dd3ca5829e036e08c95552035d5d3b",
+      "experiment_parent": "77685a50a14059a63d550f7cd54829e23874f9c7876d40dc091c357f7439cac3",
+      "decision": {
+        "verdict": "accept",
+        "reason": "mean paired log gain exceeds delta_min and all valid blocks agree",
+        "effect_mean": 0.040437763395621516,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 2,
+        "valid_blocks": 2,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 32943.80945313077,
+          "candidate_tps": 34552.54561270749,
+          "log_gain": 0.047677860287846395,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "a second paired block is required",
+            "effect_mean": 0.047677860287846395,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 33238.37031004041,
+          "candidate_tps": 34360.32677187311,
+          "log_gain": 0.03319766650339664,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "accept",
+            "reason": "mean paired log gain exceeds delta_min and all valid blocks agree",
+            "effect_mean": 0.040437763395621516,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": true
+    },
+    {
+      "experiment_id": "health:009:81eb0759",
+      "action": {
+        "subsystem": "wal_durability",
+        "knob": "wal_writer_delay",
+        "old_value": 200,
+        "new_value": 100,
+        "reason": "expert-protocol reserve: writer cadence",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "60133816e1e665e296196e14f1c1b658bb4705c96bdc1ece046c62a82639bdce",
+      "experiment_parent": "76c8474236277f120b1ba734a6f95edf49dd3ca5829e036e08c95552035d5d3b",
+      "decision": {
+        "verdict": "accept",
+        "reason": "mean paired log gain exceeds delta_min and all valid blocks agree",
+        "effect_mean": 0.11181541603512812,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 2,
+        "valid_blocks": 2,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 29844.77007637511,
+          "candidate_tps": 34589.826107365494,
+          "log_gain": 0.1475499780182941,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "a second paired block is required",
+            "effect_mean": 0.1475499780182941,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 27770.27698333568,
+          "candidate_tps": 29965.512274141827,
+          "log_gain": 0.07608085405196215,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "accept",
+            "reason": "mean paired log gain exceeds delta_min and all valid blocks agree",
+            "effect_mean": 0.11181541603512812,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": true
+    },
+    {
+      "experiment_id": "health:010:28d3dd9b",
+      "action": {
+        "subsystem": "concurrency_maintenance",
+        "knob": "max_pred_locks_per_transaction",
+        "old_value": 8192,
+        "new_value": 16384,
+        "reason": "expert-protocol reserve: predicate-lock capacity",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "cb0e2b68e55abe43df27e73bf807937c33d70d8adedfd9ae491d472d66e13607",
+      "experiment_parent": "60133816e1e665e296196e14f1c1b658bb4705c96bdc1ece046c62a82639bdce",
+      "decision": {
+        "verdict": "reject_harmful",
+        "reason": "mean paired log gain is below the harmful boundary and all valid blocks agree",
+        "effect_mean": -0.20304817906056927,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 2,
+        "valid_blocks": 2,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 35874.943781804664,
+          "candidate_tps": 29246.47515101511,
+          "log_gain": -0.2042800482622164,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "early_stopped_worse",
+            "reason": "first paired log gain is below the harmful boundary",
+            "effect_mean": -0.2042800482622164,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 38265.70414571801,
+          "candidate_tps": 31272.456686018533,
+          "log_gain": -0.20181630985892213,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "reject_harmful",
+            "reason": "mean paired log gain is below the harmful boundary and all valid blocks agree",
+            "effect_mean": -0.20304817906056927,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:011:8e3e7d2c",
+      "action": {
+        "subsystem": "query_planning",
+        "knob": "seq_page_cost",
+        "old_value": 1.0,
+        "new_value": 0.5,
+        "reason": "coverage reserve: cheaper sequential access",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "fa26f2ea9c14b1c3d2804b25df1097e749dc8c72169f2c440536cb30a9c9495e",
+      "experiment_parent": "60133816e1e665e296196e14f1c1b658bb4705c96bdc1ece046c62a82639bdce",
+      "decision": {
+        "verdict": "inconclusive",
+        "reason": "valid paired blocks do not show a consistent effect above delta_min",
+        "effect_mean": 0.012140449094050272,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 3,
+        "valid_blocks": 3,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 31336.036367286426,
+          "candidate_tps": 32760.892988354062,
+          "log_gain": 0.04446676018796578,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "a second paired block is required for the one-block comeback check",
+            "effect_mean": 0.04446676018796578,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 36315.318424426565,
+          "candidate_tps": 32993.168922155965,
+          "log_gain": -0.0959391097395295,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "paired effects cross zero; run one final block",
+            "effect_mean": -0.02573617477578186,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 3,
+          "champion_tps": 30066.10935137078,
+          "candidate_tps": 32828.34434485735,
+          "log_gain": 0.08789369683371454,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "inconclusive",
+            "reason": "valid paired blocks do not show a consistent effect above delta_min",
+            "effect_mean": 0.012140449094050272,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 3,
+            "valid_blocks": 3,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:012:97d1c61a",
+      "action": {
+        "subsystem": "query_planning",
+        "knob": "seq_page_cost",
+        "old_value": 1.0,
+        "new_value": 2.0,
+        "reason": "coverage reserve: more expensive sequential access",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "4c930b4a791dc56f68255200b0f56acd739baf04f23fe2a14bc001166f16dff7",
+      "experiment_parent": "60133816e1e665e296196e14f1c1b658bb4705c96bdc1ece046c62a82639bdce",
+      "decision": {
+        "verdict": "inconclusive",
+        "reason": "valid paired blocks do not show a consistent effect above delta_min",
+        "effect_mean": -0.011375670888729506,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 3,
+        "valid_blocks": 3,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 35534.709957696745,
+          "candidate_tps": 31840.795390014046,
+          "log_gain": -0.10976162258070499,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "early_stopped_worse",
+            "reason": "first paired log gain is below the harmful boundary",
+            "effect_mean": -0.10976162258070499,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 33288.24139158895,
+          "candidate_tps": 34653.12278735316,
+          "log_gain": 0.040183622043943296,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "paired effects cross zero; run one final block",
+            "effect_mean": -0.034789000268380846,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 3,
+          "champion_tps": 31329.42578609176,
+          "candidate_tps": 32460.006578172088,
+          "log_gain": 0.03545098787057317,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "inconclusive",
+            "reason": "valid paired blocks do not show a consistent effect above delta_min",
+            "effect_mean": -0.011375670888729506,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 3,
+            "valid_blocks": 3,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:013:32fd0521",
+      "action": {
+        "subsystem": "memory_cache",
+        "knob": "temp_buffers",
+        "old_value": 1024,
+        "new_value": 2048,
+        "reason": "coverage reserve: session-local temporary buffers",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "5ca9daf9c00cd3c1b74f2cc1ab75182b6a989fbfe6fd541e4ba860c3d30e0f61",
+      "experiment_parent": "60133816e1e665e296196e14f1c1b658bb4705c96bdc1ece046c62a82639bdce",
+      "decision": {
+        "verdict": "inconclusive",
+        "reason": "valid paired blocks do not show a consistent effect above delta_min",
+        "effect_mean": -0.020120255067424132,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 3,
+        "valid_blocks": 3,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 32534.54228804932,
+          "candidate_tps": 30862.96361050744,
+          "log_gain": -0.0527454881887103,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "early_stopped_worse",
+            "reason": "first paired log gain is below the harmful boundary",
+            "effect_mean": -0.0527454881887103,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 30684.1036406774,
+          "candidate_tps": 31726.822727106115,
+          "log_gain": 0.03341774214760172,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "paired effects cross zero; run one final block",
+            "effect_mean": -0.009663873020554287,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 3,
+          "champion_tps": 32954.251848398424,
+          "candidate_tps": 31629.406486016218,
+          "log_gain": -0.04103301916116382,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "inconclusive",
+            "reason": "valid paired blocks do not show a consistent effect above delta_min",
+            "effect_mean": -0.020120255067424132,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 3,
+            "valid_blocks": 3,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": false
+    },
+    {
+      "experiment_id": "health:014:9ea440e7",
+      "action": {
+        "subsystem": "wal_durability",
+        "knob": "checkpoint_completion_target",
+        "old_value": 0.9,
+        "new_value": 0.95,
+        "reason": "coverage reserve: spread checkpoint writes",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "43ddf6e999fb3c0b0f83fed220385fd6357feaed372ce1999f1b634d648893ab",
+      "experiment_parent": "60133816e1e665e296196e14f1c1b658bb4705c96bdc1ece046c62a82639bdce",
+      "decision": {
+        "verdict": "accept",
+        "reason": "mean paired log gain exceeds delta_min and all valid blocks agree",
+        "effect_mean": 0.12541082779885146,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 2,
+        "valid_blocks": 2,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 33268.10818993908,
+          "candidate_tps": 33419.37332089859,
+          "log_gain": 0.0045365452992134035,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "a second paired block is required for the one-block comeback check",
+            "effect_mean": 0.0045365452992134035,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 28805.356430322438,
+          "candidate_tps": 36849.66277523702,
+          "log_gain": 0.24628511029848954,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "accept",
+            "reason": "mean paired log gain exceeds delta_min and all valid blocks agree",
+            "effect_mean": 0.12541082779885146,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": true
+    },
+    {
+      "experiment_id": "health:015:539d646c",
+      "action": {
+        "subsystem": "wal_durability",
+        "knob": "bgwriter_lru_maxpages",
+        "old_value": 100,
+        "new_value": 200,
+        "reason": "coverage reserve: background writer capacity",
+        "duration_seconds": 30,
+        "minimum_paired_blocks": 2
+      },
+      "candidate_config_hash": "8d2f0d397be14cbffc7a9092f6cfa9dc9526bfcea20fc56985a381cd3e49d338",
+      "experiment_parent": "43ddf6e999fb3c0b0f83fed220385fd6357feaed372ce1999f1b634d648893ab",
+      "decision": {
+        "verdict": "accept",
+        "reason": "mean paired log gain exceeds delta_min and all valid blocks agree",
+        "effect_mean": 0.10571481075934733,
+        "ci_low": -Infinity,
+        "ci_high": Infinity,
+        "delta_min": 0.03,
+        "blocks": 2,
+        "valid_blocks": 2,
+        "outlier_blocks": 0,
+        "should_continue": false
+      },
+      "blocks": [
+        {
+          "block": 1,
+          "champion_tps": 27408.56498980671,
+          "candidate_tps": 33522.92812542741,
+          "log_gain": 0.2013740709593476,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "continue",
+            "reason": "a second paired block is required",
+            "effect_mean": 0.2013740709593476,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 1,
+            "valid_blocks": 1,
+            "outlier_blocks": 0,
+            "should_continue": true
+          }
+        },
+        {
+          "block": 2,
+          "champion_tps": 28924.020708330176,
+          "candidate_tps": 29216.334887861933,
+          "log_gain": 0.010055550559347063,
+          "outlier": false,
+          "outlier_reason": null,
+          "decision_after_block": {
+            "verdict": "accept",
+            "reason": "mean paired log gain exceeds delta_min and all valid blocks agree",
+            "effect_mean": 0.10571481075934733,
+            "ci_low": -Infinity,
+            "ci_high": Infinity,
+            "delta_min": 0.03,
+            "blocks": 2,
+            "valid_blocks": 2,
+            "outlier_blocks": 0,
+            "should_continue": false
+          }
+        }
+      ],
+      "promoted_to_champion": true
+    }
+  ]
+}

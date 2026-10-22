@@ -1,0 +1,8 @@
+{
+  "schema_version": "andromeda.incremental-causal-graph/v1",
+  "graph_kind": "effective",
+  "version": 31,
+  "generated_at": "2026-10-22T04:24:46.666551+00:00",
+  "nodes": [],
+  "edges": []
+}

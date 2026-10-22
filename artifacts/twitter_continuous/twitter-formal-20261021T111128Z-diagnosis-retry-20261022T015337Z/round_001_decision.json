@@ -1,0 +1,741 @@
+{
+  "event": "candidate_frozen",
+  "round": 1,
+  "stage": "mechanism_diagnosis",
+  "anomalies": [
+    "low_buffer_hit_ratio",
+    "wal_wait",
+    "transaction_terminal_saturation"
+  ],
+  "analysis_priority": "resource_or_wait_path_plus_contributing_sql",
+  "diagnostic_knowledge": {
+    "schema_version": "andromeda.postgres-diagnostic-knob-relations/v1",
+    "active_phenomena": [
+      "low_buffer_hit_ratio",
+      "transaction_terminal_saturation",
+      "wal_sync_latency",
+      "wal_wait"
+    ],
+    "bundles": [
+      {
+        "bundle_id": "buffer_cache_capacity",
+        "phenomenon": "low_buffer_hit_ratio",
+        "roles": [
+          "memory_storage"
+        ],
+        "mechanism": "The working set is not retained or the planner undervalues cached/random I/O, increasing physical reads and terminal occupancy.",
+        "related_knobs": [
+          {
+            "knob": "shared_buffers",
+            "direction": "increase",
+            "role": "database cache capacity",
+            "current": 16384,
+            "vartype": "integer",
+            "execution_class": "restart",
+            "unit": "8kB",
+            "safe_low": 8192,
+            "safe_high": 65536,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "effective_cache_size",
+            "direction": "increase",
+            "role": "planner estimate of available cache",
+            "current": 524288,
+            "vartype": "integer",
+            "execution_class": "session",
+            "unit": "8kB",
+            "safe_low": 131072,
+            "safe_high": 1048576,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "effective_io_concurrency",
+            "direction": "increase",
+            "role": "concurrent prefetch capacity",
+            "current": 1,
+            "vartype": "integer",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 256,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "random_page_cost",
+            "direction": "decrease",
+            "role": "planner cost of cached/random reads",
+            "current": 4.0,
+            "vartype": "real",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 1.0,
+            "safe_high": 6.0,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "seq_page_cost",
+            "direction": "decrease",
+            "role": "I/O cost scale paired with random_page_cost",
+            "current": 1.0,
+            "vartype": "real",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 0.5,
+            "safe_high": 2.0,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          }
+        ],
+        "sources": [
+          {
+            "title": "PostgreSQL 14 Resource Consumption",
+            "url": "https://www.postgresql.org/docs/14/runtime-config-resource.html"
+          },
+          {
+            "title": "PostgreSQL 14 Query Planning",
+            "url": "https://www.postgresql.org/docs/14/runtime-config-query.html"
+          },
+          {
+            "title": "OtterTune: Automatic DBMS Tuning",
+            "url": "https://dl.acm.org/doi/10.1145/3035918.3064029"
+          }
+        ],
+        "required_knobs": [
+          "shared_buffers",
+          "effective_cache_size",
+          "effective_io_concurrency",
+          "random_page_cost",
+          "seq_page_cost"
+        ],
+        "non_actionable_knobs": []
+      },
+      {
+        "bundle_id": "wal_commit_path",
+        "phenomenon": "wal_sync_latency",
+        "roles": [
+          "memory_storage"
+        ],
+        "mechanism": "WAL buffer capacity, writer cadence, flush batch size and group commit jointly determine commit-path sync frequency and queueing.",
+        "related_knobs": [
+          {
+            "knob": "wal_buffers",
+            "direction": "increase",
+            "role": "WAL buffering capacity",
+            "current": 512,
+            "vartype": "integer",
+            "execution_class": "restart",
+            "unit": "8kB",
+            "safe_low": -1,
+            "safe_high": 2048,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "wal_writer_delay",
+            "direction": "decrease",
+            "role": "writer wake-up cadence",
+            "current": 200,
+            "vartype": "integer",
+            "execution_class": "reload",
+            "unit": "ms",
+            "safe_low": 20,
+            "safe_high": 500,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "wal_writer_flush_after",
+            "direction": "tune",
+            "role": "flush batch size",
+            "current": 128,
+            "vartype": "integer",
+            "execution_class": "reload",
+            "unit": "8kB",
+            "safe_low": 0,
+            "safe_high": 1024,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "commit_delay",
+            "direction": "increase",
+            "role": "group-commit collection window",
+            "current": 0,
+            "vartype": "integer",
+            "execution_class": "superuser",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 1000,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "commit_siblings",
+            "direction": "decrease",
+            "role": "group-commit activation threshold",
+            "current": 5,
+            "vartype": "integer",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 20,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "wal_compression",
+            "direction": "enable",
+            "role": "reduce full-page-image WAL volume",
+            "current": "off",
+            "vartype": "bool",
+            "execution_class": "superuser",
+            "unit": "",
+            "safe_low": null,
+            "safe_high": null,
+            "choices": [
+              "off",
+              "on"
+            ],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          }
+        ],
+        "sources": [
+          {
+            "title": "PostgreSQL 14 WAL Configuration",
+            "url": "https://www.postgresql.org/docs/14/runtime-config-wal.html"
+          },
+          {
+            "title": "PostgreSQL 14 Asynchronous Commit",
+            "url": "https://www.postgresql.org/docs/14/wal-async-commit.html"
+          }
+        ],
+        "required_knobs": [
+          "wal_buffers",
+          "wal_writer_delay",
+          "wal_writer_flush_after",
+          "commit_delay",
+          "commit_siblings",
+          "wal_compression"
+        ],
+        "non_actionable_knobs": []
+      }
+    ],
+    "mandatory_bundle_by_role": {
+      "memory_storage": {
+        "bundle_id": "buffer_cache_capacity",
+        "phenomenon": "low_buffer_hit_ratio",
+        "roles": [
+          "memory_storage"
+        ],
+        "mechanism": "The working set is not retained or the planner undervalues cached/random I/O, increasing physical reads and terminal occupancy.",
+        "related_knobs": [
+          {
+            "knob": "shared_buffers",
+            "direction": "increase",
+            "role": "database cache capacity",
+            "current": 16384,
+            "vartype": "integer",
+            "execution_class": "restart",
+            "unit": "8kB",
+            "safe_low": 8192,
+            "safe_high": 65536,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "effective_cache_size",
+            "direction": "increase",
+            "role": "planner estimate of available cache",
+            "current": 524288,
+            "vartype": "integer",
+            "execution_class": "session",
+            "unit": "8kB",
+            "safe_low": 131072,
+            "safe_high": 1048576,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "effective_io_concurrency",
+            "direction": "increase",
+            "role": "concurrent prefetch capacity",
+            "current": 1,
+            "vartype": "integer",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 0,
+            "safe_high": 256,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "random_page_cost",
+            "direction": "decrease",
+            "role": "planner cost of cached/random reads",
+            "current": 4.0,
+            "vartype": "real",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 1.0,
+            "safe_high": 6.0,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          },
+          {
+            "knob": "seq_page_cost",
+            "direction": "decrease",
+            "role": "I/O cost scale paired with random_page_cost",
+            "current": 1.0,
+            "vartype": "real",
+            "execution_class": "session",
+            "unit": "",
+            "safe_low": 0.5,
+            "safe_high": 2.0,
+            "choices": [],
+            "prior_experiment_count": 0,
+            "actionable_from_current": true
+          }
+        ],
+        "sources": [
+          {
+            "title": "PostgreSQL 14 Resource Consumption",
+            "url": "https://www.postgresql.org/docs/14/runtime-config-resource.html"
+          },
+          {
+            "title": "PostgreSQL 14 Query Planning",
+            "url": "https://www.postgresql.org/docs/14/runtime-config-query.html"
+          },
+          {
+            "title": "OtterTune: Automatic DBMS Tuning",
+            "url": "https://dl.acm.org/doi/10.1145/3035918.3064029"
+          }
+        ],
+        "required_knobs": [
+          "shared_buffers",
+          "effective_cache_size",
+          "effective_io_concurrency",
+          "random_page_cost",
+          "seq_page_cost"
+        ],
+        "non_actionable_knobs": []
+      }
+    },
+    "policy": "A mechanism action tunes every actionable knob in its required_knobs as one coherent group. The expert chooses exact values from the live safe ranges and explains each knob's role.",
+    "knowledge_source": "/root/Openguass/knowledge/postgres_diagnostic_knob_relations.json"
+  },
+  "scheduler_reason": "mandatory first sample for every expert; probabilities={'query_execution': 0.3333333333333333, 'memory_storage': 0.3333333333333333, 'concurrency_maintenance': 0.3333333333333333}; selected r001_concurrency_maintenance: executable against current incumbent; score=7.450; discriminating reviews=proposal alternatives",
+  "group": "expert:concurrency_maintenance",
+  "expert_proposals": [
+    {
+      "schema_version": "andromeda.expert-proposal/v1",
+      "proposal_id": "r001_concurrency_maintenance",
+      "expert": "concurrency_maintenance",
+      "incumbent_config_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+      "workload_fingerprint_hash": "ccbaaddc081053693e83f45cd77d1f9a81d3ea974892c7a98642bebb4fa0b287",
+      "title": "Raise predicate-lock promotion thresholds to test SERIALIZABLE lock-wait regime",
+      "anomaly": {
+        "metric_id": "telemetry.gauges.lock_waiting_backends.p95",
+        "source": "pg_stat_activity wait gauges",
+        "measurement_type": "state",
+        "unit": "backends",
+        "aggregation": "p95",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 0.0
+      },
+      "configuration_cause": "max_pred_locks_per_page=2 and max_pred_locks_per_relation=-2 force early predicate-lock promotion to page/relation granularity, so SERIALIZABLE readers of GetUserTweets can serialize on coarse relation-level SIRead locks even though instantaneous lock_waiting_backends p95 is 0.",
+      "mechanism": "Under SERIALIZABLE, GetUserTweets dominates terminal capacity (0.885) and its p99 (1121us) is 5.7x its p50 (196us). With max_pred_locks_per_page=2 and max_pred_locks_per_relation=-2, per-tuple SIRead locks promote to page then relation level almost immediately, so concurrent readers of the same tweet rows acquire conflicting coarse predicate locks and serialize. Raising per-page to 16 and per-relation to 64 keeps locks at tuple/page granularity longer, reducing false conflicts and tail latency without changing WAL or commit semantics. max_pred_locks_per_transaction stays at 8192 (already ample), so no lock-table exhaustion risk.",
+      "intermediate_metrics": [
+        {
+          "metric_id": "telemetry.gauges.lock_waiting_backends.p95",
+          "source": "pg_stat_activity",
+          "measurement_type": "state",
+          "unit": "backends",
+          "aggregation": "p95",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 0.0
+        },
+        {
+          "metric_id": "telemetry.gauges.locks_waiting.p95",
+          "source": "pg_locks",
+          "measurement_type": "state",
+          "unit": "locks",
+          "aggregation": "p95",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 0.0
+        },
+        {
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "source": "benchbase client",
+          "measurement_type": "per_transaction",
+          "unit": "us",
+          "aggregation": "p99",
+          "sampling_window_seconds": 120.0,
+          "observed_value": 1121.0
+        }
+      ],
+      "query_effect": "GetUserTweets SIRead locks stay at tuple/page granularity longer, reducing coarse relation-level predicate-lock conflicts among concurrent SERIALIZABLE readers.",
+      "expected_tps_effect": "Small increase in successful_transaction_tps as GetUserTweets tail latency drops; magnitude bounded because lock_waiting_backends is already 0 at p95.",
+      "expected_latency_effect": "GetUserTweets p99 decreases; p50 roughly unchanged.",
+      "knob_changes": [
+        {
+          "knob": "max_pred_locks_per_page",
+          "old_value": 2,
+          "new_value": 16,
+          "numerical_basis": "8x current, within [0,256]; keeps tuple/page granularity longer before relation promotion.",
+          "mechanism_role": "per-page SIRead lock budget before promotion",
+          "recommended_min": 8,
+          "recommended_max": 64,
+          "initial_step": 8
+        },
+        {
+          "knob": "max_pred_locks_per_relation",
+          "old_value": -2,
+          "new_value": 64,
+          "numerical_basis": "Positive 64 replaces the -2 (half-of-transaction) heuristic, within [-2,4096]; delays relation-level promotion.",
+          "mechanism_role": "per-relation SIRead lock budget before promotion",
+          "recommended_min": 16,
+          "recommended_max": 256,
+          "initial_step": 16
+        }
+      ],
+      "predictions": [
+        {
+          "prediction_id": "r001_concurrency_maintenance_p1",
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+          "expected_direction": "decrease",
+          "minimum_change": 2.0,
+          "comparison_method": "relative_percent",
+          "rationale": "Coarser promotion removed; fewer relation-level SIRead conflicts shorten the tail."
+        },
+        {
+          "prediction_id": "r001_concurrency_maintenance_p2",
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "metric_id": "client.successful_transaction_tps",
+          "expected_direction": "increase",
+          "minimum_change": 0.3,
+          "comparison_method": "relative_percent",
+          "rationale": "Lower GetUserTweets tail frees terminal capacity, raising completed TPS."
+        },
+        {
+          "prediction_id": "r001_concurrency_maintenance_p3",
+          "edge_id": "r001_concurrency_maintenance_e2",
+          "metric_id": "telemetry.gauges.locks_waiting.p95",
+          "expected_direction": "unchanged",
+          "minimum_change": 0.0,
+          "comparison_method": "absolute_delta",
+          "rationale": "Already 0; promotion thresholds should not create new waits."
+        }
+      ],
+      "alternatives": [
+        {
+          "alternative_id": "alt-wal",
+          "statement": "If the tail is WAL-sync driven rather than predicate-lock driven, GetUserTweets p99 will not improve and wal_sync_time_per_txn stays flat; then the WAL commit-path bundle is the correct lever.",
+          "discriminating_metric_id": "telemetry.per_transaction.wal_sync_time_per_txn",
+          "expected_direction": "unchanged"
+        },
+        {
+          "alternative_id": "alt-buffers",
+          "statement": "If the tail is buffer-miss driven, blks_read_per_txn stays high and shared_buffers/effective_cache_size is the correct lever.",
+          "discriminating_metric_id": "telemetry.per_transaction.blks_read_per_txn",
+          "expected_direction": "unchanged"
+        }
+      ],
+      "cross_domain_requirements": [
+        "memory_storage owns shared_buffers/effective_cache_size coverage for low_buffer_hit_ratio",
+        "memory_storage owns wal_buffers/wal_writer_delay/commit_delay/wal_compression for wal_wait",
+        "unverified interaction note (demoted to pending constraint): shared_buffers",
+        "unverified interaction note (demoted to pending constraint): wal_buffers"
+      ],
+      "why_exceeds_incumbent": "Incumbent leaves predicate-lock promotion at aggressive defaults (page=2, relation=-2) despite a SERIALIZABLE workload whose dominant transaction shows a 5.7x p50-to-p99 tail; widening promotion thresholds is a low-risk, reload-only test of the lock-granularity mechanism.",
+      "cost": {
+        "restart_required": false,
+        "workload_measurements": 2,
+        "estimated_seconds": 180
+      },
+      "nodes": [
+        {
+          "node_id": "r001_concurrency_maintenance_node_intervention",
+          "kind": "intervention",
+          "label": "Raise max_pred_locks_per_page/relation",
+          "attributes": {}
+        },
+        {
+          "node_id": "r001_concurrency_maintenance_node_mechanism",
+          "kind": "mechanism",
+          "label": "Fewer coarse SIRead promotions, less serialization",
+          "attributes": {}
+        },
+        {
+          "node_id": "r001_concurrency_maintenance_node_objective",
+          "kind": "objective",
+          "label": "Successful transaction TPS",
+          "attributes": {}
+        }
+      ],
+      "edges": [
+        {
+          "edge_id": "r001_concurrency_maintenance_e1",
+          "source": "r001_concurrency_maintenance_node_intervention",
+          "target": "r001_concurrency_maintenance_node_mechanism",
+          "relation": "reduces_predicate_lock_promotion",
+          "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+          "prediction_ids": [
+            "r001_concurrency_maintenance_p1",
+            "r001_concurrency_maintenance_p2"
+          ]
+        },
+        {
+          "edge_id": "r001_concurrency_maintenance_e2",
+          "source": "r001_concurrency_maintenance_node_mechanism",
+          "target": "r001_concurrency_maintenance_node_objective",
+          "relation": "lowers_tail_latency_raises_tps",
+          "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+          "prediction_ids": [
+            "r001_concurrency_maintenance_p3"
+          ]
+        }
+      ],
+      "interaction_factors": [],
+      "interaction_predictions": {},
+      "interaction_design": null,
+      "created_at": "2026-10-22T02:10:00Z"
+    }
+  ],
+  "selected": {
+    "schema_version": "andromeda.expert-proposal/v1",
+    "proposal_id": "r001_concurrency_maintenance",
+    "expert": "concurrency_maintenance",
+    "incumbent_config_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+    "workload_fingerprint_hash": "ccbaaddc081053693e83f45cd77d1f9a81d3ea974892c7a98642bebb4fa0b287",
+    "title": "Raise predicate-lock promotion thresholds to test SERIALIZABLE lock-wait regime",
+    "anomaly": {
+      "metric_id": "telemetry.gauges.lock_waiting_backends.p95",
+      "source": "pg_stat_activity wait gauges",
+      "measurement_type": "state",
+      "unit": "backends",
+      "aggregation": "p95",
+      "sampling_window_seconds": 120.0,
+      "observed_value": 0.0
+    },
+    "configuration_cause": "max_pred_locks_per_page=2 and max_pred_locks_per_relation=-2 force early predicate-lock promotion to page/relation granularity, so SERIALIZABLE readers of GetUserTweets can serialize on coarse relation-level SIRead locks even though instantaneous lock_waiting_backends p95 is 0.",
+    "mechanism": "Under SERIALIZABLE, GetUserTweets dominates terminal capacity (0.885) and its p99 (1121us) is 5.7x its p50 (196us). With max_pred_locks_per_page=2 and max_pred_locks_per_relation=-2, per-tuple SIRead locks promote to page then relation level almost immediately, so concurrent readers of the same tweet rows acquire conflicting coarse predicate locks and serialize. Raising per-page to 16 and per-relation to 64 keeps locks at tuple/page granularity longer, reducing false conflicts and tail latency without changing WAL or commit semantics. max_pred_locks_per_transaction stays at 8192 (already ample), so no lock-table exhaustion risk.",
+    "intermediate_metrics": [
+      {
+        "metric_id": "telemetry.gauges.lock_waiting_backends.p95",
+        "source": "pg_stat_activity",
+        "measurement_type": "state",
+        "unit": "backends",
+        "aggregation": "p95",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 0.0
+      },
+      {
+        "metric_id": "telemetry.gauges.locks_waiting.p95",
+        "source": "pg_locks",
+        "measurement_type": "state",
+        "unit": "locks",
+        "aggregation": "p95",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 0.0
+      },
+      {
+        "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+        "source": "benchbase client",
+        "measurement_type": "per_transaction",
+        "unit": "us",
+        "aggregation": "p99",
+        "sampling_window_seconds": 120.0,
+        "observed_value": 1121.0
+      }
+    ],
+    "query_effect": "GetUserTweets SIRead locks stay at tuple/page granularity longer, reducing coarse relation-level predicate-lock conflicts among concurrent SERIALIZABLE readers.",
+    "expected_tps_effect": "Small increase in successful_transaction_tps as GetUserTweets tail latency drops; magnitude bounded because lock_waiting_backends is already 0 at p95.",
+    "expected_latency_effect": "GetUserTweets p99 decreases; p50 roughly unchanged.",
+    "knob_changes": [
+      {
+        "knob": "max_pred_locks_per_page",
+        "old_value": 2,
+        "new_value": 16,
+        "numerical_basis": "8x current, within [0,256]; keeps tuple/page granularity longer before relation promotion.",
+        "mechanism_role": "per-page SIRead lock budget before promotion",
+        "recommended_min": 8,
+        "recommended_max": 64,
+        "initial_step": 8
+      },
+      {
+        "knob": "max_pred_locks_per_relation",
+        "old_value": -2,
+        "new_value": 64,
+        "numerical_basis": "Positive 64 replaces the -2 (half-of-transaction) heuristic, within [-2,4096]; delays relation-level promotion.",
+        "mechanism_role": "per-relation SIRead lock budget before promotion",
+        "recommended_min": 16,
+        "recommended_max": 256,
+        "initial_step": 16
+      }
+    ],
+    "predictions": [
+      {
+        "prediction_id": "r001_concurrency_maintenance_p1",
+        "edge_id": "r001_concurrency_maintenance_e1",
+        "metric_id": "client.transaction_latency.GetUserTweets.p99_us",
+        "expected_direction": "decrease",
+        "minimum_change": 2.0,
+        "comparison_method": "relative_percent",
+        "rationale": "Coarser promotion removed; fewer relation-level SIRead conflicts shorten the tail."
+      },
+      {
+        "prediction_id": "r001_concurrency_maintenance_p2",
+        "edge_id": "r001_concurrency_maintenance_e1",
+        "metric_id": "client.successful_transaction_tps",
+        "expected_direction": "increase",
+        "minimum_change": 0.3,
+        "comparison_method": "relative_percent",
+        "rationale": "Lower GetUserTweets tail frees terminal capacity, raising completed TPS."
+      },
+      {
+        "prediction_id": "r001_concurrency_maintenance_p3",
+        "edge_id": "r001_concurrency_maintenance_e2",
+        "metric_id": "telemetry.gauges.locks_waiting.p95",
+        "expected_direction": "unchanged",
+        "minimum_change": 0.0,
+        "comparison_method": "absolute_delta",
+        "rationale": "Already 0; promotion thresholds should not create new waits."
+      }
+    ],
+    "alternatives": [
+      {
+        "alternative_id": "alt-wal",
+        "statement": "If the tail is WAL-sync driven rather than predicate-lock driven, GetUserTweets p99 will not improve and wal_sync_time_per_txn stays flat; then the WAL commit-path bundle is the correct lever.",
+        "discriminating_metric_id": "telemetry.per_transaction.wal_sync_time_per_txn",
+        "expected_direction": "unchanged"
+      },
+      {
+        "alternative_id": "alt-buffers",
+        "statement": "If the tail is buffer-miss driven, blks_read_per_txn stays high and shared_buffers/effective_cache_size is the correct lever.",
+        "discriminating_metric_id": "telemetry.per_transaction.blks_read_per_txn",
+        "expected_direction": "unchanged"
+      }
+    ],
+    "cross_domain_requirements": [
+      "memory_storage owns shared_buffers/effective_cache_size coverage for low_buffer_hit_ratio",
+      "memory_storage owns wal_buffers/wal_writer_delay/commit_delay/wal_compression for wal_wait",
+      "unverified interaction note (demoted to pending constraint): shared_buffers",
+      "unverified interaction note (demoted to pending constraint): wal_buffers"
+    ],
+    "why_exceeds_incumbent": "Incumbent leaves predicate-lock promotion at aggressive defaults (page=2, relation=-2) despite a SERIALIZABLE workload whose dominant transaction shows a 5.7x p50-to-p99 tail; widening promotion thresholds is a low-risk, reload-only test of the lock-granularity mechanism.",
+    "cost": {
+      "restart_required": false,
+      "workload_measurements": 2,
+      "estimated_seconds": 180
+    },
+    "nodes": [
+      {
+        "node_id": "r001_concurrency_maintenance_node_intervention",
+        "kind": "intervention",
+        "label": "Raise max_pred_locks_per_page/relation",
+        "attributes": {}
+      },
+      {
+        "node_id": "r001_concurrency_maintenance_node_mechanism",
+        "kind": "mechanism",
+        "label": "Fewer coarse SIRead promotions, less serialization",
+        "attributes": {}
+      },
+      {
+        "node_id": "r001_concurrency_maintenance_node_objective",
+        "kind": "objective",
+        "label": "Successful transaction TPS",
+        "attributes": {}
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "r001_concurrency_maintenance_e1",
+        "source": "r001_concurrency_maintenance_node_intervention",
+        "target": "r001_concurrency_maintenance_node_mechanism",
+        "relation": "reduces_predicate_lock_promotion",
+        "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+        "prediction_ids": [
+          "r001_concurrency_maintenance_p1",
+          "r001_concurrency_maintenance_p2"
+        ]
+      },
+      {
+        "edge_id": "r001_concurrency_maintenance_e2",
+        "source": "r001_concurrency_maintenance_node_mechanism",
+        "target": "r001_concurrency_maintenance_node_objective",
+        "relation": "lowers_tail_latency_raises_tps",
+        "context_hash": "ca80f9ead585680ab582a94d8b5333ef14316b83be8cf4e973fb8443dcb64ed2",
+        "prediction_ids": [
+          "r001_concurrency_maintenance_p3"
+        ]
+      }
+    ],
+    "interaction_factors": [],
+    "interaction_predictions": {},
+    "interaction_design": null,
+    "created_at": "2026-10-22T02:10:00Z"
+  },
+  "action_consistency": {
+    "at": "2026-10-22T02:06:14.824966+00:00",
+    "round": 1,
+    "stage": "mechanism_diagnosis",
+    "proposal_id": "r001_concurrency_maintenance",
+    "expert_changes": [
+      {
+        "knob": "max_pred_locks_per_page",
+        "old_value": 2,
+        "new_value": 16,
+        "numerical_basis": "8x current, within [0,256]; keeps tuple/page granularity longer before relation promotion.",
+        "mechanism_role": "per-page SIRead lock budget before promotion",
+        "recommended_min": 8,
+        "recommended_max": 64,
+        "initial_step": 8
+      },
+      {
+        "knob": "max_pred_locks_per_relation",
+        "old_value": -2,
+        "new_value": 64,
+        "numerical_basis": "Positive 64 replaces the -2 (half-of-transaction) heuristic, within [-2,4096]; delays relation-level promotion.",
+        "mechanism_role": "per-relation SIRead lock budget before promotion",
+        "recommended_min": 16,
+        "recommended_max": 256,
+        "initial_step": 16
+      }
+    ],
+    "candidate_changes": {
+      "max_pred_locks_per_page": 16,
+      "max_pred_locks_per_relation": 64
+    },
+    "applied_changes": null,
+    "verdict": "exact_match",
+    "reasons": []
+  },
+  "candidate_config_hash": "56e09e6a14a0def2fd53799375be55de619575880e27da209904db1dfb9fe6cc",
+  "action_boundaries": {
+    "ddl_executed": false,
+    "sql_rewrite_executed": false,
+    "index_build_executed": false
+  }
+}

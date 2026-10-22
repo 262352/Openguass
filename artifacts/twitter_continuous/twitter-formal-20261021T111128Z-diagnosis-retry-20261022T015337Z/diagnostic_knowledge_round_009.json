@@ -1,0 +1,248 @@
+{
+  "schema_version": "andromeda.postgres-diagnostic-knob-relations/v1",
+  "active_phenomena": [
+    "transaction_terminal_saturation",
+    "wal_sync_latency",
+    "wal_wait"
+  ],
+  "bundles": [
+    {
+      "bundle_id": "wal_commit_path",
+      "phenomenon": "wal_sync_latency",
+      "roles": [
+        "memory_storage"
+      ],
+      "mechanism": "WAL buffer capacity, writer cadence, flush batch size and group commit jointly determine commit-path sync frequency and queueing.",
+      "related_knobs": [
+        {
+          "knob": "wal_buffers",
+          "direction": "increase",
+          "role": "WAL buffering capacity",
+          "current": 2048,
+          "vartype": "integer",
+          "execution_class": "restart",
+          "unit": "8kB",
+          "safe_low": -1,
+          "safe_high": 2048,
+          "choices": [],
+          "prior_experiment_count": 1,
+          "actionable_from_current": false
+        },
+        {
+          "knob": "wal_writer_delay",
+          "direction": "decrease",
+          "role": "writer wake-up cadence",
+          "current": 20,
+          "vartype": "integer",
+          "execution_class": "reload",
+          "unit": "ms",
+          "safe_low": 20,
+          "safe_high": 500,
+          "choices": [],
+          "prior_experiment_count": 1,
+          "actionable_from_current": false
+        },
+        {
+          "knob": "wal_writer_flush_after",
+          "direction": "tune",
+          "role": "flush batch size",
+          "current": 0,
+          "vartype": "integer",
+          "execution_class": "reload",
+          "unit": "8kB",
+          "safe_low": 0,
+          "safe_high": 1024,
+          "choices": [],
+          "prior_experiment_count": 3,
+          "actionable_from_current": true
+        },
+        {
+          "knob": "commit_delay",
+          "direction": "increase",
+          "role": "group-commit collection window",
+          "current": 100,
+          "vartype": "integer",
+          "execution_class": "superuser",
+          "unit": "",
+          "safe_low": 0,
+          "safe_high": 1000,
+          "choices": [],
+          "prior_experiment_count": 3,
+          "actionable_from_current": true
+        },
+        {
+          "knob": "commit_siblings",
+          "direction": "decrease",
+          "role": "group-commit activation threshold",
+          "current": 2,
+          "vartype": "integer",
+          "execution_class": "session",
+          "unit": "",
+          "safe_low": 0,
+          "safe_high": 20,
+          "choices": [],
+          "prior_experiment_count": 3,
+          "actionable_from_current": true
+        },
+        {
+          "knob": "wal_compression",
+          "direction": "enable",
+          "role": "reduce full-page-image WAL volume",
+          "current": "on",
+          "vartype": "bool",
+          "execution_class": "superuser",
+          "unit": "",
+          "safe_low": null,
+          "safe_high": null,
+          "choices": [
+            "off",
+            "on"
+          ],
+          "prior_experiment_count": 1,
+          "actionable_from_current": false
+        }
+      ],
+      "sources": [
+        {
+          "title": "PostgreSQL 14 WAL Configuration",
+          "url": "https://www.postgresql.org/docs/14/runtime-config-wal.html"
+        },
+        {
+          "title": "PostgreSQL 14 Asynchronous Commit",
+          "url": "https://www.postgresql.org/docs/14/wal-async-commit.html"
+        }
+      ],
+      "required_knobs": [
+        "wal_writer_flush_after",
+        "commit_delay",
+        "commit_siblings"
+      ],
+      "non_actionable_knobs": [
+        "wal_buffers",
+        "wal_writer_delay",
+        "wal_compression"
+      ]
+    }
+  ],
+  "mandatory_bundle_by_role": {
+    "memory_storage": {
+      "bundle_id": "wal_commit_path",
+      "phenomenon": "wal_sync_latency",
+      "roles": [
+        "memory_storage"
+      ],
+      "mechanism": "WAL buffer capacity, writer cadence, flush batch size and group commit jointly determine commit-path sync frequency and queueing.",
+      "related_knobs": [
+        {
+          "knob": "wal_buffers",
+          "direction": "increase",
+          "role": "WAL buffering capacity",
+          "current": 2048,
+          "vartype": "integer",
+          "execution_class": "restart",
+          "unit": "8kB",
+          "safe_low": -1,
+          "safe_high": 2048,
+          "choices": [],
+          "prior_experiment_count": 1,
+          "actionable_from_current": false
+        },
+        {
+          "knob": "wal_writer_delay",
+          "direction": "decrease",
+          "role": "writer wake-up cadence",
+          "current": 20,
+          "vartype": "integer",
+          "execution_class": "reload",
+          "unit": "ms",
+          "safe_low": 20,
+          "safe_high": 500,
+          "choices": [],
+          "prior_experiment_count": 1,
+          "actionable_from_current": false
+        },
+        {
+          "knob": "wal_writer_flush_after",
+          "direction": "tune",
+          "role": "flush batch size",
+          "current": 0,
+          "vartype": "integer",
+          "execution_class": "reload",
+          "unit": "8kB",
+          "safe_low": 0,
+          "safe_high": 1024,
+          "choices": [],
+          "prior_experiment_count": 3,
+          "actionable_from_current": true
+        },
+        {
+          "knob": "commit_delay",
+          "direction": "increase",
+          "role": "group-commit collection window",
+          "current": 100,
+          "vartype": "integer",
+          "execution_class": "superuser",
+          "unit": "",
+          "safe_low": 0,
+          "safe_high": 1000,
+          "choices": [],
+          "prior_experiment_count": 3,
+          "actionable_from_current": true
+        },
+        {
+          "knob": "commit_siblings",
+          "direction": "decrease",
+          "role": "group-commit activation threshold",
+          "current": 2,
+          "vartype": "integer",
+          "execution_class": "session",
+          "unit": "",
+          "safe_low": 0,
+          "safe_high": 20,
+          "choices": [],
+          "prior_experiment_count": 3,
+          "actionable_from_current": true
+        },
+        {
+          "knob": "wal_compression",
+          "direction": "enable",
+          "role": "reduce full-page-image WAL volume",
+          "current": "on",
+          "vartype": "bool",
+          "execution_class": "superuser",
+          "unit": "",
+          "safe_low": null,
+          "safe_high": null,
+          "choices": [
+            "off",
+            "on"
+          ],
+          "prior_experiment_count": 1,
+          "actionable_from_current": false
+        }
+      ],
+      "sources": [
+        {
+          "title": "PostgreSQL 14 WAL Configuration",
+          "url": "https://www.postgresql.org/docs/14/runtime-config-wal.html"
+        },
+        {
+          "title": "PostgreSQL 14 Asynchronous Commit",
+          "url": "https://www.postgresql.org/docs/14/wal-async-commit.html"
+        }
+      ],
+      "required_knobs": [
+        "wal_writer_flush_after",
+        "commit_delay",
+        "commit_siblings"
+      ],
+      "non_actionable_knobs": [
+        "wal_buffers",
+        "wal_writer_delay",
+        "wal_compression"
+      ]
+    }
+  },
+  "policy": "A mechanism action tunes every actionable knob in its required_knobs as one coherent group. The expert chooses exact values from the live safe ranges and explains each knob's role.",
+  "knowledge_source": "/root/Openguass/knowledge/postgres_diagnostic_knob_relations.json"
+}

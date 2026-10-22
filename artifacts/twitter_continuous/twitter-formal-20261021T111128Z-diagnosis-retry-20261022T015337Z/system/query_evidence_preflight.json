@@ -1,0 +1,7 @@
+{
+  "status": "fallback",
+  "reason": "pg_stat_statements view is unavailable; aggregate query deltas are disabled",
+  "fallback_mode": "pg_stat_activity_sampling_only",
+  "fallback_limit": "wait sampling remains available; statement aggregates may be absent",
+  "postgresql_version_num": "140024"
+}

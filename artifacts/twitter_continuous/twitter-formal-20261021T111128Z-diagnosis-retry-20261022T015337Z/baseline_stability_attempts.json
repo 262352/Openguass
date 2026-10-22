@@ -1,0 +1,23 @@
+{
+  "schema_version": "andromeda.baseline-stability-attempts/v1",
+  "hard_gate": false,
+  "attempts": [
+    {
+      "attempt": 1,
+      "stable": true,
+      "values": [
+        20893.421984579814,
+        22781.848400945248,
+        20596.238097430927
+      ],
+      "median": 20893.421984579814,
+      "spread_percent": 10.460757960698773,
+      "max_min_ratio": 1.1061169662719592,
+      "reason": "stable",
+      "action": "accepted"
+    }
+  ],
+  "final_stable": true,
+  "fallback_used": false,
+  "fallback_policy": "median throughput of the final three repeats"
+}
